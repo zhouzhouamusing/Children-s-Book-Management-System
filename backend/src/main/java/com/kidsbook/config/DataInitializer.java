@@ -30,10 +30,14 @@ public class DataInitializer implements CommandLineRunner {
                 admin.setUsername("admin");
                 admin.setPassword(encodedPassword);
                 admin.setNickname("超级管理员");
+                admin.setEmail("admin@kidsbook.com");
                 adminMapper.insert(admin);
                 log.info("=== 初始管理员账号已创建 === 用户名: admin, 密码: admin123");
             } else {
                 admin.setPassword(encodedPassword);
+                if (admin.getEmail() == null) {
+                    admin.setEmail("admin@kidsbook.com");
+                }
                 adminMapper.updateById(admin);
                 log.info("=== 管理员密码已更新 === 用户名: admin, 密码: admin123");
             }

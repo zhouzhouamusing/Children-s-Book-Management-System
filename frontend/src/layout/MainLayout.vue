@@ -44,9 +44,9 @@
         </div>
         <div class="header-right">
           <span class="welcome">你好，{{ nickname }} 👋</span>
-          <el-button type="danger" text @click="handleLogout">
+          <el-button class="logout-btn" @click="handleLogout">
             <el-icon><SwitchButton /></el-icon>
-            退出
+            退出登录
           </el-button>
         </div>
       </el-header>
@@ -193,6 +193,21 @@ const handleLogout = () => {
 .welcome {
   color: var(--text-secondary);
   font-size: 14px;
+}
+
+.logout-btn {
+  background: linear-gradient(135deg, #FF6B81, #FF8A9E) !important;
+  border: none !important;
+  color: #fff !important;
+  font-size: 13px;
+  padding: 8px 16px !important;
+  height: 36px;
+}
+
+.logout-btn:hover {
+  background: linear-gradient(135deg, #FF4757, #FF6B81) !important;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(255, 107, 129, 0.4);
 }
 
 .content {

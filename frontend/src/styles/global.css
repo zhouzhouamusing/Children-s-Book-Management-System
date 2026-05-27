@@ -49,16 +49,19 @@ body {
 .el-button--primary {
   background: linear-gradient(135deg, var(--pink), var(--purple-light)) !important;
   border: none !important;
+  color: #fff !important;
 }
 
 .el-button--success {
   background: linear-gradient(135deg, var(--green), #8DD5BE) !important;
   border: none !important;
+  color: #fff !important;
 }
 
 .el-button--danger {
   background: linear-gradient(135deg, #FF8A9E, #FF6B81) !important;
   border: none !important;
+  color: #fff !important;
 }
 
 .el-input__wrapper {

@@ -10,11 +10,13 @@ CREATE TABLE `admin` (
     `username` VARCHAR(50) NOT NULL COMMENT '用户名',
     `password` VARCHAR(200) NOT NULL COMMENT '密码(BCrypt加密)',
     `nickname` VARCHAR(50) DEFAULT '管理员' COMMENT '昵称',
+    `email` VARCHAR(100) DEFAULT NULL COMMENT '邮箱',
     `avatar` VARCHAR(255) DEFAULT NULL COMMENT '头像URL',
     `create_time` DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
     `update_time` DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
     PRIMARY KEY (`id`),
-    UNIQUE KEY `uk_username` (`username`)
+    UNIQUE KEY `uk_username` (`username`),
+    UNIQUE KEY `uk_email` (`email`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='管理员表';
 
 -- 图书表
@@ -53,3 +55,7 @@ INSERT INTO `book` (`title`, `author`, `publisher`, `isbn`, `category`, `age_ran
 ('草房子', '曹文轩', '江苏凤凰少年儿童出版社', '9787534618727', '成长故事', '8-14岁', 18.00, 30, '一部讲述少年成长的纯美小说', 1),
 ('安徒生童话', '安徒生', '人民文学出版社', '9787020008735', '童话故事', '5-12岁', 26.00, 55, '世界经典童话集', 1),
 ('三毛流浪记', '张乐平', '少年儿童出版社', '9787532474585', '漫画', '6-12岁', 28.00, 25, '中国经典漫画作品', 1);
+
+-- 如果admin表已存在但缺少email字段，执行以下语句：
+-- ALTER TABLE `admin` ADD COLUMN `email` VARCHAR(100) DEFAULT NULL COMMENT '邮箱' AFTER `nickname`;
+-- ALTER TABLE `admin` ADD UNIQUE KEY `uk_email` (`email`);

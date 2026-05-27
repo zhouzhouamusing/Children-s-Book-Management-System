@@ -8,6 +8,18 @@ const routes = [
     meta: { title: '登录', public: true }
   },
   {
+    path: '/register',
+    name: 'Register',
+    component: () => import('@/views/Register.vue'),
+    meta: { title: '注册', public: true }
+  },
+  {
+    path: '/forgot-password',
+    name: 'ForgotPassword',
+    component: () => import('@/views/ForgotPassword.vue'),
+    meta: { title: '找回密码', public: true }
+  },
+  {
     path: '/',
     component: () => import('@/layout/MainLayout.vue'),
     redirect: '/dashboard',

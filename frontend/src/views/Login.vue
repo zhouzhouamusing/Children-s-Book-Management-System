@@ -38,6 +38,9 @@
             show-password
           />
         </el-form-item>
+        <div class="form-actions">
+          <router-link to="/forgot-password" class="forgot-link">忘记密码？</router-link>
+        </div>
         <el-form-item>
           <el-button
             type="primary"
@@ -46,12 +49,16 @@
             class="login-btn"
             @click="handleLogin"
           >
-            {{ loading ? '登录中...' : '欢迎进入' }}
+            {{ loading ? '登录中...' : '🚀 欢迎进入' }}
           </el-button>
         </el-form-item>
       </el-form>
       <div class="login-footer">
-        <span>默认账号：admin / admin123</span>
+        <span>还没有账号？</span>
+        <router-link to="/register" class="link">立即注册</router-link>
+      </div>
+      <div class="login-hint">
+        <span>默认体验账号：admin / admin123</span>
       </div>
     </div>
   </div>
@@ -176,7 +183,7 @@ const handleLogin = async () => {
 .login-card {
   background: white;
   border-radius: var(--radius-lg);
-  padding: 50px 40px;
+  padding: 50px 40px 35px;
   width: 420px;
   box-shadow: 0 20px 60px rgba(0, 0, 0, 0.08);
   position: relative;
@@ -185,7 +192,7 @@ const handleLogin = async () => {
 
 .login-header {
   text-align: center;
-  margin-bottom: 40px;
+  margin-bottom: 36px;
 }
 
 .logo {
@@ -212,6 +219,24 @@ const handleLogin = async () => {
   margin-bottom: 20px;
 }
 
+.form-actions {
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: 12px;
+  margin-top: -6px;
+}
+
+.forgot-link {
+  color: var(--purple);
+  font-size: 13px;
+  text-decoration: none;
+  transition: color 0.3s;
+}
+
+.forgot-link:hover {
+  color: var(--pink);
+}
+
 .login-btn {
   width: 100%;
   height: 48px;
@@ -219,6 +244,7 @@ const handleLogin = async () => {
   background: linear-gradient(135deg, var(--green), #8DD5BE) !important;
   border: none !important;
   letter-spacing: 2px;
+  color: #fff !important;
 }
 
 .login-btn:hover {
@@ -228,6 +254,25 @@ const handleLogin = async () => {
 .login-footer {
   text-align: center;
   color: var(--text-secondary);
+  font-size: 14px;
+  margin-bottom: 12px;
+}
+
+.login-footer .link {
+  color: var(--purple);
+  text-decoration: none;
+  font-weight: 600;
+  margin-left: 6px;
+  transition: color 0.3s;
+}
+
+.login-footer .link:hover {
+  color: var(--pink);
+}
+
+.login-hint {
+  text-align: center;
+  color: #BBB;
   font-size: 12px;
 }
 </style>

@@ -12,6 +12,7 @@ public class Admin {
     private String username;
     private String password;
     private String nickname;
+    private String email;
     private String avatar;
     @TableField(fill = FieldFill.INSERT)
     private LocalDateTime createTime;

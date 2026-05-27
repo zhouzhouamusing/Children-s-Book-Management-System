@@ -34,6 +34,8 @@ public class SecurityConfig {
 
     private static final String[] PUBLIC_URLS = {
         "/api/admin/login",
+        "/api/admin/register",
+        "/api/admin/reset-password",
         "/api/health",
         "/error"
     };

@@ -4,6 +4,14 @@ export function login(data) {
   return request.post('/admin/login', data)
 }
 
+export function register(data) {
+  return request.post('/admin/register', data)
+}
+
+export function resetPassword(data) {
+  return request.post('/admin/reset-password', data)
+}
+
 export function getBooks(params) {
   return request.get('/books', { params })
 }

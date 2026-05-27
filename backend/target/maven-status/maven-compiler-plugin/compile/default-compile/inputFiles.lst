@@ -2,6 +2,7 @@ F:\tpzwt\Project001\backend\src\main\java\com\kidsbook\config\GlobalExceptionHan
 F:\tpzwt\Project001\backend\src\main\java\com\kidsbook\config\SecurityConfig.java
 F:\tpzwt\Project001\backend\src\main\java\com\kidsbook\controller\BookController.java
 F:\tpzwt\Project001\backend\src\main\java\com\kidsbook\controller\AdminController.java
+F:\tpzwt\Project001\backend\src\main\java\com\kidsbook\dto\RegisterRequest.java
 F:\tpzwt\Project001\backend\src\main\java\com\kidsbook\common\Result.java
 F:\tpzwt\Project001\backend\src\main\java\com\kidsbook\config\MyBatisPlusConfig.java
 F:\tpzwt\Project001\backend\src\main\java\com\kidsbook\controller\HealthController.java
@@ -15,5 +16,6 @@ F:\tpzwt\Project001\backend\src\main\java\com\kidsbook\service\BookService.java
 F:\tpzwt\Project001\backend\src\main\java\com\kidsbook\dto\LoginRequest.java
 F:\tpzwt\Project001\backend\src\main\java\com\kidsbook\KidsBookApplication.java
 F:\tpzwt\Project001\backend\src\main\java\com\kidsbook\util\JwtUtil.java
+F:\tpzwt\Project001\backend\src\main\java\com\kidsbook\dto\ResetPasswordRequest.java
 F:\tpzwt\Project001\backend\src\main\java\com\kidsbook\service\AdminService.java
 F:\tpzwt\Project001\backend\src\main\java\com\kidsbook\config\DataInitializer.java

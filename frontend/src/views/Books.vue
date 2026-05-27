@@ -88,12 +88,12 @@
             </el-tag>
           </template>
         </el-table-column>
-        <el-table-column label="操作" width="180" fixed="right">
+        <el-table-column label="操作" width="200" fixed="right">
           <template #default="{ row }">
-            <el-button type="primary" link @click="handleEdit(row)">
+            <el-button class="action-btn-edit" @click="handleEdit(row)">
               <el-icon><Edit /></el-icon> 编辑
             </el-button>
-            <el-button type="danger" link @click="handleDelete(row)">
+            <el-button class="action-btn-delete" @click="handleDelete(row)">
               <el-icon><Delete /></el-icon> 删除
             </el-button>
           </template>
@@ -426,5 +426,33 @@ onMounted(() => {
 .book-dialog :deep(.el-dialog__title) {
   font-weight: 600;
   font-size: 18px;
+}
+
+.action-btn-edit {
+  background: linear-gradient(135deg, #7C5CFC, #A78BFA) !important;
+  border: none !important;
+  color: #fff !important;
+  font-size: 13px;
+  padding: 6px 14px !important;
+  height: 32px;
+}
+
+.action-btn-edit:hover {
+  background: linear-gradient(135deg, #6C4DE6, #7C5CFC) !important;
+  box-shadow: 0 3px 8px rgba(124, 92, 252, 0.4);
+}
+
+.action-btn-delete {
+  background: linear-gradient(135deg, #FF6B81, #FF8A9E) !important;
+  border: none !important;
+  color: #fff !important;
+  font-size: 13px;
+  padding: 6px 14px !important;
+  height: 32px;
+}
+
+.action-btn-delete:hover {
+  background: linear-gradient(135deg, #FF4757, #FF6B81) !important;
+  box-shadow: 0 3px 8px rgba(255, 107, 129, 0.4);
 }
 </style>
