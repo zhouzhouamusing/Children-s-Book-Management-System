@@ -1,5 +1,5 @@
 <template>
-  <div class="layout">
+  <div class="layout" :class="{ 'is-collapsed': isCollapse }">
     <el-aside class="sidebar" :width="isCollapse ? '64px' : '220px'">
       <div class="sidebar-header">
         <span class="sidebar-logo">📚</span>
@@ -57,7 +57,7 @@
 
       <el-main class="content">
         <router-view v-slot="{ Component, route: childRoute }">
-          <transition name="fade-slide" mode="out-in">
+          <transition name="page-fade" mode="out-in">
             <component :is="Component" :key="childRoute.path" />
           </transition>
         </router-view>
@@ -153,9 +153,10 @@ const handleLogout = () => {
   flex-direction: column;
   margin-left: 220px;
   transition: margin-left 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  min-height: 100vh;
 }
 
-.layout:has(.sidebar[style*="64px"]) .main-container {
+.is-collapsed .main-container {
   margin-left: 64px;
 }
 
@@ -218,6 +219,7 @@ const handleLogout = () => {
   padding: 24px;
   background: var(--bg-main);
   flex: 1;
+  overflow-x: hidden;
 }
 
 .fade-enter-active,
@@ -226,6 +228,17 @@ const handleLogout = () => {
 }
 .fade-enter-from,
 .fade-leave-to {
+  opacity: 0;
+}
+
+.page-fade-enter-active {
+  transition: opacity 0.25s ease-in;
+}
+.page-fade-leave-active {
+  transition: opacity 0.15s ease-out;
+}
+.page-fade-enter-from,
+.page-fade-leave-to {
   opacity: 0;
 }
 </style>

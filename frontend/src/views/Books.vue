@@ -57,16 +57,15 @@
           </template>
         </el-table-column>
         <el-table-column prop="author" label="作者" width="120" />
-        <el-table-column prop="category" label="分类" width="120">
+        <el-table-column prop="category" label="分类" width="130">
           <template #default="{ row }">
-            <el-tag
-              :type="getCategoryType(row.category)"
-              effect="light"
-              size="small"
-              :style="getCategoryColor(row.category) ? { '--el-tag-bg-color': getCategoryColor(row.category) + '30', '--el-tag-border-color': getCategoryColor(row.category) + '60', '--el-tag-text-color': getCategoryColor(row.category) } : {}"
+            <span
+              class="category-badge"
+              :style="getCategoryColor(row.category) ? { background: getCategoryColor(row.category) + '25', borderColor: getCategoryColor(row.category) } : {}"
             >
-              <span v-if="getCategoryIcon(row.category)">{{ getCategoryIcon(row.category) }} </span>{{ row.category || '未分类' }}
-            </el-tag>
+              <span v-if="getCategoryIcon(row.category)" class="category-badge-icon">{{ getCategoryIcon(row.category) }}</span>
+              <span class="category-badge-text">{{ row.category || '未分类' }}</span>
+            </span>
           </template>
         </el-table-column>
         <el-table-column prop="ageRange" label="适读年龄" width="100" />
@@ -205,9 +204,11 @@
 
 <script setup>
 import { ref, reactive, onMounted } from 'vue'
+import { useRoute } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { getBooks, addBook, updateBook, deleteBook, getCategories, getAllCategories } from '@/api'
 
+const route = useRoute()
 const tableLoading = ref(false)
 const submitLoading = ref(false)
 const dialogVisible = ref(false)
@@ -364,6 +365,9 @@ const handleDelete = (row) => {
 }
 
 onMounted(() => {
+  if (route.query.category) {
+    searchCategory.value = route.query.category
+  }
   fetchBooks()
   fetchCategories()
 })
@@ -413,6 +417,27 @@ onMounted(() => {
 .price {
   color: #E74C3C;
   font-weight: 600;
+}
+
+.category-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 10px;
+  border-radius: 20px;
+  background: #F5F5F5;
+  border: 1.5px solid #E0E0E0;
+  font-size: 13px;
+  line-height: 1.4;
+}
+
+.category-badge-icon {
+  font-size: 13px;
+}
+
+.category-badge-text {
+  color: var(--text-primary);
+  font-weight: 500;
 }
 
 .table-row {

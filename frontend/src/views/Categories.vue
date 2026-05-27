@@ -42,6 +42,7 @@
           size="large"
           clearable
           class="search-input"
+          @input="handleSearchDebounced"
           @keyup.enter="handleSearch"
           @clear="handleSearch"
         />
@@ -76,6 +77,7 @@
           class="category-card"
           :style="{ animationDelay: `${index * 0.05}s`, '--card-color': cat.color || '#C7CEEA' }"
         >
+          <div class="card-color-bar" :style="{ background: cat.color || '#C7CEEA' }"></div>
           <div class="card-header">
             <div class="card-icon-wrapper" :style="{ background: (cat.color || '#C7CEEA') + '30' }">
               <span class="card-icon">{{ cat.icon || '📁' }}</span>
@@ -89,7 +91,7 @@
               </el-tag>
             </div>
           </div>
-          <div class="card-body">
+          <div class="card-body" @click="handleViewBooks(cat)">
             <h3 class="card-title">{{ cat.name }}</h3>
             <p class="card-desc">{{ cat.description || '暂无描述' }}</p>
             <div class="card-meta">
@@ -97,13 +99,20 @@
                 <el-icon><User /></el-icon>
                 {{ cat.ageRangeMin }}-{{ cat.ageRangeMax }}岁
               </span>
-              <span class="meta-item">
+              <span class="meta-item meta-books">
                 <el-icon><Reading /></el-icon>
                 {{ cat.bookCount || 0 }}本图书
               </span>
             </div>
+            <div class="card-view-hint">
+              <el-icon><Right /></el-icon>
+              <span>点击查看该分类图书</span>
+            </div>
           </div>
           <div class="card-footer">
+            <el-button class="card-btn view" size="small" @click="handleViewBooks(cat)">
+              <el-icon><View /></el-icon> 查看图书
+            </el-button>
             <el-button class="card-btn edit" size="small" @click="handleEdit(cat)">
               <el-icon><Edit /></el-icon> 编辑
             </el-button>
@@ -111,7 +120,6 @@
               <el-icon><Delete /></el-icon> 删除
             </el-button>
           </div>
-          <div class="card-color-bar" :style="{ background: cat.color || '#C7CEEA' }"></div>
         </div>
       </transition-group>
 
@@ -229,9 +237,11 @@
 
 <script setup>
 import { ref, reactive, onMounted, computed } from 'vue'
+import { useRouter } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { getCategoryList, addCategory, updateCategory, deleteCategory } from '@/api'
 
+const router = useRouter()
 const loading = ref(false)
 const submitLoading = ref(false)
 const dialogVisible = ref(false)
@@ -244,6 +254,8 @@ const page = ref(1)
 const pageSize = ref(12)
 const total = ref(0)
 const categoryList = ref([])
+
+let searchTimer = null
 
 const emojiOptions = ['📁', '🧚', '🌱', '🎨', '💫', '🔬', '📜', '🌍', '🎭', '🚀', '🦄', '🌈', '🎵', '🏰', '🐾', '🌸']
 const colorOptions = ['#FFB3BA', '#B5EAD7', '#C7CEEA', '#FFDAC1', '#957DAD', '#FFFFD1', '#E8F5E9', '#FFE0B2', '#B3E5FC', '#F8BBD0', '#DCEDC8', '#D1C4E9']
@@ -297,6 +309,13 @@ const handleSearch = () => {
   fetchCategories()
 }
 
+const handleSearchDebounced = () => {
+  clearTimeout(searchTimer)
+  searchTimer = setTimeout(() => {
+    handleSearch()
+  }, 300)
+}
+
 const resetForm = () => {
   Object.assign(form, {
     id: null, name: '', icon: '📁', color: '#C7CEEA',
@@ -315,6 +334,10 @@ const handleEdit = (row) => {
   isEdit.value = true
   Object.assign(form, { ...row })
   dialogVisible.value = true
+}
+
+const handleViewBooks = (cat) => {
+  router.push({ path: '/books', query: { category: cat.name } })
 }
 
 const handleSubmit = async () => {
@@ -475,21 +498,31 @@ onMounted(() => {
   transition: all 0.35s cubic-bezier(0.4, 0, 0.2, 1);
   animation: cardFadeIn 0.4s ease forwards;
   opacity: 0;
+  cursor: default;
 }
 
 .category-card:hover {
-  transform: translateY(-6px);
-  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.1);
+  transform: translateY(-6px) scale(1.01);
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.12);
+}
+
+.category-card:hover .card-color-bar {
+  height: 5px;
+}
+
+.category-card:hover .card-view-hint {
+  opacity: 1;
+  transform: translateX(0);
 }
 
 @keyframes cardFadeIn {
   from {
     opacity: 0;
-    transform: translateY(20px);
+    transform: translateY(24px) scale(0.96);
   }
   to {
     opacity: 1;
-    transform: translateY(0);
+    transform: translateY(0) scale(1);
   }
 }
 
@@ -499,6 +532,7 @@ onMounted(() => {
   left: 0;
   right: 0;
   height: 4px;
+  transition: height 0.3s ease;
 }
 
 .card-header {
@@ -515,15 +549,26 @@ onMounted(() => {
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: transform 0.3s ease;
+  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .category-card:hover .card-icon-wrapper {
-  transform: scale(1.1) rotate(5deg);
+  transform: scale(1.15) rotate(8deg);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
 }
 
 .card-icon {
   font-size: 24px;
+  transition: transform 0.3s ease;
+}
+
+.category-card:hover .card-icon {
+  animation: iconBounce 0.5s ease;
+}
+
+@keyframes iconBounce {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.2); }
 }
 
 .card-badges {
@@ -533,6 +578,13 @@ onMounted(() => {
 
 .card-body {
   padding: 0 20px 16px;
+  cursor: pointer;
+  transition: background 0.2s ease;
+  border-radius: 0 0 8px 8px;
+}
+
+.card-body:hover {
+  background: #FAFAFA;
 }
 
 .card-title {
@@ -540,6 +592,11 @@ onMounted(() => {
   font-weight: 600;
   color: var(--text-primary);
   margin: 0 0 8px;
+  transition: color 0.2s ease;
+}
+
+.card-body:hover .card-title {
+  color: var(--purple);
 }
 
 .card-desc {
@@ -567,11 +624,40 @@ onMounted(() => {
   color: var(--text-secondary);
 }
 
+.meta-books {
+  font-weight: 600;
+  color: var(--purple);
+}
+
+.card-view-hint {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  margin-top: 10px;
+  font-size: 12px;
+  color: var(--purple);
+  opacity: 0;
+  transform: translateX(-8px);
+  transition: all 0.3s ease;
+}
+
 .card-footer {
   padding: 12px 20px;
   border-top: 1px solid #F5F5F5;
   display: flex;
   gap: 8px;
+}
+
+.card-btn.view {
+  background: linear-gradient(135deg, var(--green), #8DD5BE) !important;
+  border: none !important;
+  color: #fff !important;
+  font-size: 12px;
+}
+
+.card-btn.view:hover {
+  background: linear-gradient(135deg, #8DD5BE, var(--green)) !important;
+  box-shadow: 0 3px 8px rgba(181, 234, 215, 0.5);
 }
 
 .card-btn.edit {
