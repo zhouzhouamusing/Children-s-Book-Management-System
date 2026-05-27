@@ -39,3 +39,31 @@ export function getStatistics() {
 export function getCategories() {
   return request.get('/books/categories')
 }
+
+export function getCategoryList(params) {
+  return request.get('/categories', { params })
+}
+
+export function getAllCategories() {
+  return request.get('/categories/all')
+}
+
+export function getCategory(id) {
+  return request.get(`/categories/${id}`)
+}
+
+export function addCategory(data) {
+  return request.post('/categories', data)
+}
+
+export function updateCategory(id, data) {
+  return request.put(`/categories/${id}`, data)
+}
+
+export function deleteCategory(id) {
+  return request.delete(`/categories/${id}`)
+}
+
+export function getCategoryBookCount(id) {
+  return request.get(`/categories/${id}/book-count`)
+}

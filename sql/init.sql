@@ -56,6 +56,34 @@ INSERT INTO `book` (`title`, `author`, `publisher`, `isbn`, `category`, `age_ran
 ('安徒生童话', '安徒生', '人民文学出版社', '9787020008735', '童话故事', '5-12岁', 26.00, 55, '世界经典童话集', 1),
 ('三毛流浪记', '张乐平', '少年儿童出版社', '9787532474585', '漫画', '6-12岁', 28.00, 25, '中国经典漫画作品', 1);
 
+-- 图书分类表
+DROP TABLE IF EXISTS `category`;
+CREATE TABLE `category` (
+    `id` BIGINT NOT NULL AUTO_INCREMENT COMMENT '主键ID',
+    `name` VARCHAR(50) NOT NULL COMMENT '分类名称',
+    `icon` VARCHAR(10) DEFAULT NULL COMMENT '分类图标(emoji)',
+    `color` VARCHAR(20) DEFAULT NULL COMMENT '分类颜色',
+    `age_range_min` INT DEFAULT 0 COMMENT '适龄最小值',
+    `age_range_max` INT DEFAULT 14 COMMENT '适龄最大值',
+    `sort_order` INT DEFAULT 0 COMMENT '排序权重(越大越靠前)',
+    `description` VARCHAR(200) DEFAULT NULL COMMENT '分类描述',
+    `status` TINYINT DEFAULT 1 COMMENT '状态：1-启用 0-禁用',
+    `create_time` DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+    `update_time` DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+    PRIMARY KEY (`id`),
+    UNIQUE KEY `uk_name` (`name`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='图书分类表';
+
+-- 示例分类数据
+INSERT INTO `category` (`name`, `icon`, `color`, `age_range_min`, `age_range_max`, `sort_order`, `description`, `status`) VALUES
+('童话故事', '🧚', '#FFB3BA', 3, 12, 100, '经典童话与奇幻故事，激发孩子想象力', 1),
+('成长故事', '🌱', '#B5EAD7', 6, 14, 90, '关于成长、友谊和勇气的温暖故事', 1),
+('绘本', '🎨', '#C7CEEA', 0, 6, 95, '图文并茂的启蒙读物，适合亲子共读', 1),
+('漫画', '💫', '#FFDAC1', 6, 14, 80, '趣味漫画作品，寓教于乐', 1),
+('科普百科', '🔬', '#957DAD', 5, 14, 85, '探索自然与科学的奥秘', 1),
+('国学经典', '📜', '#FFFFD1', 6, 14, 75, '传统文化与古典文学启蒙', 1),
+('英文绘本', '🌍', '#E8F5E9', 2, 10, 70, '英语启蒙与双语阅读', 1);
+
 -- 如果admin表已存在但缺少email字段，执行以下语句：
 -- ALTER TABLE `admin` ADD COLUMN `email` VARCHAR(100) DEFAULT NULL COMMENT '邮箱' AFTER `nickname`;
 -- ALTER TABLE `admin` ADD UNIQUE KEY `uk_email` (`email`);

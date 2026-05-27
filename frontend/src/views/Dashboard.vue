@@ -38,6 +38,10 @@
             <div class="action-icon" style="background: var(--green-light)">📚</div>
             <span>图书列表</span>
           </div>
+          <div class="action-item" @click="$router.push('/categories')">
+            <div class="action-icon" style="background: #F3EEFF">📂</div>
+            <span>分类管理</span>
+          </div>
           <div class="action-item" @click="$router.push('/books')">
             <div class="action-icon" style="background: var(--pink-light)">➕</div>
             <span>新增图书</span>
@@ -45,10 +49,6 @@
           <div class="action-item" @click="$router.push('/books')">
             <div class="action-icon" style="background: var(--blue-light)">🔍</div>
             <span>搜索图书</span>
-          </div>
-          <div class="action-item" @click="$router.push('/dashboard')">
-            <div class="action-icon" style="background: var(--yellow)">📈</div>
-            <span>数据统计</span>
           </div>
         </div>
       </el-card>

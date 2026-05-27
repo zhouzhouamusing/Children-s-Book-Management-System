@@ -24,7 +24,7 @@
           <el-option
             v-for="cat in categories"
             :key="cat"
-            :label="cat"
+            :label="(getCategoryIcon(cat) || '') + ' ' + cat"
             :value="cat"
           />
         </el-select>
@@ -57,14 +57,15 @@
           </template>
         </el-table-column>
         <el-table-column prop="author" label="作者" width="120" />
-        <el-table-column prop="category" label="分类" width="100">
+        <el-table-column prop="category" label="分类" width="120">
           <template #default="{ row }">
             <el-tag
               :type="getCategoryType(row.category)"
               effect="light"
               size="small"
+              :style="getCategoryColor(row.category) ? { '--el-tag-bg-color': getCategoryColor(row.category) + '30', '--el-tag-border-color': getCategoryColor(row.category) + '60', '--el-tag-text-color': getCategoryColor(row.category) } : {}"
             >
-              {{ row.category || '未分类' }}
+              <span v-if="getCategoryIcon(row.category)">{{ getCategoryIcon(row.category) }} </span>{{ row.category || '未分类' }}
             </el-tag>
           </template>
         </el-table-column>
@@ -149,7 +150,7 @@
         <div class="form-row">
           <el-form-item label="分类" prop="category">
             <el-select v-model="bookForm.category" placeholder="选择分类" allow-create filterable>
-              <el-option v-for="cat in categories" :key="cat" :label="cat" :value="cat" />
+              <el-option v-for="cat in categories" :key="cat" :label="(getCategoryIcon(cat) || '') + ' ' + cat" :value="cat" />
             </el-select>
           </el-form-item>
           <el-form-item label="适读年龄" prop="ageRange">
@@ -205,7 +206,7 @@
 <script setup>
 import { ref, reactive, onMounted } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import { getBooks, addBook, updateBook, deleteBook, getCategories } from '@/api'
+import { getBooks, addBook, updateBook, deleteBook, getCategories, getAllCategories } from '@/api'
 
 const tableLoading = ref(false)
 const submitLoading = ref(false)
@@ -220,6 +221,7 @@ const pageSize = ref(10)
 const total = ref(0)
 const bookList = ref([])
 const categories = ref([])
+const categoryDetails = ref([])
 
 const bookForm = reactive({
   id: null,
@@ -272,6 +274,20 @@ const fetchCategories = async () => {
     const res = await getCategories()
     categories.value = res.data || []
   } catch (e) {}
+  try {
+    const res = await getAllCategories()
+    categoryDetails.value = res.data || []
+  } catch (e) {}
+}
+
+const getCategoryColor = (categoryName) => {
+  const cat = categoryDetails.value.find(c => c.name === categoryName)
+  return cat ? cat.color : null
+}
+
+const getCategoryIcon = (categoryName) => {
+  const cat = categoryDetails.value.find(c => c.name === categoryName)
+  return cat ? cat.icon : null
 }
 
 const handleSearch = () => {

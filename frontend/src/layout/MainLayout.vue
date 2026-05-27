@@ -24,6 +24,10 @@
           <el-icon><Reading /></el-icon>
           <template #title>图书管理</template>
         </el-menu-item>
+        <el-menu-item index="/categories">
+          <el-icon><FolderOpened /></el-icon>
+          <template #title>分类管理</template>
+        </el-menu-item>
       </el-menu>
     </el-aside>
 
