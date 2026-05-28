@@ -244,7 +244,15 @@ public class ReaderCenterController {
                 })
                 .collect(Collectors.toList());
 
-        Map<String, Object> pointsStats = readerPointsService.getStatistics(readerId);
+        Map<String, Object> pointsStats;
+        try {
+            pointsStats = readerPointsService.getStatistics(readerId);
+        } catch (Exception e) {
+            pointsStats = new HashMap<>();
+            pointsStats.put("totalPoints", 0);
+            pointsStats.put("level", "");
+            pointsStats.put("monthlyStats", List.of());
+        }
 
         data.put("totalBorrows", totalBorrows);
         data.put("thisMonthBorrows", thisMonthBorrows);

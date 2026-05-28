@@ -66,17 +66,20 @@ public class ReaderAccountService {
             throw new RuntimeException("两次输入的密码不一致");
         }
 
+        String username = request.getUsername().trim();
+        String name = sanitize(request.getName().trim());
+
         ReaderAccount existing = readerAccountMapper.selectOne(
-            new LambdaQueryWrapper<ReaderAccount>().eq(ReaderAccount::getUsername, request.getUsername())
+            new LambdaQueryWrapper<ReaderAccount>().eq(ReaderAccount::getUsername, username)
         );
         if (existing != null) {
             throw new RuntimeException("用户名已存在");
         }
 
         Reader reader = new Reader();
-        reader.setName(request.getName());
-        reader.setParentPhone(request.getParentPhone());
-        reader.setParentName(request.getParentName());
+        reader.setName(name);
+        reader.setParentPhone(request.getParentPhone().trim());
+        reader.setParentName(request.getParentName() != null ? sanitize(request.getParentName().trim()) : null);
         reader.setAge(request.getAge());
         reader.setGender(request.getGender());
         reader.setStatus("normal");
@@ -88,11 +91,16 @@ public class ReaderAccountService {
         readerMapper.insert(reader);
 
         ReaderAccount account = new ReaderAccount();
-        account.setUsername(request.getUsername());
+        account.setUsername(username);
         account.setPassword(passwordEncoder.encode(request.getPassword()));
         account.setReaderId(reader.getId());
         account.setStatus("active");
         readerAccountMapper.insert(account);
-        log.info("读者注册成功: username={}, readerId={}", request.getUsername(), reader.getId());
+        log.info("读者注册成功: username={}, readerId={}", username, reader.getId());
+    }
+
+    private String sanitize(String input) {
+        if (input == null) return null;
+        return input.replaceAll("[<>\"'&;]", "");
     }
 }

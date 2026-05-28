@@ -69,22 +69,39 @@ public class AdminApplicationController {
 
     @GetMapping("/my-status")
     public Result<Map<String, Object>> getMyApplicationStatus() {
-        Long readerId = getCurrentReaderId();
-        LambdaQueryWrapper<AdminApplication> wrapper = new LambdaQueryWrapper<>();
-        wrapper.eq(AdminApplication::getReaderId, readerId)
-                .orderByDesc(AdminApplication::getCreateTime)
-                .last("LIMIT 1");
-        AdminApplication latest = applicationMapper.selectOne(wrapper);
+        Long readerId = null;
+        try {
+            Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+            String token = (String) auth.getCredentials();
+            readerId = jwtUtil.getReaderIdFromToken(token);
+        } catch (Exception e) {
+            // token parsing failed
+        }
 
         Map<String, Object> data = new HashMap<>();
-        if (latest != null) {
-            data.put("hasApplication", true);
-            data.put("status", latest.getStatus());
-            data.put("reason", latest.getReason());
-            data.put("rejectReason", latest.getRejectReason());
-            data.put("createTime", latest.getCreateTime());
-            data.put("approvedTime", latest.getApprovedTime());
-        } else {
+        if (readerId == null) {
+            data.put("hasApplication", false);
+            return Result.success(data);
+        }
+
+        try {
+            LambdaQueryWrapper<AdminApplication> wrapper = new LambdaQueryWrapper<>();
+            wrapper.eq(AdminApplication::getReaderId, readerId)
+                    .orderByDesc(AdminApplication::getCreateTime)
+                    .last("LIMIT 1");
+            AdminApplication latest = applicationMapper.selectOne(wrapper);
+
+            if (latest != null) {
+                data.put("hasApplication", true);
+                data.put("status", latest.getStatus());
+                data.put("reason", latest.getReason());
+                data.put("rejectReason", latest.getRejectReason());
+                data.put("createTime", latest.getCreateTime());
+                data.put("approvedTime", latest.getApprovedTime());
+            } else {
+                data.put("hasApplication", false);
+            }
+        } catch (Exception e) {
             data.put("hasApplication", false);
         }
         return Result.success(data);

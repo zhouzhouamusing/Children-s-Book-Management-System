@@ -232,14 +232,36 @@ onMounted(() => {
   border-radius: var(--radius-md);
   padding: 20px;
   box-shadow: var(--shadow-soft);
-  transition: all 0.3s;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   display: flex;
   flex-direction: column;
+  position: relative;
+  overflow: hidden;
+}
+
+.book-card::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: linear-gradient(90deg, var(--green), var(--blue), var(--purple-light));
+  transform: scaleX(0);
+  transition: transform 0.3s ease;
 }
 
 .book-card:hover {
-  transform: translateY(-4px);
-  box-shadow: var(--shadow-hover);
+  transform: translateY(-6px);
+  box-shadow: 0 12px 36px rgba(149, 125, 173, 0.15);
+}
+
+.book-card:hover::after {
+  transform: scaleX(1);
+}
+
+.book-card:hover .cover-emoji {
+  transform: scale(1.2) rotate(5deg);
 }
 
 .book-cover {
@@ -255,6 +277,7 @@ onMounted(() => {
 
 .cover-emoji {
   font-size: 36px;
+  transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .stock-badge {

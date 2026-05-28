@@ -70,8 +70,10 @@
               prefix-icon="User"
               size="large"
               clearable
+              maxlength="20"
               @focus="focusField = 'username'"
               @blur="focusField = ''"
+              @input="form.username = form.username.replace(/[^a-zA-Z0-9_一-龥]/g, '')"
             />
           </el-form-item>
           <el-form-item prop="password">
@@ -82,6 +84,7 @@
               prefix-icon="Lock"
               size="large"
               show-password
+              maxlength="32"
               @focus="focusField = 'password'"
               @blur="focusField = ''"
             />
@@ -145,10 +148,14 @@ const form = reactive({
 })
 
 const rules = {
-  username: [{ required: true, message: '请输入用户名', trigger: 'blur' }],
+  username: [
+    { required: true, message: '请输入用户名', trigger: 'blur' },
+    { min: 3, max: 20, message: '用户名长度为3-20位', trigger: 'blur' },
+    { pattern: /^[a-zA-Z0-9_一-龥]+$/, message: '用户名只能包含字母、数字、下划线和中文', trigger: 'blur' }
+  ],
   password: [
     { required: true, message: '请输入密码', trigger: 'blur' },
-    { min: 6, message: '密码至少6位', trigger: 'blur' }
+    { min: 6, max: 32, message: '密码长度为6-32位', trigger: 'blur' }
   ]
 }
 
@@ -425,6 +432,24 @@ const handleLogin = async () => {
   letter-spacing: 4px;
   color: #fff !important;
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
+  position: relative;
+  overflow: hidden;
+}
+
+.login-btn::before {
+  content: '';
+  position: absolute;
+  top: -50%;
+  left: -50%;
+  width: 200%;
+  height: 200%;
+  background: radial-gradient(circle, rgba(255,255,255,0.15) 0%, transparent 70%);
+  transform: scale(0);
+  transition: transform 0.5s;
+}
+
+.login-btn:hover::before {
+  transform: scale(1);
 }
 
 .login-btn:hover {
@@ -434,7 +459,7 @@ const handleLogin = async () => {
 }
 
 .login-btn:active {
-  transform: translateY(0) !important;
+  transform: translateY(0) scale(0.98) !important;
 }
 
 .login-divider {

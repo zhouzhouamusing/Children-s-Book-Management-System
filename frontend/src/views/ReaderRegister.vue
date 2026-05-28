@@ -46,10 +46,12 @@
           <el-form-item prop="username" label="用户名">
             <el-input
               v-model="form.username"
-              placeholder="3-20位字符，作为登录凭证"
+              placeholder="3-20位字母、数字或下划线"
               prefix-icon="User"
               size="large"
               clearable
+              maxlength="20"
+              @input="form.username = form.username.replace(/[^a-zA-Z0-9_]/g, '')"
             />
           </el-form-item>
           <el-form-item prop="name" label="儿童姓名">
@@ -59,6 +61,8 @@
               prefix-icon="UserFilled"
               size="large"
               clearable
+              maxlength="20"
+              @input="form.name = form.name.replace(/[<>\"'&;]/g, '')"
             />
           </el-form-item>
           <el-form-item prop="parentPhone" label="家长手机号">
@@ -68,6 +72,8 @@
               prefix-icon="Phone"
               size="large"
               clearable
+              maxlength="11"
+              @input="form.parentPhone = form.parentPhone.replace(/[^0-9]/g, '')"
             />
           </el-form-item>
           <el-form-item prop="age" label="儿童年龄">
@@ -94,6 +100,7 @@
               prefix-icon="Lock"
               size="large"
               show-password
+              maxlength="32"
             />
           </el-form-item>
           <el-form-item prop="confirmPassword" label="确认密码">
@@ -104,6 +111,7 @@
               prefix-icon="Lock"
               size="large"
               show-password
+              maxlength="32"
             />
           </el-form-item>
           <div class="password-match" v-if="form.confirmPassword">
@@ -168,9 +176,14 @@ const validateConfirm = (rule, value, callback) => {
 const rules = {
   username: [
     { required: true, message: '请输入用户名', trigger: 'blur' },
-    { min: 3, max: 20, message: '用户名长度为3-20位', trigger: 'blur' }
+    { min: 3, max: 20, message: '用户名长度为3-20位', trigger: 'blur' },
+    { pattern: /^[a-zA-Z0-9_]+$/, message: '用户名只能包含字母、数字和下划线', trigger: 'blur' }
   ],
-  name: [{ required: true, message: '请输入儿童姓名', trigger: 'blur' }],
+  name: [
+    { required: true, message: '请输入儿童姓名', trigger: 'blur' },
+    { max: 20, message: '姓名不能超过20个字符', trigger: 'blur' },
+    { pattern: /^[a-zA-Z一-龥·]+$/, message: '姓名只能包含中文、字母', trigger: 'blur' }
+  ],
   parentPhone: [
     { required: true, message: '请输入家长手机号', trigger: 'blur' },
     { pattern: /^1[3-9]\d{9}$/, message: '请输入正确的手机号', trigger: 'blur' }
@@ -374,12 +387,35 @@ const handleRegister = async () => {
   border: none !important;
   letter-spacing: 2px;
   color: #fff !important;
+  position: relative;
+  overflow: hidden;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
+}
+
+.register-btn::before {
+  content: '';
+  position: absolute;
+  top: -50%;
+  left: -50%;
+  width: 200%;
+  height: 200%;
+  background: radial-gradient(circle, rgba(255,255,255,0.15) 0%, transparent 70%);
+  transform: scale(0);
+  transition: transform 0.5s;
+}
+
+.register-btn:hover::before {
+  transform: scale(1);
 }
 
 .register-btn:hover {
   background: linear-gradient(135deg, #8DD5BE, var(--green)) !important;
   transform: translateY(-2px) !important;
   box-shadow: 0 8px 24px rgba(181, 234, 215, 0.4) !important;
+}
+
+.register-btn:active {
+  transform: translateY(0) scale(0.98) !important;
 }
 
 .register-footer {

@@ -258,14 +258,57 @@ onMounted(() => {
 }
 
 .view-tabs {
-  margin-bottom: 4px;
+  margin-bottom: 8px;
+  background: white;
+  border-radius: var(--radius-md);
+  padding: 16px 20px;
+  box-shadow: var(--shadow-soft);
+}
+
+.tab-group {
+  display: flex;
+  gap: 10px;
+}
+
+.tab-group :deep(.el-radio-button) {
+  --el-radio-button-checked-bg-color: transparent;
+  --el-radio-button-checked-border-color: transparent;
 }
 
 .tab-group :deep(.el-radio-button__inner) {
-  border-radius: 20px !important;
-  padding: 10px 24px;
-  border: none !important;
+  border-radius: 24px !important;
+  padding: 10px 28px;
+  border: 2px solid #f0f0f0 !important;
   box-shadow: none !important;
+  font-weight: 500;
+  font-size: 14px;
+  color: var(--text-secondary);
+  background: #fafafa;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.tab-group :deep(.el-radio-button__inner:hover) {
+  border-color: var(--purple-light) !important;
+  color: var(--purple);
+  background: linear-gradient(135deg, #f8f5ff, #fff5f8);
+  transform: translateY(-1px);
+}
+
+.tab-group :deep(.el-radio-button.is-active .el-radio-button__inner) {
+  background: linear-gradient(135deg, var(--purple), #7B61A8) !important;
+  border-color: transparent !important;
+  color: #fff !important;
+  font-weight: 600;
+  box-shadow: 0 4px 14px rgba(149, 125, 173, 0.35) !important;
+  transform: translateY(-1px);
+}
+
+.tab-group :deep(.el-radio-button__original-radio:checked + .el-radio-button__inner) {
+  background: linear-gradient(135deg, var(--purple), #7B61A8) !important;
+  border-color: transparent !important;
+  color: #fff !important;
+  font-weight: 600;
+  box-shadow: 0 4px 14px rgba(149, 125, 173, 0.35) !important;
 }
 
 .tab-content {
@@ -295,12 +338,30 @@ onMounted(() => {
   border-radius: var(--radius-md);
   padding: 16px;
   box-shadow: var(--shadow-soft);
-  transition: all 0.3s;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  position: relative;
+  overflow: hidden;
+}
+
+.book-card::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: linear-gradient(90deg, var(--green), var(--blue), var(--purple-light));
+  opacity: 0;
+  transition: opacity 0.3s;
 }
 
 .book-card:hover {
-  transform: translateY(-3px);
-  box-shadow: var(--shadow-hover);
+  transform: translateY(-4px) scale(1.01);
+  box-shadow: 0 10px 30px rgba(149, 125, 173, 0.12);
+}
+
+.book-card:hover::after {
+  opacity: 1;
 }
 
 .book-cover {
@@ -387,6 +448,16 @@ onMounted(() => {
   align-items: center;
   gap: 12px;
   box-shadow: var(--shadow-soft);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.stat-card:hover {
+  transform: translateY(-3px) scale(1.02);
+  box-shadow: var(--shadow-hover);
+}
+
+.stat-card:hover .stat-icon {
+  transform: scale(1.15) rotate(5deg);
 }
 
 .stat-icon {
@@ -397,6 +468,7 @@ onMounted(() => {
   align-items: center;
   justify-content: center;
   font-size: 20px;
+  transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .stat-value {
@@ -412,6 +484,50 @@ onMounted(() => {
 
 .filter-section {
   margin: 4px 0;
+  background: white;
+  border-radius: var(--radius-md);
+  padding: 14px 20px;
+  box-shadow: var(--shadow-soft);
+}
+
+.filter-section :deep(.el-radio-button) {
+  --el-radio-button-checked-bg-color: transparent;
+  --el-radio-button-checked-border-color: transparent;
+}
+
+.filter-section :deep(.el-radio-button__inner) {
+  border-radius: 24px !important;
+  padding: 8px 22px;
+  border: 2px solid #f0f0f0 !important;
+  box-shadow: none !important;
+  font-weight: 500;
+  font-size: 13px;
+  color: var(--text-secondary);
+  background: #fafafa;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.filter-section :deep(.el-radio-button__inner:hover) {
+  border-color: var(--purple-light) !important;
+  color: var(--purple);
+  background: linear-gradient(135deg, #f8f5ff, #fff5f8);
+  transform: translateY(-1px);
+}
+
+.filter-section :deep(.el-radio-button.is-active .el-radio-button__inner) {
+  background: linear-gradient(135deg, var(--purple-light), var(--pink-light)) !important;
+  border-color: transparent !important;
+  color: #fff !important;
+  font-weight: 600;
+  box-shadow: 0 4px 12px rgba(149, 125, 173, 0.3) !important;
+}
+
+.filter-section :deep(.el-radio-button__original-radio:checked + .el-radio-button__inner) {
+  background: linear-gradient(135deg, var(--purple-light), var(--pink-light)) !important;
+  border-color: transparent !important;
+  color: #fff !important;
+  font-weight: 600;
+  box-shadow: 0 4px 12px rgba(149, 125, 173, 0.3) !important;
 }
 
 .table-section {

@@ -205,13 +205,56 @@ onMounted(fetchReservations)
 }
 
 .filter-section {
+  background: white;
+  border-radius: var(--radius-md);
+  padding: 16px 20px;
+  box-shadow: var(--shadow-soft);
+}
+
+.status-filter {
+  display: flex;
+  gap: 10px;
+}
+
+.status-filter :deep(.el-radio-button) {
+  --el-radio-button-checked-bg-color: transparent;
+  --el-radio-button-checked-border-color: transparent;
 }
 
 .status-filter :deep(.el-radio-button__inner) {
-  border-radius: 20px !important;
-  padding: 8px 16px;
-  border: none !important;
+  border-radius: 24px !important;
+  padding: 10px 24px;
+  border: 2px solid #f0f0f0 !important;
   box-shadow: none !important;
+  font-weight: 500;
+  font-size: 13px;
+  color: var(--text-secondary);
+  background: #fafafa;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.status-filter :deep(.el-radio-button__inner:hover) {
+  border-color: var(--purple-light) !important;
+  color: var(--purple);
+  background: linear-gradient(135deg, #f8f5ff, #fff5f8);
+  transform: translateY(-1px);
+}
+
+.status-filter :deep(.el-radio-button.is-active .el-radio-button__inner) {
+  background: linear-gradient(135deg, var(--purple-light), var(--pink-light)) !important;
+  border-color: transparent !important;
+  color: #fff !important;
+  font-weight: 600;
+  box-shadow: 0 4px 12px rgba(149, 125, 173, 0.3) !important;
+  transform: translateY(-1px);
+}
+
+.status-filter :deep(.el-radio-button__original-radio:checked + .el-radio-button__inner) {
+  background: linear-gradient(135deg, var(--purple-light), var(--pink-light)) !important;
+  border-color: transparent !important;
+  color: #fff !important;
+  font-weight: 600;
+  box-shadow: 0 4px 12px rgba(149, 125, 173, 0.3) !important;
 }
 
 .card-container {
@@ -225,14 +268,29 @@ onMounted(fetchReservations)
   border-radius: var(--radius-md);
   padding: 20px;
   box-shadow: var(--shadow-soft);
-  transition: all 0.3s;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   position: relative;
   overflow: hidden;
 }
 
+.reservation-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(149, 125, 173, 0.03), transparent);
+  transition: left 0.5s ease;
+}
+
+.reservation-card:hover::before {
+  left: 100%;
+}
+
 .reservation-card:hover {
-  transform: translateY(-4px);
-  box-shadow: var(--shadow-hover);
+  transform: translateY(-6px) scale(1.01);
+  box-shadow: 0 12px 36px rgba(149, 125, 173, 0.15);
 }
 
 .card-header {
