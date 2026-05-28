@@ -89,7 +89,7 @@ const routes = [
         path: 'profile',
         name: 'ReaderProfile',
         component: () => import('@/views/reader/Profile.vue'),
-        meta: { title: '个人信息', role: 'READER' }
+        meta: { title: '个人中心', role: 'READER' }
       }
     ]
   },

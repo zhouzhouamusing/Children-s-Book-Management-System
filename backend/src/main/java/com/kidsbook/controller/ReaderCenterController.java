@@ -21,8 +21,11 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 
+import java.time.LocalDate;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/api/reader-center")
@@ -149,6 +152,71 @@ public class ReaderCenterController {
         Map<String, Object> data = new HashMap<>();
         data.put("records", result.getRecords());
         data.put("total", result.getTotal());
+        return Result.success(data);
+    }
+
+    @GetMapping("/statistics")
+    public Result<Map<String, Object>> getStatistics() {
+        Long readerId = getCurrentReaderId();
+        long totalBorrows = borrowRecordMapper.countByReaderId(readerId);
+
+        LambdaQueryWrapper<BorrowRecord> thisMonthWrapper = new LambdaQueryWrapper<>();
+        LocalDate firstDayOfMonth = LocalDate.now().withDayOfMonth(1);
+        thisMonthWrapper.eq(BorrowRecord::getReaderId, readerId)
+                .ge(BorrowRecord::getBorrowDate, firstDayOfMonth);
+        long thisMonthBorrows = borrowRecordMapper.selectCount(thisMonthWrapper);
+
+        LambdaQueryWrapper<BorrowRecord> allWrapper = new LambdaQueryWrapper<>();
+        allWrapper.eq(BorrowRecord::getReaderId, readerId);
+        List<BorrowRecord> allRecords = borrowRecordMapper.selectList(allWrapper);
+
+        long readingDays = allRecords.stream()
+                .map(BorrowRecord::getBorrowDate)
+                .distinct()
+                .count();
+
+        Map<String, Long> categoryMap = allRecords.stream()
+                .filter(r -> r.getBookTitle() != null)
+                .collect(Collectors.groupingBy(
+                        r -> {
+                            Book book = bookMapper.selectById(r.getBookId());
+                            return book != null && book.getCategory() != null ? book.getCategory() : "其他";
+                        },
+                        Collectors.counting()
+                ));
+
+        List<Map<String, Object>> categoryDistribution = categoryMap.entrySet().stream()
+                .sorted((a, b) -> Long.compare(b.getValue(), a.getValue()))
+                .limit(6)
+                .map(entry -> {
+                    Map<String, Object> item = new HashMap<>();
+                    item.put("name", entry.getKey());
+                    item.put("count", entry.getValue());
+                    return item;
+                })
+                .collect(Collectors.toList());
+
+        long totalPoints = totalBorrows * 10;
+
+        Map<String, Object> data = new HashMap<>();
+        data.put("totalBorrows", totalBorrows);
+        data.put("thisMonthBorrows", thisMonthBorrows);
+        data.put("totalBooks", totalBorrows);
+        data.put("readingDays", readingDays);
+        data.put("totalPoints", totalPoints);
+        data.put("categoryDistribution", categoryDistribution);
+        return Result.success(data);
+    }
+
+    @GetMapping("/points")
+    public Result<Map<String, Object>> getPoints() {
+        Long readerId = getCurrentReaderId();
+        long totalBorrows = borrowRecordMapper.countByReaderId(readerId);
+        long totalPoints = totalBorrows * 10;
+
+        Map<String, Object> data = new HashMap<>();
+        data.put("totalPoints", totalPoints);
+        data.put("level", totalPoints >= 500 ? "阅读大师" : totalPoints >= 200 ? "阅读达人" : totalPoints >= 50 ? "小书虫" : "新手读者");
         return Result.success(data);
     }
 }

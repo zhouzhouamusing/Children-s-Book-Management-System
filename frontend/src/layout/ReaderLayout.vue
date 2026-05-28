@@ -33,7 +33,7 @@
         </el-menu-item>
         <el-menu-item index="/reader/profile">
           <el-icon><User /></el-icon>
-          <template #title>个人信息</template>
+          <template #title>个人中心</template>
         </el-menu-item>
       </el-menu>
     </el-aside>

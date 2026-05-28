@@ -160,3 +160,11 @@ export function cancelReservation(id) {
 export function browseBooks(params) {
   return request.get('/reader-center/books', { params })
 }
+
+export function getMyStatistics() {
+  return request.get('/reader-center/statistics')
+}
+
+export function getMyPoints() {
+  return request.get('/reader-center/points')
+}

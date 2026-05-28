@@ -6,80 +6,117 @@
       <div class="floating-shape shape-3"></div>
       <div class="floating-shape shape-4"></div>
       <div class="floating-shape shape-5"></div>
+      <div class="floating-shape shape-6"></div>
     </div>
-    <div class="login-card animate__animated animate__bounceIn">
-      <div class="login-header">
-        <div class="logo animate-float">📚</div>
-        <h1>童书乐园</h1>
-        <p>儿童图书管理系统</p>
+    <div class="login-wrapper">
+      <div class="login-brand animate__animated animate__fadeInLeft">
+        <div class="brand-content">
+          <div class="brand-logo">📚</div>
+          <h2>童书乐园</h2>
+          <p class="brand-slogan">让每个孩子爱上阅读</p>
+          <div class="brand-features">
+            <div class="feature-item">
+              <span class="feature-icon">📖</span>
+              <span>海量童书资源</span>
+            </div>
+            <div class="feature-item">
+              <span class="feature-icon">🎯</span>
+              <span>智能推荐系统</span>
+            </div>
+            <div class="feature-item">
+              <span class="feature-icon">📊</span>
+              <span>阅读成长记录</span>
+            </div>
+          </div>
+        </div>
       </div>
-      <div class="role-toggle">
-        <div
-          class="role-option"
-          :class="{ active: loginRole === 'admin' }"
-          @click="loginRole = 'admin'"
-        >
-          <el-icon><Setting /></el-icon>
-          <span>管理员登录</span>
+      <div class="login-card animate__animated animate__fadeInRight">
+        <div class="login-header">
+          <h1>欢迎回来</h1>
+          <p>登录你的账号以继续使用</p>
         </div>
-        <div
-          class="role-option"
-          :class="{ active: loginRole === 'reader' }"
-          @click="loginRole = 'reader'"
-        >
-          <el-icon><UserFilled /></el-icon>
-          <span>读者登录</span>
-        </div>
-        <div class="role-slider" :class="{ right: loginRole === 'reader' }"></div>
-      </div>
-      <el-form
-        ref="formRef"
-        :model="form"
-        :rules="rules"
-        class="login-form"
-        @keyup.enter="handleLogin"
-      >
-        <el-form-item prop="username">
-          <el-input
-            v-model="form.username"
-            placeholder="请输入用户名"
-            prefix-icon="User"
-            size="large"
-          />
-        </el-form-item>
-        <el-form-item prop="password">
-          <el-input
-            v-model="form.password"
-            type="password"
-            placeholder="请输入密码"
-            prefix-icon="Lock"
-            size="large"
-            show-password
-          />
-        </el-form-item>
-        <div class="form-actions">
-          <router-link v-if="loginRole === 'admin'" to="/forgot-password" class="forgot-link">忘记密码？</router-link>
-        </div>
-        <el-form-item>
-          <el-button
-            type="primary"
-            size="large"
-            :loading="loading"
-            class="login-btn"
-            @click="handleLogin"
+        <div class="role-toggle">
+          <div
+            class="role-option"
+            :class="{ active: loginRole === 'admin' }"
+            @click="loginRole = 'admin'"
           >
-            {{ loading ? '登录中...' : '🚀 欢迎进入' }}
-          </el-button>
-        </el-form-item>
-      </el-form>
-      <div class="login-footer">
-        <span>{{ loginRole === 'admin' ? '还没有账号？' : '还没有读者账号？' }}</span>
-        <router-link v-if="loginRole === 'admin'" to="/register" class="link">立即注册</router-link>
-        <router-link v-else to="/reader-register" class="link">立即注册</router-link>
-      </div>
-      <div class="login-hint">
-        <span v-if="loginRole === 'admin'">默认体验账号：admin / admin123</span>
-        <span v-else>默认体验账号：xiaoming / 123456</span>
+            <el-icon><Setting /></el-icon>
+            <span>管理员</span>
+          </div>
+          <div
+            class="role-option"
+            :class="{ active: loginRole === 'reader' }"
+            @click="loginRole = 'reader'"
+          >
+            <el-icon><UserFilled /></el-icon>
+            <span>读者</span>
+          </div>
+          <div class="role-slider" :class="{ right: loginRole === 'reader' }"></div>
+        </div>
+        <el-form
+          ref="formRef"
+          :model="form"
+          :rules="rules"
+          class="login-form"
+          @keyup.enter="handleLogin"
+          hide-required-asterisk
+          status-icon
+        >
+          <el-form-item prop="username">
+            <el-input
+              v-model="form.username"
+              placeholder="请输入用户名"
+              prefix-icon="User"
+              size="large"
+              clearable
+              @focus="focusField = 'username'"
+              @blur="focusField = ''"
+            />
+          </el-form-item>
+          <el-form-item prop="password">
+            <el-input
+              v-model="form.password"
+              type="password"
+              placeholder="请输入密码"
+              prefix-icon="Lock"
+              size="large"
+              show-password
+              @focus="focusField = 'password'"
+              @blur="focusField = ''"
+            />
+          </el-form-item>
+          <div class="form-actions">
+            <el-checkbox v-model="rememberMe" class="remember-me">记住我</el-checkbox>
+            <router-link v-if="loginRole === 'admin'" to="/forgot-password" class="forgot-link">忘记密码？</router-link>
+          </div>
+          <el-form-item>
+            <el-button
+              type="primary"
+              size="large"
+              :loading="loading"
+              class="login-btn"
+              @click="handleLogin"
+            >
+              <transition name="btn-text" mode="out-in">
+                <span :key="loading">{{ loading ? '登录中...' : '登 录' }}</span>
+              </transition>
+            </el-button>
+          </el-form-item>
+        </el-form>
+        <div class="login-divider">
+          <span>或者</span>
+        </div>
+        <div class="login-footer">
+          <span>{{ loginRole === 'admin' ? '还没有账号？' : '还没有读者账号？' }}</span>
+          <router-link v-if="loginRole === 'admin'" to="/register" class="link">立即注册</router-link>
+          <router-link v-else to="/reader-register" class="link">立即注册</router-link>
+        </div>
+        <div class="login-hint">
+          <el-icon><InfoFilled /></el-icon>
+          <span v-if="loginRole === 'admin'">体验账号：admin / admin123</span>
+          <span v-else>体验账号：xiaoming / 123456</span>
+        </div>
       </div>
     </div>
   </div>
@@ -95,6 +132,8 @@ const router = useRouter()
 const formRef = ref(null)
 const loading = ref(false)
 const loginRole = ref('admin')
+const focusField = ref('')
+const rememberMe = ref(false)
 
 const form = reactive({
   username: '',
@@ -151,6 +190,7 @@ const handleLogin = async () => {
   background: linear-gradient(135deg, #FFF5F5 0%, #F0FFF4 50%, #EBF8FF 100%);
   position: relative;
   overflow: hidden;
+  padding: 20px;
 }
 
 .login-bg {
@@ -162,88 +202,123 @@ const handleLogin = async () => {
 .floating-shape {
   position: absolute;
   border-radius: 50%;
-  opacity: 0.5;
+  opacity: 0.4;
   animation: float 6s ease-in-out infinite;
 }
 
-.shape-1 {
-  width: 120px;
-  height: 120px;
-  background: var(--pink-light);
-  top: 10%;
-  left: 10%;
-  animation-delay: 0s;
+.shape-1 { width: 140px; height: 140px; background: var(--pink-light); top: 8%; left: 8%; animation-delay: 0s; }
+.shape-2 { width: 90px; height: 90px; background: var(--green); top: 18%; right: 12%; animation-delay: 1s; }
+.shape-3 { width: 110px; height: 110px; background: var(--blue); bottom: 12%; left: 18%; animation-delay: 2s; }
+.shape-4 { width: 70px; height: 70px; background: var(--yellow-warm); bottom: 22%; right: 22%; animation-delay: 3s; }
+.shape-5 { width: 100px; height: 100px; background: var(--purple-light); top: 55%; left: 5%; animation-delay: 4s; }
+.shape-6 { width: 60px; height: 60px; background: var(--peach); top: 40%; right: 5%; animation-delay: 2.5s; }
+
+.login-wrapper {
+  display: flex;
+  background: white;
+  border-radius: var(--radius-lg);
+  box-shadow: 0 24px 80px rgba(0, 0, 0, 0.08);
+  overflow: hidden;
+  position: relative;
+  z-index: 1;
+  max-width: 880px;
+  width: 100%;
 }
 
-.shape-2 {
-  width: 80px;
-  height: 80px;
-  background: var(--green);
-  top: 20%;
-  right: 15%;
-  animation-delay: 1s;
+.login-brand {
+  width: 360px;
+  background: linear-gradient(135deg, var(--purple) 0%, #7B61A8 100%);
+  padding: 48px 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  overflow: hidden;
 }
 
-.shape-3 {
-  width: 100px;
-  height: 100px;
-  background: var(--blue);
-  bottom: 15%;
-  left: 20%;
-  animation-delay: 2s;
+.login-brand::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(circle at 30% 20%, rgba(255,255,255,0.1) 0%, transparent 50%),
+              radial-gradient(circle at 80% 80%, rgba(255,255,255,0.05) 0%, transparent 40%);
 }
 
-.shape-4 {
-  width: 60px;
-  height: 60px;
-  background: var(--yellow-warm);
-  bottom: 25%;
-  right: 25%;
-  animation-delay: 3s;
+.brand-content {
+  position: relative;
+  z-index: 1;
+  text-align: center;
+  color: white;
 }
 
-.shape-5 {
-  width: 90px;
-  height: 90px;
-  background: var(--purple-light);
-  top: 50%;
-  left: 50%;
-  animation-delay: 4s;
+.brand-logo {
+  font-size: 64px;
+  margin-bottom: 16px;
+  animation: float 3s ease-in-out infinite;
+}
+
+.brand-content h2 {
+  font-size: 28px;
+  font-weight: 700;
+  margin: 0 0 8px;
+}
+
+.brand-slogan {
+  font-size: 14px;
+  opacity: 0.85;
+  margin: 0 0 36px;
+}
+
+.brand-features {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  text-align: left;
+}
+
+.feature-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 14px;
+  opacity: 0.9;
+  padding: 10px 16px;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: var(--radius-sm);
+  transition: background 0.3s;
+}
+
+.feature-item:hover {
+  background: rgba(255, 255, 255, 0.18);
+}
+
+.feature-icon {
+  font-size: 18px;
 }
 
 .login-card {
-  background: white;
-  border-radius: var(--radius-lg);
-  padding: 50px 40px 35px;
-  width: 420px;
-  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.08);
-  position: relative;
-  z-index: 1;
+  flex: 1;
+  padding: 48px 44px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
 }
 
 .login-header {
-  text-align: center;
   margin-bottom: 28px;
 }
 
-.logo {
-  font-size: 56px;
-  margin-bottom: 12px;
-}
-
 .login-header h1 {
-  font-size: 28px;
+  font-size: 26px;
   color: var(--text-primary);
-  margin-bottom: 8px;
-  background: linear-gradient(135deg, var(--purple), var(--pink));
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
+  margin: 0 0 6px;
+  font-weight: 700;
 }
 
 .login-header p {
   color: var(--text-secondary);
   font-size: 14px;
+  margin: 0;
 }
 
 .role-toggle {
@@ -252,7 +327,7 @@ const handleLogin = async () => {
   background: #f5f7fa;
   border-radius: var(--radius-sm);
   padding: 4px;
-  margin-bottom: 24px;
+  margin-bottom: 28px;
 }
 
 .role-option {
@@ -297,15 +372,32 @@ const handleLogin = async () => {
 }
 
 .login-form {
+  margin-bottom: 8px;
+}
+
+.login-form :deep(.el-form-item) {
   margin-bottom: 20px;
+}
+
+.login-form :deep(.el-input__wrapper) {
+  padding: 4px 12px;
 }
 
 .form-actions {
   display: flex;
-  justify-content: flex-end;
-  margin-bottom: 12px;
-  margin-top: -6px;
-  min-height: 20px;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+  margin-top: -4px;
+}
+
+.remember-me {
+  color: var(--text-secondary);
+}
+
+.remember-me :deep(.el-checkbox__label) {
+  font-size: 13px;
+  color: var(--text-secondary);
 }
 
 .forgot-link {
@@ -323,21 +415,49 @@ const handleLogin = async () => {
   width: 100%;
   height: 48px;
   font-size: 16px;
-  background: linear-gradient(135deg, var(--green), #8DD5BE) !important;
+  font-weight: 600;
+  background: linear-gradient(135deg, var(--purple), #7B61A8) !important;
   border: none !important;
-  letter-spacing: 2px;
+  letter-spacing: 4px;
   color: #fff !important;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
 }
 
 .login-btn:hover {
-  background: linear-gradient(135deg, #8DD5BE, var(--green)) !important;
+  background: linear-gradient(135deg, #7B61A8, var(--purple)) !important;
+  transform: translateY(-2px) !important;
+  box-shadow: 0 8px 24px rgba(149, 125, 173, 0.35) !important;
+}
+
+.login-btn:active {
+  transform: translateY(0) !important;
+}
+
+.login-divider {
+  display: flex;
+  align-items: center;
+  margin: 20px 0;
+  color: var(--text-secondary);
+  font-size: 12px;
+}
+
+.login-divider::before,
+.login-divider::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: #eee;
+}
+
+.login-divider span {
+  padding: 0 16px;
 }
 
 .login-footer {
   text-align: center;
   color: var(--text-secondary);
   font-size: 14px;
-  margin-bottom: 12px;
+  margin-bottom: 16px;
 }
 
 .login-footer .link {
@@ -354,7 +474,48 @@ const handleLogin = async () => {
 
 .login-hint {
   text-align: center;
-  color: #BBB;
+  color: #bbb;
   font-size: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  padding: 10px;
+  background: #fafafa;
+  border-radius: var(--radius-sm);
+}
+
+.login-hint .el-icon {
+  font-size: 14px;
+}
+
+/* Button text transition */
+.btn-text-enter-active,
+.btn-text-leave-active {
+  transition: all 0.2s ease;
+}
+.btn-text-enter-from {
+  opacity: 0;
+  transform: translateY(6px);
+}
+.btn-text-leave-to {
+  opacity: 0;
+  transform: translateY(-6px);
+}
+
+@media (max-width: 768px) {
+  .login-wrapper {
+    flex-direction: column;
+  }
+  .login-brand {
+    width: 100%;
+    padding: 32px 24px;
+  }
+  .brand-features {
+    display: none;
+  }
+  .login-card {
+    padding: 32px 24px;
+  }
 }
 </style>
