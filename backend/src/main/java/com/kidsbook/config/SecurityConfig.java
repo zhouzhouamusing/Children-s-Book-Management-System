@@ -68,6 +68,7 @@ public class SecurityConfig {
             .authorizeHttpRequests(auth -> auth
                 .requestMatchers(PUBLIC_URLS).permitAll()
                 .requestMatchers("/api/admin/send-code").permitAll()
+                .requestMatchers("/api/categories/all").hasAnyRole("READER", "ADMIN")
                 .requestMatchers("/api/admin-application/apply", "/api/admin-application/my-status").hasRole("READER")
                 .requestMatchers("/api/admin-application/list", "/api/admin-application/*/approve", "/api/admin-application/*/reject").hasRole("ADMIN")
                 .requestMatchers("/api/reader-center/**").hasAnyRole("READER", "ADMIN")

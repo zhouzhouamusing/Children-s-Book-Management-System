@@ -2,9 +2,11 @@ package com.kidsbook.config;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.kidsbook.entity.Admin;
+import com.kidsbook.entity.Reader;
 import com.kidsbook.entity.ReaderAccount;
 import com.kidsbook.mapper.AdminMapper;
 import com.kidsbook.mapper.ReaderAccountMapper;
+import com.kidsbook.mapper.ReaderMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.CommandLineRunner;
@@ -17,6 +19,7 @@ import org.springframework.stereotype.Component;
 public class DataInitializer implements CommandLineRunner {
     private final AdminMapper adminMapper;
     private final ReaderAccountMapper readerAccountMapper;
+    private final ReaderMapper readerMapper;
     private final PasswordEncoder passwordEncoder;
 
     @Override
@@ -48,11 +51,31 @@ public class DataInitializer implements CommandLineRunner {
                 admin.setEmail("admin@kidsbook.com");
             }
             adminMapper.updateById(admin);
-            log.info("=== 管理员密码已更新 === 用户名: admin, 密码: admin123");
+            log.info("=== 管理员密码已重置 === 用户名: admin, 密码: admin123");
         }
     }
 
     private void initReaderAccount() {
+        Reader reader = readerMapper.selectOne(
+            new LambdaQueryWrapper<Reader>().eq(Reader::getName, "小明")
+        );
+        if (reader == null) {
+            reader = new Reader();
+            reader.setName("小明");
+            reader.setAge(8);
+            reader.setGender("male");
+            reader.setParentName("张先生");
+            reader.setParentPhone("13800138001");
+            reader.setStatus("normal");
+            reader.setBorrowCount(0);
+            reader.setOverdueCount(0);
+            reader.setPoints(0);
+            reader.setTotalReadingDays(0);
+            reader.setLevel("新手读者");
+            readerMapper.insert(reader);
+            log.info("=== 默认读者已创建 === 姓名: 小明, ID: {}", reader.getId());
+        }
+
         ReaderAccount account = readerAccountMapper.selectOne(
             new LambdaQueryWrapper<ReaderAccount>().eq(ReaderAccount::getUsername, "xiaoming")
         );
@@ -60,15 +83,16 @@ public class DataInitializer implements CommandLineRunner {
             account = new ReaderAccount();
             account.setUsername("xiaoming");
             account.setPassword(passwordEncoder.encode("123456"));
-            account.setReaderId(1L);
+            account.setReaderId(reader.getId());
             account.setStatus("active");
             readerAccountMapper.insert(account);
             log.info("=== 默认读者账号已创建 === 用户名: xiaoming, 密码: 123456");
         } else {
             account.setPassword(passwordEncoder.encode("123456"));
+            account.setReaderId(reader.getId());
             account.setStatus("active");
             readerAccountMapper.updateById(account);
-            log.info("=== 读者账号密码已更新 === 用户名: xiaoming, 密码: 123456");
+            log.info("=== 读者账号密码已重置 === 用户名: xiaoming, 密码: 123456");
         }
     }
 }

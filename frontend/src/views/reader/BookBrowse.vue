@@ -301,6 +301,8 @@ onMounted(() => {
 
 .category-tag {
   font-size: 11px;
+  background: linear-gradient(135deg, var(--blue-light), var(--purple-light)) !important;
+  color: var(--purple) !important;
 }
 
 .age-range {
