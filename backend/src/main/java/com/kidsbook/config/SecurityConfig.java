@@ -39,7 +39,11 @@ public class SecurityConfig {
         "/api/reader/login",
         "/api/reader/register",
         "/api/health",
-        "/error"
+        "/error",
+        "/",
+        "/index.html",
+        "/favicon.svg",
+        "/assets/**"
     };
 
     @Bean
