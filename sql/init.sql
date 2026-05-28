@@ -87,3 +87,70 @@ INSERT INTO `category` (`name`, `icon`, `color`, `age_range_min`, `age_range_max
 -- 如果admin表已存在但缺少email字段，执行以下语句：
 -- ALTER TABLE `admin` ADD COLUMN `email` VARCHAR(100) DEFAULT NULL COMMENT '邮箱' AFTER `nickname`;
 -- ALTER TABLE `admin` ADD UNIQUE KEY `uk_email` (`email`);
+
+-- 读者表
+DROP TABLE IF EXISTS `reader`;
+CREATE TABLE `reader` (
+    `id` BIGINT NOT NULL AUTO_INCREMENT COMMENT '主键ID',
+    `name` VARCHAR(50) NOT NULL COMMENT '儿童姓名',
+    `age` INT NOT NULL COMMENT '年龄',
+    `gender` VARCHAR(10) NOT NULL COMMENT '性别：male-男 female-女',
+    `parent_name` VARCHAR(50) DEFAULT NULL COMMENT '家长姓名',
+    `parent_phone` VARCHAR(20) NOT NULL COMMENT '家长联系方式',
+    `status` VARCHAR(20) DEFAULT 'normal' COMMENT '状态：normal-正常 suspended-暂停借阅',
+    `borrow_count` INT DEFAULT 0 COMMENT '累计借阅数',
+    `overdue_count` INT DEFAULT 0 COMMENT '逾期次数',
+    `remark` VARCHAR(200) DEFAULT NULL COMMENT '备注',
+    `create_time` DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+    `update_time` DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+    PRIMARY KEY (`id`),
+    KEY `idx_name` (`name`),
+    KEY `idx_parent_phone` (`parent_phone`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='读者表';
+
+-- 借阅记录表
+DROP TABLE IF EXISTS `borrow_record`;
+CREATE TABLE `borrow_record` (
+    `id` BIGINT NOT NULL AUTO_INCREMENT COMMENT '主键ID',
+    `reader_id` BIGINT NOT NULL COMMENT '读者ID',
+    `book_id` BIGINT DEFAULT NULL COMMENT '图书ID',
+    `book_title` VARCHAR(200) NOT NULL COMMENT '图书名称',
+    `borrow_date` DATE NOT NULL COMMENT '借阅日期',
+    `due_date` DATE NOT NULL COMMENT '应还日期',
+    `return_date` DATE DEFAULT NULL COMMENT '归还日期',
+    `status` VARCHAR(20) DEFAULT 'borrowing' COMMENT '状态：borrowing-借阅中 returned-已归还 overdue-逾期',
+    `create_time` DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+    `update_time` DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+    PRIMARY KEY (`id`),
+    KEY `idx_reader_id` (`reader_id`),
+    KEY `idx_book_id` (`book_id`),
+    KEY `idx_status` (`status`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='借阅记录表';
+
+-- 示例读者数据
+INSERT INTO `reader` (`name`, `age`, `gender`, `parent_name`, `parent_phone`, `status`, `borrow_count`, `overdue_count`, `remark`) VALUES
+('小明', 8, 'male', '张先生', '13800138001', 'normal', 12, 0, ''),
+('小红', 6, 'female', '李女士', '13800138002', 'normal', 8, 1, '喜欢绘本'),
+('小刚', 10, 'male', '王先生', '13800138003', 'suspended', 15, 4, '多次逾期，已暂停借阅'),
+('小美', 7, 'female', '赵女士', '13800138004', 'normal', 5, 0, '对科普类感兴趣'),
+('小杰', 9, 'male', '刘先生', '13800138005', 'normal', 20, 2, ''),
+('小雪', 5, 'female', '陈女士', '13800138006', 'normal', 3, 0, '刚入学');
+
+-- 示例借阅记录
+INSERT INTO `borrow_record` (`reader_id`, `book_id`, `book_title`, `borrow_date`, `due_date`, `return_date`, `status`) VALUES
+(1, 1, '小王子', '2025-12-01', '2025-12-15', '2025-12-14', 'returned'),
+(1, 7, '安徒生童话', '2026-01-05', '2026-01-19', '2026-01-18', 'returned'),
+(1, 5, '好饿的毛毛虫', '2026-03-01', '2026-03-15', '2026-03-10', 'returned'),
+(2, 4, '猜猜我有多爱你', '2025-11-20', '2025-12-04', '2025-12-03', 'returned'),
+(2, 5, '好饿的毛毛虫', '2026-01-10', '2026-01-24', '2026-01-28', 'returned'),
+(2, 3, '夏洛的网', '2026-04-01', '2026-04-15', NULL, 'borrowing'),
+(3, 1, '小王子', '2025-10-01', '2025-10-15', '2025-10-20', 'returned'),
+(3, 6, '草房子', '2025-11-01', '2025-11-15', '2025-11-25', 'returned'),
+(3, 2, '窗边的小豆豆', '2025-12-01', '2025-12-15', '2025-12-28', 'returned'),
+(3, 7, '安徒生童话', '2026-01-10', '2026-01-24', NULL, 'overdue'),
+(4, 5, '好饿的毛毛虫', '2026-02-10', '2026-02-24', '2026-02-20', 'returned'),
+(4, 4, '猜猜我有多爱你', '2026-04-05', '2026-04-19', NULL, 'borrowing'),
+(5, 6, '草房子', '2025-12-15', '2025-12-29', '2025-12-28', 'returned'),
+(5, 8, '三毛流浪记', '2026-01-20', '2026-02-03', '2026-02-10', 'returned'),
+(5, 1, '小王子', '2026-03-10', '2026-03-24', NULL, 'overdue'),
+(6, 4, '猜猜我有多爱你', '2026-03-15', '2026-03-29', '2026-03-25', 'returned');
