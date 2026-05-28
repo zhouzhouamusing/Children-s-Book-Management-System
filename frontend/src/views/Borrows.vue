@@ -217,13 +217,12 @@ onMounted(() => { fetchList(); fetchStats() })
 </script>
 
 <style scoped>
-.borrows-page { max-width: 1200px; margin: 0 auto; }
+.borrows-page { display: flex; flex-direction: column; gap: 20px; }
 
 .stats-row {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
   gap: 16px;
-  margin-bottom: 24px;
 }
 
 .stat-card {
@@ -253,7 +252,6 @@ onMounted(() => { fetchList(); fetchStats() })
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 20px;
 }
 
 .toolbar-left { display: flex; gap: 12px; }

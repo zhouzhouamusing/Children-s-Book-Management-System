@@ -108,9 +108,13 @@
           <span>或者</span>
         </div>
         <div class="login-footer">
-          <span>{{ loginRole === 'admin' ? '还没有账号？' : '还没有读者账号？' }}</span>
-          <router-link v-if="loginRole === 'admin'" to="/register" class="link">立即注册</router-link>
-          <router-link v-else to="/reader-register" class="link">立即注册</router-link>
+          <template v-if="loginRole === 'admin'">
+            <span>管理员账号由超级管理员分配</span>
+          </template>
+          <template v-else>
+            <span>还没有读者账号？</span>
+            <router-link to="/reader-register" class="link">立即注册</router-link>
+          </template>
         </div>
         <div class="login-hint">
           <el-icon><InfoFilled /></el-icon>

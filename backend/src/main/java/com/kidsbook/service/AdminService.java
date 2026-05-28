@@ -46,31 +46,7 @@ public class AdminService {
     }
 
     public void register(RegisterRequest request) {
-        if (!request.getPassword().equals(request.getConfirmPassword())) {
-            throw new RuntimeException("两次输入的密码不一致");
-        }
-
-        Admin existing = adminMapper.selectOne(
-            new LambdaQueryWrapper<Admin>().eq(Admin::getUsername, request.getUsername())
-        );
-        if (existing != null) {
-            throw new RuntimeException("用户名已存在");
-        }
-
-        Admin existingEmail = adminMapper.selectOne(
-            new LambdaQueryWrapper<Admin>().eq(Admin::getEmail, request.getEmail())
-        );
-        if (existingEmail != null) {
-            throw new RuntimeException("该邮箱已被注册");
-        }
-
-        Admin admin = new Admin();
-        admin.setUsername(request.getUsername());
-        admin.setPassword(passwordEncoder.encode(request.getPassword()));
-        admin.setNickname(request.getNickname());
-        admin.setEmail(request.getEmail());
-        adminMapper.insert(admin);
-        log.info("新用户注册成功: username={}", request.getUsername());
+        throw new RuntimeException("管理员账号不支持自主注册，请联系超级管理员添加");
     }
 
     public void resetPassword(ResetPasswordRequest request) {

@@ -13,6 +13,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 @Slf4j
 @Service
@@ -59,6 +60,7 @@ public class ReaderAccountService {
         return response;
     }
 
+    @Transactional
     public void register(ReaderRegisterRequest request) {
         if (!request.getPassword().equals(request.getConfirmPassword())) {
             throw new RuntimeException("两次输入的密码不一致");
@@ -71,21 +73,19 @@ public class ReaderAccountService {
             throw new RuntimeException("用户名已存在");
         }
 
-        Reader reader = readerMapper.selectOne(
-            new LambdaQueryWrapper<Reader>()
-                .eq(Reader::getParentPhone, request.getParentPhone())
-                .eq(Reader::getName, request.getName())
-        );
-        if (reader == null) {
-            throw new RuntimeException("未找到匹配的读者信息，请确认姓名和家长手机号是否正确");
-        }
-
-        ReaderAccount existingLink = readerAccountMapper.selectOne(
-            new LambdaQueryWrapper<ReaderAccount>().eq(ReaderAccount::getReaderId, reader.getId())
-        );
-        if (existingLink != null) {
-            throw new RuntimeException("该读者已有关联账号");
-        }
+        Reader reader = new Reader();
+        reader.setName(request.getName());
+        reader.setParentPhone(request.getParentPhone());
+        reader.setParentName(request.getParentName());
+        reader.setAge(request.getAge());
+        reader.setGender(request.getGender());
+        reader.setStatus("normal");
+        reader.setBorrowCount(0);
+        reader.setOverdueCount(0);
+        reader.setPoints(0);
+        reader.setTotalReadingDays(0);
+        reader.setLevel("初级小书虫");
+        readerMapper.insert(reader);
 
         ReaderAccount account = new ReaderAccount();
         account.setUsername(request.getUsername());

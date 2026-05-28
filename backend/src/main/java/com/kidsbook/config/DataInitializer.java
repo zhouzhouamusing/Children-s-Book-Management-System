@@ -64,6 +64,11 @@ public class DataInitializer implements CommandLineRunner {
             account.setStatus("active");
             readerAccountMapper.insert(account);
             log.info("=== 默认读者账号已创建 === 用户名: xiaoming, 密码: 123456");
+        } else {
+            account.setPassword(passwordEncoder.encode("123456"));
+            account.setStatus("active");
+            readerAccountMapper.updateById(account);
+            log.info("=== 读者账号密码已更新 === 用户名: xiaoming, 密码: 123456");
         }
     }
 }

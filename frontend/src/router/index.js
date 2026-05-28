@@ -10,8 +10,7 @@ const routes = [
   {
     path: '/register',
     name: 'Register',
-    component: () => import('@/views/Register.vue'),
-    meta: { title: '注册', public: true }
+    redirect: '/login'
   },
   {
     path: '/reader-register',

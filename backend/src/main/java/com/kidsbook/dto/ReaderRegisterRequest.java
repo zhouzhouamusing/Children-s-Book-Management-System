@@ -22,4 +22,10 @@ public class ReaderRegisterRequest {
 
     @NotBlank(message = "儿童姓名不能为空")
     private String name;
+
+    private Integer age;
+
+    private String gender;
+
+    private String parentName;
 }

@@ -16,15 +16,15 @@
           <div class="brand-info">
             <div class="info-card">
               <span class="info-icon">💡</span>
-              <span>需先由管理员录入读者信息</span>
+              <span>填写基本信息即可注册</span>
             </div>
             <div class="info-card">
               <span class="info-icon">🔑</span>
-              <span>使用姓名+手机号验证身份</span>
+              <span>注册后即可登录使用</span>
             </div>
             <div class="info-card">
               <span class="info-icon">📚</span>
-              <span>注册后即可使用借阅服务</span>
+              <span>享受图书借阅服务</span>
             </div>
           </div>
         </div>
@@ -55,7 +55,7 @@
           <el-form-item prop="name" label="儿童姓名">
             <el-input
               v-model="form.name"
-              placeholder="请输入管理员登记时的儿童姓名"
+              placeholder="请输入儿童姓名"
               prefix-icon="UserFilled"
               size="large"
               clearable
@@ -64,11 +64,27 @@
           <el-form-item prop="parentPhone" label="家长手机号">
             <el-input
               v-model="form.parentPhone"
-              placeholder="请输入管理员登记时的家长手机号"
+              placeholder="请输入家长手机号"
               prefix-icon="Phone"
               size="large"
               clearable
             />
+          </el-form-item>
+          <el-form-item prop="age" label="儿童年龄">
+            <el-input-number
+              v-model="form.age"
+              :min="1"
+              :max="18"
+              placeholder="选填"
+              size="large"
+              style="width: 100%"
+            />
+          </el-form-item>
+          <el-form-item prop="gender" label="性别">
+            <el-radio-group v-model="form.gender" size="large">
+              <el-radio label="男">男</el-radio>
+              <el-radio label="女">女</el-radio>
+            </el-radio-group>
           </el-form-item>
           <el-form-item prop="password" label="设置密码">
             <el-input
@@ -135,6 +151,8 @@ const form = reactive({
   username: '',
   name: '',
   parentPhone: '',
+  age: null,
+  gender: '',
   password: '',
   confirmPassword: ''
 })
