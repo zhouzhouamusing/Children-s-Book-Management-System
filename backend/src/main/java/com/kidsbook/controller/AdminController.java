@@ -6,10 +6,13 @@ import com.kidsbook.dto.LoginResponse;
 import com.kidsbook.dto.RegisterRequest;
 import com.kidsbook.dto.ResetPasswordRequest;
 import com.kidsbook.service.AdminService;
+import com.kidsbook.service.EmailService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.web.bind.annotation.*;
+
+import java.util.Map;
 
 @Slf4j
 @RestController
@@ -17,6 +20,7 @@ import org.springframework.web.bind.annotation.*;
 @RequiredArgsConstructor
 public class AdminController {
     private final AdminService adminService;
+    private final EmailService emailService;
 
     @PostMapping("/login")
     public Result<LoginResponse> login(@Valid @RequestBody LoginRequest request) {
@@ -39,6 +43,21 @@ public class AdminController {
         } catch (Exception e) {
             log.warn("注册失败: username={}, reason={}", request.getUsername(), e.getMessage());
             return Result.error(400, e.getMessage() != null ? e.getMessage() : "注册失败");
+        }
+    }
+
+    @PostMapping("/send-code")
+    public Result<Void> sendCode(@RequestBody Map<String, String> body) {
+        String email = body.get("email");
+        if (email == null || email.isBlank()) {
+            return Result.error(400, "邮箱不能为空");
+        }
+        try {
+            emailService.sendVerificationCode(email);
+            return Result.success();
+        } catch (Exception e) {
+            log.warn("验证码发送失败: email={}, reason={}", email, e.getMessage());
+            return Result.error(400, e.getMessage());
         }
     }
 

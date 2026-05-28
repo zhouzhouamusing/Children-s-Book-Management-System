@@ -38,17 +38,17 @@
             <div class="action-icon" style="background: var(--green-light)">📚</div>
             <span>图书列表</span>
           </div>
+          <div class="action-item" @click="$router.push('/borrows')">
+            <div class="action-icon" style="background: #F3EEFF">📖</div>
+            <span>借阅管理</span>
+          </div>
+          <div class="action-item" @click="$router.push('/readers')">
+            <div class="action-icon" style="background: var(--pink-light)">👦</div>
+            <span>读者管理</span>
+          </div>
           <div class="action-item" @click="$router.push('/categories')">
-            <div class="action-icon" style="background: #F3EEFF">📂</div>
+            <div class="action-icon" style="background: var(--blue-light)">📂</div>
             <span>分类管理</span>
-          </div>
-          <div class="action-item" @click="$router.push('/books')">
-            <div class="action-icon" style="background: var(--pink-light)">➕</div>
-            <span>新增图书</span>
-          </div>
-          <div class="action-item" @click="$router.push('/books')">
-            <div class="action-icon" style="background: var(--blue-light)">🔍</div>
-            <span>搜索图书</span>
           </div>
         </div>
       </el-card>
@@ -63,7 +63,7 @@ import * as echarts from 'echarts'
 
 const loading = ref(true)
 const chartRef = ref(null)
-const stats = ref({ totalBooks: 0, totalStock: 0, categoryStats: [] })
+const stats = ref({ totalBooks: 0, totalStock: 0, categoryStats: [], totalBorrows: 0, activeBorrows: 0, overdueBorrows: 0, totalReaders: 0, activeReaders: 0 })
 
 const statCards = computed(() => [
   {
@@ -79,15 +79,15 @@ const statCards = computed(() => [
     bg: 'linear-gradient(135deg, #E8F5E9, #F1FFF3)'
   },
   {
-    icon: '📂',
-    label: '图书分类',
-    value: stats.value.categoryStats?.length || 0,
+    icon: '📖',
+    label: '借阅中',
+    value: stats.value.activeBorrows,
     bg: 'linear-gradient(135deg, #E3F2FD, #F0F7FF)'
   },
   {
-    icon: '⭐',
-    label: '系统状态',
-    value: '正常',
+    icon: '👦',
+    label: '注册读者',
+    value: stats.value.totalReaders,
     bg: 'linear-gradient(135deg, #FFF9C4, #FFFDE7)'
   }
 ])
@@ -129,10 +129,10 @@ const initChart = () => {
 onMounted(async () => {
   try {
     const res = await getStatistics()
-    stats.value = res.data || { totalBooks: 0, totalStock: 0, categoryStats: [] }
+    stats.value = res.data || { totalBooks: 0, totalStock: 0, categoryStats: [], totalBorrows: 0, activeBorrows: 0, overdueBorrows: 0, totalReaders: 0 }
   } catch (e) {
     console.warn('获取统计数据失败，使用默认值', e)
-    stats.value = { totalBooks: 0, totalStock: 0, categoryStats: [] }
+    stats.value = { totalBooks: 0, totalStock: 0, categoryStats: [], totalBorrows: 0, activeBorrows: 0, overdueBorrows: 0, totalReaders: 0 }
   } finally {
     loading.value = false
     await nextTick()

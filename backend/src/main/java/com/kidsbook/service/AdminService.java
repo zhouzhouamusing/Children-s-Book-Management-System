@@ -20,6 +20,7 @@ public class AdminService {
     private final AdminMapper adminMapper;
     private final PasswordEncoder passwordEncoder;
     private final JwtUtil jwtUtil;
+    private final EmailService emailService;
 
     public LoginResponse login(LoginRequest request) {
         Admin admin = adminMapper.selectOne(
@@ -75,6 +76,10 @@ public class AdminService {
     public void resetPassword(ResetPasswordRequest request) {
         if (!request.getNewPassword().equals(request.getConfirmPassword())) {
             throw new RuntimeException("两次输入的密码不一致");
+        }
+
+        if (!emailService.verifyCode(request.getEmail(), request.getCode())) {
+            throw new RuntimeException("验证码错误或已过期");
         }
 
         Admin admin = adminMapper.selectOne(

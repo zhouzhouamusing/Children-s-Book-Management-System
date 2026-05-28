@@ -97,6 +97,32 @@ export function updateReaderStatus(id, status) {
   return request.put(`/readers/${id}/status`, { status })
 }
 
+// 借阅管理 API
+export function getBorrows(params) {
+  return request.get('/borrows', { params })
+}
+
+export function createBorrow(data) {
+  return request.post('/borrows', data)
+}
+
+export function returnBorrow(id) {
+  return request.put(`/borrows/${id}/return`)
+}
+
+export function renewBorrow(id, days = 14) {
+  return request.put(`/borrows/${id}/renew`, null, { params: { days } })
+}
+
+export function getBorrowStatistics() {
+  return request.get('/borrows/statistics')
+}
+
+// 邮箱验证码
+export function sendResetCode(data) {
+  return request.post('/admin/send-code', data)
+}
+
 // 读者认证 API
 export function readerLogin(data) {
   return request.post('/reader/login', data)

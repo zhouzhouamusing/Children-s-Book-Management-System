@@ -63,8 +63,9 @@ public class SecurityConfig {
             }))
             .authorizeHttpRequests(auth -> auth
                 .requestMatchers(PUBLIC_URLS).permitAll()
+                .requestMatchers("/api/admin/send-code").permitAll()
                 .requestMatchers("/api/reader-center/**").hasRole("READER")
-                .requestMatchers("/api/books/**", "/api/categories/**", "/api/readers/**").hasRole("ADMIN")
+                .requestMatchers("/api/books/**", "/api/categories/**", "/api/readers/**", "/api/borrows/**").hasRole("ADMIN")
                 .anyRequest().authenticated()
             )
             .addFilterBefore(jwtAuthenticationFilter(), UsernamePasswordAuthenticationFilter.class);

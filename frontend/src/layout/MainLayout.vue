@@ -32,6 +32,10 @@
           <el-icon><UserFilled /></el-icon>
           <template #title>读者管理</template>
         </el-menu-item>
+        <el-menu-item index="/borrows">
+          <el-icon><Notebook /></el-icon>
+          <template #title>借阅管理</template>
+        </el-menu-item>
       </el-menu>
     </el-aside>
 

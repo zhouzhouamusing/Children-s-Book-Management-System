@@ -29,7 +29,6 @@ const routes = [
     path: '/',
     component: () => import('@/layout/MainLayout.vue'),
     redirect: '/dashboard',
-    meta: { role: 'ADMIN' },
     children: [
       {
         path: 'dashboard',
@@ -54,6 +53,12 @@ const routes = [
         name: 'Readers',
         component: () => import('@/views/Readers.vue'),
         meta: { title: '读者管理', role: 'ADMIN' }
+      },
+      {
+        path: 'borrows',
+        name: 'Borrows',
+        component: () => import('@/views/Borrows.vue'),
+        meta: { title: '借阅管理', role: 'ADMIN' }
       }
     ]
   },
@@ -61,7 +66,6 @@ const routes = [
     path: '/reader',
     component: () => import('@/layout/ReaderLayout.vue'),
     redirect: '/reader/my-borrows',
-    meta: { role: 'READER' },
     children: [
       {
         path: 'my-borrows',
@@ -110,16 +114,19 @@ router.beforeEach((to, from, next) => {
     } else {
       next()
     }
+  } else if (!token) {
+    next('/login')
+  } else if (to.meta.role && to.meta.role !== role) {
+    next(role === 'READER' ? '/reader/my-borrows' : '/dashboard')
   } else {
-    if (!token) {
-      next('/login')
-    } else {
-      if (to.meta.role && to.meta.role !== role) {
-        next(role === 'READER' ? '/reader/my-borrows' : '/dashboard')
-      } else {
-        next()
-      }
-    }
+    next()
+  }
+})
+
+router.onError((error) => {
+  if (error.message.includes('Failed to fetch dynamically imported module') ||
+      error.message.includes('Importing a module script failed')) {
+    window.location.reload()
   }
 })
 
