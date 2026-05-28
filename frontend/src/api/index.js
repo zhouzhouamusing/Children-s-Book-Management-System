@@ -67,3 +67,32 @@ export function deleteCategory(id) {
 export function getCategoryBookCount(id) {
   return request.get(`/categories/${id}/book-count`)
 }
+
+// 读者管理 API
+export function getReaders(params) {
+  return request.get('/readers', { params })
+}
+
+export function getReader(id) {
+  return request.get(`/readers/${id}`)
+}
+
+export function addReader(data) {
+  return request.post('/readers', data)
+}
+
+export function updateReader(id, data) {
+  return request.put(`/readers/${id}`, data)
+}
+
+export function deleteReader(id) {
+  return request.delete(`/readers/${id}`)
+}
+
+export function getReaderBorrowRecords(id, params) {
+  return request.get(`/readers/${id}/borrow-records`, { params })
+}
+
+export function updateReaderStatus(id, status) {
+  return request.put(`/readers/${id}/status`, { status })
+}

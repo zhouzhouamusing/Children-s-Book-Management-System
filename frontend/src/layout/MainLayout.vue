@@ -28,6 +28,10 @@
           <el-icon><FolderOpened /></el-icon>
           <template #title>分类管理</template>
         </el-menu-item>
+        <el-menu-item index="/readers">
+          <el-icon><UserFilled /></el-icon>
+          <template #title>读者管理</template>
+        </el-menu-item>
       </el-menu>
     </el-aside>
 
@@ -57,7 +61,7 @@
 
       <el-main class="content">
         <router-view v-slot="{ Component, route: childRoute }">
-          <transition name="page-fade">
+          <transition name="page-fade" mode="out-in">
             <div :key="childRoute.path" class="page-wrapper">
               <component :is="Component" />
             </div>
@@ -240,18 +244,16 @@ const handleLogout = () => {
 
 .page-fade-enter-active,
 .page-fade-leave-active {
-  transition: opacity 0.2s ease;
+  transition: opacity 0.25s ease, transform 0.25s ease;
 }
 
-.page-fade-leave-active {
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
+.page-fade-enter-from {
+  opacity: 0;
+  transform: translateY(12px);
 }
 
-.page-fade-enter-from,
 .page-fade-leave-to {
   opacity: 0;
+  transform: translateY(-8px);
 }
 </style>
