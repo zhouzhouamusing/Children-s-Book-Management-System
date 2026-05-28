@@ -36,6 +36,8 @@ public class SecurityConfig {
         "/api/admin/login",
         "/api/admin/register",
         "/api/admin/reset-password",
+        "/api/reader/login",
+        "/api/reader/register",
         "/api/health",
         "/error"
     };
@@ -61,6 +63,8 @@ public class SecurityConfig {
             }))
             .authorizeHttpRequests(auth -> auth
                 .requestMatchers(PUBLIC_URLS).permitAll()
+                .requestMatchers("/api/reader-center/**").hasRole("READER")
+                .requestMatchers("/api/books/**", "/api/categories/**", "/api/readers/**").hasRole("ADMIN")
                 .anyRequest().authenticated()
             )
             .addFilterBefore(jwtAuthenticationFilter(), UsernamePasswordAuthenticationFilter.class);
@@ -108,8 +112,10 @@ public class SecurityConfig {
                 try {
                     if (jwtUtil.validateToken(token)) {
                         String username = jwtUtil.getUsernameFromToken(token);
+                        String role = jwtUtil.getRoleFromToken(token);
+                        String authority = "ADMIN".equals(role) ? "ROLE_ADMIN" : "ROLE_READER";
                         var auth = new org.springframework.security.authentication.UsernamePasswordAuthenticationToken(
-                                username, null, List.of(new org.springframework.security.core.authority.SimpleGrantedAuthority("ROLE_ADMIN")));
+                                username, token, List.of(new org.springframework.security.core.authority.SimpleGrantedAuthority(authority)));
                         org.springframework.security.core.context.SecurityContextHolder.getContext().setAuthentication(auth);
                     }
                 } catch (Exception ignored) {

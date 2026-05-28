@@ -30,6 +30,8 @@ request.interceptors.response.use(
       isRedirecting = true
       localStorage.removeItem('token')
       localStorage.removeItem('nickname')
+      localStorage.removeItem('role')
+      localStorage.removeItem('readerId')
       ElMessage.error(res.message || '登录已过期，请重新登录')
       router.push('/login').finally(() => {
         setTimeout(() => { isRedirecting = false }, 1000)
@@ -45,6 +47,8 @@ request.interceptors.response.use(
       isRedirecting = true
       localStorage.removeItem('token')
       localStorage.removeItem('nickname')
+      localStorage.removeItem('role')
+      localStorage.removeItem('readerId')
       ElMessage.error('登录已过期，请重新登录')
       router.push('/login').finally(() => {
         setTimeout(() => { isRedirecting = false }, 1000)

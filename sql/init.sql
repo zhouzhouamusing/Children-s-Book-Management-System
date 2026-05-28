@@ -154,3 +154,50 @@ INSERT INTO `borrow_record` (`reader_id`, `book_id`, `book_title`, `borrow_date`
 (5, 8, '三毛流浪记', '2026-01-20', '2026-02-03', '2026-02-10', 'returned'),
 (5, 1, '小王子', '2026-03-10', '2026-03-24', NULL, 'overdue'),
 (6, 4, '猜猜我有多爱你', '2026-03-15', '2026-03-29', '2026-03-25', 'returned');
+
+-- 读者账号表（用于读者登录）
+DROP TABLE IF EXISTS `reader_account`;
+CREATE TABLE `reader_account` (
+    `id` BIGINT NOT NULL AUTO_INCREMENT COMMENT '主键ID',
+    `username` VARCHAR(50) NOT NULL COMMENT '用户名',
+    `password` VARCHAR(200) NOT NULL COMMENT '密码(BCrypt加密)',
+    `reader_id` BIGINT NOT NULL COMMENT '关联读者ID',
+    `status` VARCHAR(20) DEFAULT 'active' COMMENT '状态：active-正常 disabled-禁用',
+    `create_time` DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+    `update_time` DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+    PRIMARY KEY (`id`),
+    UNIQUE KEY `uk_username` (`username`),
+    UNIQUE KEY `uk_reader_id` (`reader_id`),
+    KEY `idx_reader_id` (`reader_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='读者账号表';
+
+-- 默认读者账号: xiaoming / 123456 (关联读者ID=1 小明)
+-- 密码为BCrypt加密后的123456
+INSERT INTO `reader_account` (`username`, `password`, `reader_id`, `status`) VALUES
+('xiaoming', '$2a$10$N.ZOn9G6/YOoTISRkp3v0.J7j6GfKOdJOWfiJNGtZDyA9C6RiAHmO', 1, 'active'),
+('xiaohong', '$2a$10$N.ZOn9G6/YOoTISRkp3v0.J7j6GfKOdJOWfiJNGtZDyA9C6RiAHmO', 2, 'active');
+
+-- 图书预约表
+DROP TABLE IF EXISTS `book_reservation`;
+CREATE TABLE `book_reservation` (
+    `id` BIGINT NOT NULL AUTO_INCREMENT COMMENT '主键ID',
+    `reader_id` BIGINT NOT NULL COMMENT '读者ID',
+    `book_id` BIGINT NOT NULL COMMENT '图书ID',
+    `book_title` VARCHAR(200) NOT NULL COMMENT '图书名称',
+    `reserve_date` DATETIME NOT NULL COMMENT '预约日期',
+    `expire_date` DATETIME NOT NULL COMMENT '过期日期',
+    `status` VARCHAR(20) DEFAULT 'pending' COMMENT '状态：pending-待取书 fulfilled-已取书 cancelled-已取消 expired-已过期',
+    `remark` VARCHAR(200) DEFAULT NULL COMMENT '备注',
+    `create_time` DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+    `update_time` DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+    PRIMARY KEY (`id`),
+    KEY `idx_reader_id` (`reader_id`),
+    KEY `idx_book_id` (`book_id`),
+    KEY `idx_status` (`status`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='图书预约表';
+
+-- 示例预约数据
+INSERT INTO `book_reservation` (`reader_id`, `book_id`, `book_title`, `reserve_date`, `expire_date`, `status`) VALUES
+(1, 3, '夏洛的网', '2026-05-25 10:00:00', '2026-05-28 10:00:00', 'pending'),
+(1, 6, '草房子', '2026-05-20 14:00:00', '2026-05-23 14:00:00', 'fulfilled'),
+(2, 1, '小王子', '2026-05-26 09:00:00', '2026-05-29 09:00:00', 'pending');

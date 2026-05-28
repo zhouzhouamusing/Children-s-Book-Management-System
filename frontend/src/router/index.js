@@ -14,6 +14,12 @@ const routes = [
     meta: { title: '注册', public: true }
   },
   {
+    path: '/reader-register',
+    name: 'ReaderRegister',
+    component: () => import('@/views/ReaderRegister.vue'),
+    meta: { title: '读者注册', public: true }
+  },
+  {
     path: '/forgot-password',
     name: 'ForgotPassword',
     component: () => import('@/views/ForgotPassword.vue'),
@@ -23,36 +29,69 @@ const routes = [
     path: '/',
     component: () => import('@/layout/MainLayout.vue'),
     redirect: '/dashboard',
+    meta: { role: 'ADMIN' },
     children: [
       {
         path: 'dashboard',
         name: 'Dashboard',
         component: () => import('@/views/Dashboard.vue'),
-        meta: { title: '数据概览' }
+        meta: { title: '数据概览', role: 'ADMIN' }
       },
       {
         path: 'books',
         name: 'Books',
         component: () => import('@/views/Books.vue'),
-        meta: { title: '图书管理' }
+        meta: { title: '图书管理', role: 'ADMIN' }
       },
       {
         path: 'categories',
         name: 'Categories',
         component: () => import('@/views/Categories.vue'),
-        meta: { title: '分类管理' }
+        meta: { title: '分类管理', role: 'ADMIN' }
       },
       {
         path: 'readers',
         name: 'Readers',
         component: () => import('@/views/Readers.vue'),
-        meta: { title: '读者管理' }
+        meta: { title: '读者管理', role: 'ADMIN' }
+      }
+    ]
+  },
+  {
+    path: '/reader',
+    component: () => import('@/layout/ReaderLayout.vue'),
+    redirect: '/reader/my-borrows',
+    meta: { role: 'READER' },
+    children: [
+      {
+        path: 'my-borrows',
+        name: 'MyBorrows',
+        component: () => import('@/views/reader/MyBorrows.vue'),
+        meta: { title: '我的借阅', role: 'READER' }
+      },
+      {
+        path: 'reservations',
+        name: 'Reservations',
+        component: () => import('@/views/reader/Reservations.vue'),
+        meta: { title: '预约图书', role: 'READER' }
+      },
+      {
+        path: 'books',
+        name: 'ReaderBooks',
+        component: () => import('@/views/reader/BookBrowse.vue'),
+        meta: { title: '图书浏览', role: 'READER' }
+      },
+      {
+        path: 'profile',
+        name: 'ReaderProfile',
+        component: () => import('@/views/reader/Profile.vue'),
+        meta: { title: '个人信息', role: 'READER' }
       }
     ]
   },
   {
     path: '/:pathMatch(.*)*',
-    redirect: '/dashboard'
+    redirect: '/login'
   }
 ]
 
@@ -63,9 +102,11 @@ const router = createRouter({
 
 router.beforeEach((to, from, next) => {
   const token = localStorage.getItem('token')
+  const role = localStorage.getItem('role')
+
   if (to.meta.public) {
     if (token && to.path === '/login') {
-      next('/dashboard')
+      next(role === 'READER' ? '/reader/my-borrows' : '/dashboard')
     } else {
       next()
     }
@@ -73,7 +114,11 @@ router.beforeEach((to, from, next) => {
     if (!token) {
       next('/login')
     } else {
-      next()
+      if (to.meta.role && to.meta.role !== role) {
+        next(role === 'READER' ? '/reader/my-borrows' : '/dashboard')
+      } else {
+        next()
+      }
     }
   }
 })

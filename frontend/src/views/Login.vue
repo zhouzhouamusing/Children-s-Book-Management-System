@@ -13,6 +13,25 @@
         <h1>童书乐园</h1>
         <p>儿童图书管理系统</p>
       </div>
+      <div class="role-toggle">
+        <div
+          class="role-option"
+          :class="{ active: loginRole === 'admin' }"
+          @click="loginRole = 'admin'"
+        >
+          <el-icon><Setting /></el-icon>
+          <span>管理员登录</span>
+        </div>
+        <div
+          class="role-option"
+          :class="{ active: loginRole === 'reader' }"
+          @click="loginRole = 'reader'"
+        >
+          <el-icon><UserFilled /></el-icon>
+          <span>读者登录</span>
+        </div>
+        <div class="role-slider" :class="{ right: loginRole === 'reader' }"></div>
+      </div>
       <el-form
         ref="formRef"
         :model="form"
@@ -39,7 +58,7 @@
           />
         </el-form-item>
         <div class="form-actions">
-          <router-link to="/forgot-password" class="forgot-link">忘记密码？</router-link>
+          <router-link v-if="loginRole === 'admin'" to="/forgot-password" class="forgot-link">忘记密码？</router-link>
         </div>
         <el-form-item>
           <el-button
@@ -54,11 +73,13 @@
         </el-form-item>
       </el-form>
       <div class="login-footer">
-        <span>还没有账号？</span>
-        <router-link to="/register" class="link">立即注册</router-link>
+        <span>{{ loginRole === 'admin' ? '还没有账号？' : '还没有读者账号？' }}</span>
+        <router-link v-if="loginRole === 'admin'" to="/register" class="link">立即注册</router-link>
+        <router-link v-else to="/reader-register" class="link">立即注册</router-link>
       </div>
       <div class="login-hint">
-        <span>默认体验账号：admin / admin123</span>
+        <span v-if="loginRole === 'admin'">默认体验账号：admin / admin123</span>
+        <span v-else>默认体验账号：xiaoming / 123456</span>
       </div>
     </div>
   </div>
@@ -68,11 +89,12 @@
 import { ref, reactive } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
-import { login } from '@/api'
+import { login, readerLogin } from '@/api'
 
 const router = useRouter()
 const formRef = ref(null)
 const loading = ref(false)
+const loginRole = ref('admin')
 
 const form = reactive({
   username: '',
@@ -93,16 +115,25 @@ const handleLogin = async () => {
 
   loading.value = true
   try {
-    const res = await login(form)
-    const { token, nickname } = res.data
+    const loginFn = loginRole.value === 'admin' ? login : readerLogin
+    const res = await loginFn(form)
+    const { token, nickname, role, readerId } = res.data
     if (!token) {
       ElMessage.error('登录异常：未获取到凭证')
       return
     }
     localStorage.setItem('token', token)
-    localStorage.setItem('nickname', nickname || '管理员')
+    localStorage.setItem('nickname', nickname || (loginRole.value === 'admin' ? '管理员' : '读者'))
+    localStorage.setItem('role', role || (loginRole.value === 'admin' ? 'ADMIN' : 'READER'))
+    if (readerId) {
+      localStorage.setItem('readerId', readerId)
+    }
     ElMessage.success('登录成功，欢迎回来！')
-    await router.push('/dashboard')
+    if (role === 'READER' || loginRole.value === 'reader') {
+      await router.push('/reader/my-borrows')
+    } else {
+      await router.push('/dashboard')
+    }
   } catch (e) {
     console.error('登录失败:', e)
   } finally {
@@ -192,7 +223,7 @@ const handleLogin = async () => {
 
 .login-header {
   text-align: center;
-  margin-bottom: 36px;
+  margin-bottom: 28px;
 }
 
 .logo {
@@ -215,6 +246,56 @@ const handleLogin = async () => {
   font-size: 14px;
 }
 
+.role-toggle {
+  display: flex;
+  position: relative;
+  background: #f5f7fa;
+  border-radius: var(--radius-sm);
+  padding: 4px;
+  margin-bottom: 24px;
+}
+
+.role-option {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 10px 0;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--text-secondary);
+  transition: color 0.3s;
+  position: relative;
+  z-index: 1;
+  border-radius: calc(var(--radius-sm) - 2px);
+}
+
+.role-option.active {
+  color: var(--purple);
+}
+
+.role-option .el-icon {
+  font-size: 16px;
+}
+
+.role-slider {
+  position: absolute;
+  top: 4px;
+  left: 4px;
+  width: calc(50% - 4px);
+  height: calc(100% - 8px);
+  background: white;
+  border-radius: calc(var(--radius-sm) - 2px);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.role-slider.right {
+  transform: translateX(100%);
+}
+
 .login-form {
   margin-bottom: 20px;
 }
@@ -224,6 +305,7 @@ const handleLogin = async () => {
   justify-content: flex-end;
   margin-bottom: 12px;
   margin-top: -6px;
+  min-height: 20px;
 }
 
 .forgot-link {

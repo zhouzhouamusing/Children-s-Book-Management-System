@@ -96,3 +96,41 @@ export function getReaderBorrowRecords(id, params) {
 export function updateReaderStatus(id, status) {
   return request.put(`/readers/${id}/status`, { status })
 }
+
+// 读者认证 API
+export function readerLogin(data) {
+  return request.post('/reader/login', data)
+}
+
+export function readerRegister(data) {
+  return request.post('/reader/register', data)
+}
+
+// 读者个人中心 API
+export function getMyProfile() {
+  return request.get('/reader-center/profile')
+}
+
+export function updateMyProfile(data) {
+  return request.put('/reader-center/profile', data)
+}
+
+export function getMyBorrowRecords(params) {
+  return request.get('/reader-center/borrow-records', { params })
+}
+
+export function getMyReservations(params) {
+  return request.get('/reader-center/reservations', { params })
+}
+
+export function createReservation(data) {
+  return request.post('/reader-center/reservations', data)
+}
+
+export function cancelReservation(id) {
+  return request.put(`/reader-center/reservations/${id}/cancel`)
+}
+
+export function browseBooks(params) {
+  return request.get('/reader-center/books', { params })
+}

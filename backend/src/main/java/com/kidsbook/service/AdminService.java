@@ -34,12 +34,13 @@ public class AdminService {
             throw new RuntimeException("用户名或密码错误");
         }
 
-        String token = jwtUtil.generateToken(admin.getUsername());
+        String token = jwtUtil.generateToken(admin.getUsername(), "ADMIN", null);
 
         LoginResponse response = new LoginResponse();
         response.setToken(token);
         response.setNickname(admin.getNickname());
         response.setAvatar(admin.getAvatar());
+        response.setRole("ADMIN");
         return response;
     }
 

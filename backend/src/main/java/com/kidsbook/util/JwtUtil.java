@@ -23,21 +23,37 @@ public class JwtUtil {
     }
 
     public String generateToken(String username) {
-        return Jwts.builder()
+        return generateToken(username, "ADMIN", null);
+    }
+
+    public String generateToken(String username, String role, Long readerId) {
+        var builder = Jwts.builder()
                 .subject(username)
+                .claim("role", role)
                 .issuedAt(new Date())
                 .expiration(new Date(System.currentTimeMillis() + expiration))
-                .signWith(getKey())
-                .compact();
+                .signWith(getKey());
+        if (readerId != null) {
+            builder.claim("readerId", readerId);
+        }
+        return builder.compact();
     }
 
     public String getUsernameFromToken(String token) {
-        Claims claims = Jwts.parser()
-                .verifyWith(getKey())
-                .build()
-                .parseSignedClaims(token)
-                .getPayload();
-        return claims.getSubject();
+        return getClaims(token).getSubject();
+    }
+
+    public String getRoleFromToken(String token) {
+        String role = (String) getClaims(token).get("role");
+        return role != null ? role : "ADMIN";
+    }
+
+    public Long getReaderIdFromToken(String token) {
+        Object readerId = getClaims(token).get("readerId");
+        if (readerId instanceof Number) {
+            return ((Number) readerId).longValue();
+        }
+        return null;
     }
 
     public boolean validateToken(String token) {
@@ -47,5 +63,13 @@ public class JwtUtil {
         } catch (Exception e) {
             return false;
         }
+    }
+
+    private Claims getClaims(String token) {
+        return Jwts.parser()
+                .verifyWith(getKey())
+                .build()
+                .parseSignedClaims(token)
+                .getPayload();
     }
 }

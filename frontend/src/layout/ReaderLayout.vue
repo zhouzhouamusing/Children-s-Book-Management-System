@@ -2,9 +2,12 @@
   <div class="layout" :class="{ 'is-collapsed': isCollapse }">
     <el-aside class="sidebar" :width="isCollapse ? '64px' : '220px'">
       <div class="sidebar-header">
-        <span class="sidebar-logo">📚</span>
+        <span class="sidebar-logo">📖</span>
         <transition name="fade">
-          <span v-if="!isCollapse" class="sidebar-title">童书乐园</span>
+          <div v-if="!isCollapse" class="sidebar-title-group">
+            <span class="sidebar-title">童书乐园</span>
+            <span class="sidebar-subtitle">读者中心</span>
+          </div>
         </transition>
       </div>
       <el-menu
@@ -16,21 +19,21 @@
         text-color="#4A4A4A"
         active-text-color="#957DAD"
       >
-        <el-menu-item index="/dashboard">
-          <el-icon><DataAnalysis /></el-icon>
-          <template #title>数据概览</template>
-        </el-menu-item>
-        <el-menu-item index="/books">
+        <el-menu-item index="/reader/my-borrows">
           <el-icon><Reading /></el-icon>
-          <template #title>图书管理</template>
+          <template #title>我的借阅</template>
         </el-menu-item>
-        <el-menu-item index="/categories">
-          <el-icon><FolderOpened /></el-icon>
-          <template #title>分类管理</template>
+        <el-menu-item index="/reader/reservations">
+          <el-icon><Calendar /></el-icon>
+          <template #title>预约图书</template>
         </el-menu-item>
-        <el-menu-item index="/readers">
-          <el-icon><UserFilled /></el-icon>
-          <template #title>读者管理</template>
+        <el-menu-item index="/reader/books">
+          <el-icon><Search /></el-icon>
+          <template #title>图书浏览</template>
+        </el-menu-item>
+        <el-menu-item index="/reader/profile">
+          <el-icon><User /></el-icon>
+          <template #title>个人信息</template>
         </el-menu-item>
       </el-menu>
     </el-aside>
@@ -38,11 +41,7 @@
     <div class="main-container">
       <el-header class="header">
         <div class="header-left">
-          <el-button
-            text
-            @click="isCollapse = !isCollapse"
-            class="collapse-btn"
-          >
+          <el-button text @click="isCollapse = !isCollapse" class="collapse-btn">
             <el-icon :size="20">
               <Fold v-if="!isCollapse" />
               <Expand v-else />
@@ -80,7 +79,7 @@ import { ElMessageBox, ElMessage } from 'element-plus'
 const route = useRoute()
 const router = useRouter()
 const isCollapse = ref(false)
-const nickname = ref(localStorage.getItem('nickname') || '管理员')
+const nickname = ref(localStorage.getItem('nickname') || '读者')
 
 const handleLogout = () => {
   ElMessageBox.confirm('确定要退出登录吗？', '提示', {
@@ -129,6 +128,12 @@ const handleLogout = () => {
   font-size: 28px;
 }
 
+.sidebar-title-group {
+  display: flex;
+  flex-direction: column;
+  line-height: 1.2;
+}
+
 .sidebar-title {
   font-size: 18px;
   font-weight: 700;
@@ -136,31 +141,25 @@ const handleLogout = () => {
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
-  white-space: nowrap;
+}
+
+.sidebar-subtitle {
+  font-size: 11px;
+  color: var(--text-secondary);
+  letter-spacing: 2px;
 }
 
 .sidebar-menu {
-  border-right: none !important;
-  padding: 10px 8px;
-}
-
-.sidebar-menu .el-menu-item {
-  border-radius: var(--radius-sm);
-  margin-bottom: 4px;
-  height: 48px;
-  line-height: 48px;
-}
-
-.sidebar-menu .el-menu-item.is-active {
-  background: linear-gradient(135deg, var(--green-light), var(--blue-light)) !important;
+  border-right: none;
+  padding: 12px 8px;
 }
 
 .main-container {
   flex: 1;
-  display: flex;
-  flex-direction: column;
   margin-left: 220px;
   transition: margin-left 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  display: flex;
+  flex-direction: column;
   min-height: 100vh;
 }
 
@@ -171,14 +170,14 @@ const handleLogout = () => {
 .header {
   height: 64px;
   background: white;
+  border-bottom: 1px solid #F5F5F5;
   display: flex;
   align-items: center;
   justify-content: space-between;
   padding: 0 24px;
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.04);
   position: sticky;
   top: 0;
-  z-index: 50;
+  z-index: 99;
 }
 
 .header-left {
@@ -188,11 +187,12 @@ const handleLogout = () => {
 }
 
 .collapse-btn {
-  font-size: 20px;
+  padding: 8px;
+  color: var(--text-secondary);
 }
 
 .page-title {
-  font-size: 18px;
+  font-size: 16px;
   font-weight: 600;
   color: var(--text-primary);
 }
@@ -209,53 +209,62 @@ const handleLogout = () => {
 }
 
 .logout-btn {
-  background: linear-gradient(135deg, #FF6B81, #FF8A9E) !important;
+  background: linear-gradient(135deg, #FFB3BA, #FF8A9B) !important;
   border: none !important;
-  color: #fff !important;
-  font-size: 13px;
+  color: white !important;
+  border-radius: 20px !important;
   padding: 8px 16px !important;
-  height: 36px;
+  font-size: 13px;
 }
 
 .logout-btn:hover {
-  background: linear-gradient(135deg, #FF4757, #FF6B81) !important;
-  transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(255, 107, 129, 0.4);
+  background: linear-gradient(135deg, #FF8A9B, #FFB3BA) !important;
+  transform: translateY(-1px);
 }
 
 .content {
+  flex: 1;
   padding: 24px;
   background: var(--bg-main);
-  flex: 1;
-  overflow-x: hidden;
-  position: relative;
 }
 
 .page-wrapper {
-  width: 100%;
+  animation: slideInUp 0.3s ease;
+}
+
+.page-fade-enter-active,
+.page-fade-leave-active {
+  transition: all 0.3s ease;
+}
+
+.page-fade-enter-from {
+  opacity: 0;
+  transform: translateY(10px);
+}
+
+.page-fade-leave-to {
+  opacity: 0;
+  transform: translateY(-10px);
 }
 
 .fade-enter-active,
 .fade-leave-active {
   transition: opacity 0.3s;
 }
+
 .fade-enter-from,
 .fade-leave-to {
   opacity: 0;
 }
 
-.page-fade-enter-active,
-.page-fade-leave-active {
-  transition: opacity 0.25s ease, transform 0.25s ease;
-}
-
-.page-fade-enter-from {
-  opacity: 0;
-  transform: translateY(12px);
-}
-
-.page-fade-leave-to {
-  opacity: 0;
-  transform: translateY(-8px);
+@keyframes slideInUp {
+  from {
+    opacity: 0;
+    transform: translateY(16px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 </style>
