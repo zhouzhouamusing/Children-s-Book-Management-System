@@ -26,6 +26,7 @@ public class BorrowService {
     private final BorrowRecordMapper borrowRecordMapper;
     private final BookMapper bookMapper;
     private final ReaderMapper readerMapper;
+    private final ReaderPointsService readerPointsService;
 
     @Transactional
     public void borrowBook(BorrowRequest request) {
@@ -71,6 +72,8 @@ public class BorrowService {
         reader.setBorrowCount(reader.getBorrowCount() + 1);
         readerMapper.updateById(reader);
 
+        readerPointsService.onBorrow(reader.getId(), record.getId(), book.getTitle());
+
         log.info("借书成功: 读者={}, 图书={}", reader.getName(), book.getTitle());
     }
 
@@ -94,13 +97,16 @@ public class BorrowService {
             bookMapper.updateById(book);
         }
 
-        if ("overdue".equals(record.getStatus()) || LocalDate.now().isAfter(record.getDueDate())) {
+        boolean isOverdue = LocalDate.now().isAfter(record.getDueDate());
+        if (isOverdue) {
             Reader reader = readerMapper.selectById(record.getReaderId());
             if (reader != null) {
                 reader.setOverdueCount(reader.getOverdueCount() + 1);
                 readerMapper.updateById(reader);
             }
         }
+
+        readerPointsService.onReturn(record.getReaderId(), record.getId(), record.getBookTitle(), !isOverdue);
 
         log.info("还书成功: recordId={}, 图书={}", recordId, record.getBookTitle());
     }

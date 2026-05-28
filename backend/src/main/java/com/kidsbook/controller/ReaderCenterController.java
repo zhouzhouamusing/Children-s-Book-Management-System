@@ -14,6 +14,7 @@ import com.kidsbook.mapper.BookMapper;
 import com.kidsbook.mapper.BorrowRecordMapper;
 import com.kidsbook.mapper.ReaderMapper;
 import com.kidsbook.service.BookReservationService;
+import com.kidsbook.service.ReaderPointsService;
 import com.kidsbook.util.JwtUtil;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -35,6 +36,7 @@ public class ReaderCenterController {
     private final BorrowRecordMapper borrowRecordMapper;
     private final BookMapper bookMapper;
     private final BookReservationService reservationService;
+    private final ReaderPointsService readerPointsService;
     private final JwtUtil jwtUtil;
 
     private Long getCurrentReaderId() {
@@ -176,7 +178,7 @@ public class ReaderCenterController {
                 .count();
 
         Map<String, Long> categoryMap = allRecords.stream()
-                .filter(r -> r.getBookTitle() != null)
+                .filter(r -> r.getBookId() != null)
                 .collect(Collectors.groupingBy(
                         r -> {
                             Book book = bookMapper.selectById(r.getBookId());
@@ -196,14 +198,16 @@ public class ReaderCenterController {
                 })
                 .collect(Collectors.toList());
 
-        long totalPoints = totalBorrows * 10;
+        Map<String, Object> pointsStats = readerPointsService.getStatistics(readerId);
 
         Map<String, Object> data = new HashMap<>();
         data.put("totalBorrows", totalBorrows);
         data.put("thisMonthBorrows", thisMonthBorrows);
         data.put("totalBooks", totalBorrows);
         data.put("readingDays", readingDays);
-        data.put("totalPoints", totalPoints);
+        data.put("totalPoints", pointsStats.get("totalPoints"));
+        data.put("level", pointsStats.get("level"));
+        data.put("monthlyStats", pointsStats.get("monthlyStats"));
         data.put("categoryDistribution", categoryDistribution);
         return Result.success(data);
     }
@@ -211,12 +215,7 @@ public class ReaderCenterController {
     @GetMapping("/points")
     public Result<Map<String, Object>> getPoints() {
         Long readerId = getCurrentReaderId();
-        long totalBorrows = borrowRecordMapper.countByReaderId(readerId);
-        long totalPoints = totalBorrows * 10;
-
-        Map<String, Object> data = new HashMap<>();
-        data.put("totalPoints", totalPoints);
-        data.put("level", totalPoints >= 500 ? "阅读大师" : totalPoints >= 200 ? "阅读达人" : totalPoints >= 50 ? "小书虫" : "新手读者");
+        Map<String, Object> data = readerPointsService.getPointsDetail(readerId);
         return Result.success(data);
     }
 }

@@ -28,6 +28,12 @@ public class Reader {
 
     private Integer overdueCount;
 
+    private Integer points;
+
+    private Integer totalReadingDays;
+
+    private String level;
+
     private String remark;
 
     @TableField(fill = FieldFill.INSERT)

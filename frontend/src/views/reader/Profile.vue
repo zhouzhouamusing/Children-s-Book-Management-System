@@ -198,6 +198,7 @@ const statistics = reactive({
   thisMonthBorrows: 0,
   totalBooks: 0,
   readingDays: 0,
+  level: '',
   categoryDistribution: []
 })
 
@@ -275,6 +276,7 @@ const fetchStatistics = async () => {
     statistics.totalBooks = data.totalBooks || 0
     statistics.readingDays = data.readingDays || 0
     statistics.totalPoints = data.totalPoints || 0
+    statistics.level = data.level || ''
     const cats = data.categoryDistribution || []
     const maxCount = Math.max(...cats.map(c => c.count), 1)
     statistics.categoryDistribution = cats.map((c, i) => ({

@@ -29,6 +29,7 @@ const routes = [
     path: '/',
     component: () => import('@/layout/MainLayout.vue'),
     redirect: '/dashboard',
+    meta: { role: 'ADMIN' },
     children: [
       {
         path: 'dashboard',
@@ -66,6 +67,7 @@ const routes = [
     path: '/reader',
     component: () => import('@/layout/ReaderLayout.vue'),
     redirect: '/reader/my-borrows',
+    meta: { role: 'READER' },
     children: [
       {
         path: 'my-borrows',
@@ -104,23 +106,36 @@ const router = createRouter({
   routes
 })
 
-router.beforeEach((to, from, next) => {
+router.beforeEach((to, from) => {
   const token = localStorage.getItem('token')
   const role = localStorage.getItem('role')
 
   if (to.meta.public) {
     if (token && to.path === '/login') {
-      next(role === 'READER' ? '/reader/my-borrows' : '/dashboard')
-    } else {
-      next()
+      return role === 'READER' ? '/reader/my-borrows' : '/dashboard'
     }
-  } else if (!token) {
-    next('/login')
-  } else if (to.meta.role && to.meta.role !== role) {
-    next(role === 'READER' ? '/reader/my-borrows' : '/dashboard')
-  } else {
-    next()
+    return true
   }
+
+  if (!token) {
+    return '/login'
+  }
+
+  if (to.meta.role && to.meta.role !== role) {
+    if (role === 'READER') {
+      if (to.path === '/reader/my-borrows') return true
+      return '/reader/my-borrows'
+    }
+    if (role === 'ADMIN') {
+      if (to.path === '/dashboard') return true
+      return '/dashboard'
+    }
+    localStorage.removeItem('token')
+    localStorage.removeItem('role')
+    return '/login'
+  }
+
+  return true
 })
 
 router.onError((error) => {
