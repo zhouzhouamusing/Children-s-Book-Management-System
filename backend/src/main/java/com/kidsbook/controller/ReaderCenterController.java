@@ -43,15 +43,27 @@ public class ReaderCenterController {
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
         String token = (String) auth.getCredentials();
         Long readerId = jwtUtil.getReaderIdFromToken(token);
-        if (readerId == null) {
-            throw new RuntimeException("无法获取读者信息");
-        }
         return readerId;
+    }
+
+    private boolean isAdmin() {
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        return auth.getAuthorities().stream()
+                .anyMatch(a -> a.getAuthority().equals("ROLE_ADMIN"));
     }
 
     @GetMapping("/profile")
     public Result<Reader> getProfile() {
         Long readerId = getCurrentReaderId();
+        if (readerId == null) {
+            if (isAdmin()) {
+                Reader adminReader = new Reader();
+                adminReader.setName("管理员");
+                adminReader.setStatus("normal");
+                return Result.success(adminReader);
+            }
+            throw new RuntimeException("无法获取读者信息");
+        }
         Reader reader = readerMapper.selectById(readerId);
         if (reader == null) {
             throw new RuntimeException("读者信息不存在");
@@ -62,6 +74,9 @@ public class ReaderCenterController {
     @PutMapping("/profile")
     public Result<Void> updateProfile(@RequestBody @Valid ReaderProfileUpdateRequest request) {
         Long readerId = getCurrentReaderId();
+        if (readerId == null) {
+            throw new RuntimeException("管理员身份无法修改读者信息");
+        }
         Reader reader = readerMapper.selectById(readerId);
         if (reader == null) {
             throw new RuntimeException("读者信息不存在");
@@ -81,6 +96,16 @@ public class ReaderCenterController {
             @RequestParam(defaultValue = "10") int size,
             @RequestParam(required = false) String status) {
         Long readerId = getCurrentReaderId();
+        Map<String, Object> data = new HashMap<>();
+        if (readerId == null) {
+            data.put("records", List.of());
+            data.put("total", 0);
+            data.put("totalBorrows", 0);
+            data.put("borrowingCount", 0);
+            data.put("overdueCount", 0);
+            data.put("returnedCount", 0);
+            return Result.success(data);
+        }
         LambdaQueryWrapper<BorrowRecord> wrapper = new LambdaQueryWrapper<>();
         wrapper.eq(BorrowRecord::getReaderId, readerId);
         if (status != null && !status.isEmpty() && !"all".equals(status)) {
@@ -97,7 +122,6 @@ public class ReaderCenterController {
         overdueWrapper.eq(BorrowRecord::getReaderId, readerId).eq(BorrowRecord::getStatus, "overdue");
         long overdueCount = borrowRecordMapper.selectCount(overdueWrapper);
 
-        Map<String, Object> data = new HashMap<>();
         data.put("records", result.getRecords());
         data.put("total", result.getTotal());
         data.put("totalBorrows", totalBorrows);
@@ -113,8 +137,13 @@ public class ReaderCenterController {
             @RequestParam(defaultValue = "10") int size,
             @RequestParam(required = false) String status) {
         Long readerId = getCurrentReaderId();
-        IPage<BookReservation> result = reservationService.getMyReservations(readerId, page, size, status);
         Map<String, Object> data = new HashMap<>();
+        if (readerId == null) {
+            data.put("records", List.of());
+            data.put("total", 0);
+            return Result.success(data);
+        }
+        IPage<BookReservation> result = reservationService.getMyReservations(readerId, page, size, status);
         data.put("records", result.getRecords());
         data.put("total", result.getTotal());
         return Result.success(data);
@@ -123,6 +152,9 @@ public class ReaderCenterController {
     @PostMapping("/reservations")
     public Result<Void> createReservation(@RequestBody @Valid ReservationRequest request) {
         Long readerId = getCurrentReaderId();
+        if (readerId == null) {
+            throw new RuntimeException("管理员身份无法进行预约操作");
+        }
         reservationService.createReservation(readerId, request.getBookId());
         return Result.success(null);
     }
@@ -130,6 +162,9 @@ public class ReaderCenterController {
     @PutMapping("/reservations/{id}/cancel")
     public Result<Void> cancelReservation(@PathVariable Long id) {
         Long readerId = getCurrentReaderId();
+        if (readerId == null) {
+            throw new RuntimeException("管理员身份无法进行预约操作");
+        }
         reservationService.cancelReservation(readerId, id);
         return Result.success(null);
     }
@@ -160,6 +195,17 @@ public class ReaderCenterController {
     @GetMapping("/statistics")
     public Result<Map<String, Object>> getStatistics() {
         Long readerId = getCurrentReaderId();
+        Map<String, Object> data = new HashMap<>();
+        if (readerId == null) {
+            data.put("totalBorrows", 0);
+            data.put("thisMonthBorrows", 0);
+            data.put("totalBooks", 0);
+            data.put("readingDays", 0);
+            data.put("totalPoints", 0);
+            data.put("level", "");
+            data.put("categoryDistribution", List.of());
+            return Result.success(data);
+        }
         long totalBorrows = borrowRecordMapper.countByReaderId(readerId);
 
         LambdaQueryWrapper<BorrowRecord> thisMonthWrapper = new LambdaQueryWrapper<>();
@@ -200,7 +246,6 @@ public class ReaderCenterController {
 
         Map<String, Object> pointsStats = readerPointsService.getStatistics(readerId);
 
-        Map<String, Object> data = new HashMap<>();
         data.put("totalBorrows", totalBorrows);
         data.put("thisMonthBorrows", thisMonthBorrows);
         data.put("totalBooks", totalBorrows);
@@ -215,6 +260,12 @@ public class ReaderCenterController {
     @GetMapping("/points")
     public Result<Map<String, Object>> getPoints() {
         Long readerId = getCurrentReaderId();
+        if (readerId == null) {
+            Map<String, Object> data = new HashMap<>();
+            data.put("totalPoints", 0);
+            data.put("logs", List.of());
+            return Result.success(data);
+        }
         Map<String, Object> data = readerPointsService.getPointsDetail(readerId);
         return Result.success(data);
     }

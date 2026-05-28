@@ -59,6 +59,18 @@ const routes = [
         name: 'Borrows',
         component: () => import('@/views/Borrows.vue'),
         meta: { title: '借阅管理', role: 'ADMIN' }
+      },
+      {
+        path: 'admin-applications',
+        name: 'AdminApplications',
+        component: () => import('@/views/AdminApplications.vue'),
+        meta: { title: '管理员审批', role: 'ADMIN' }
+      },
+      {
+        path: 'reader-view',
+        name: 'AdminReaderView',
+        component: () => import('@/views/AdminReaderView.vue'),
+        meta: { title: '读者系统', role: 'ADMIN' }
       }
     ]
   },
@@ -117,20 +129,17 @@ router.beforeEach((to, from) => {
   }
 
   if (!token) {
+    if (to.path === '/login') return true
     return '/login'
   }
 
   if (to.meta.role && to.meta.role !== role) {
     if (role === 'READER') {
-      if (to.path === '/reader/my-borrows') return true
-      return '/reader/my-borrows'
+      return to.path === '/reader/my-borrows' ? true : '/reader/my-borrows'
     }
     if (role === 'ADMIN') {
-      if (to.path === '/dashboard') return true
-      return '/dashboard'
+      return to.path === '/dashboard' ? true : '/dashboard'
     }
-    localStorage.removeItem('token')
-    localStorage.removeItem('role')
     return '/login'
   }
 
@@ -139,8 +148,14 @@ router.beforeEach((to, from) => {
 
 router.onError((error) => {
   if (error.message.includes('Failed to fetch dynamically imported module') ||
-      error.message.includes('Importing a module script failed')) {
-    window.location.reload()
+      error.message.includes('Importing a module script failed') ||
+      error.message.includes('Loading chunk') ||
+      error.message.includes('Loading CSS chunk')) {
+    const currentPath = window.location.hash.slice(1) || '/'
+    console.warn('Dynamic import failed, reloading...', error.message)
+    setTimeout(() => {
+      window.location.reload()
+    }, 100)
   }
 })
 

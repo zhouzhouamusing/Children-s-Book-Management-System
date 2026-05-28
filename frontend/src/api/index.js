@@ -168,3 +168,25 @@ export function getMyStatistics() {
 export function getMyPoints() {
   return request.get('/reader-center/points')
 }
+
+// 管理员申请 API
+export function applyForAdmin(data) {
+  return request.post('/admin-application/apply', data)
+}
+
+export function getMyApplicationStatus() {
+  return request.get('/admin-application/my-status')
+}
+
+export function getAdminApplications(params) {
+  return request.get('/admin-application/list', { params })
+}
+
+export function approveApplication(id) {
+  return request.put(`/admin-application/${id}/approve`)
+}
+
+export function rejectApplication(id, data) {
+  return request.put(`/admin-application/${id}/reject`, data)
+}
+

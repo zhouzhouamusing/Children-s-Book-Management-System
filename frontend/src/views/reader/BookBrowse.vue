@@ -144,10 +144,12 @@ const fetchBooks = async () => {
       keyword: keyword.value,
       category: categoryFilter.value
     })
-    books.value = res.data.records
-    total.value = res.data.total
+    books.value = res.data?.records || []
+    total.value = res.data?.total || 0
   } catch (e) {
     console.error('获取图书列表失败:', e)
+    books.value = []
+    total.value = 0
   } finally {
     loading.value = false
   }
@@ -156,18 +158,20 @@ const fetchBooks = async () => {
 const fetchCategories = async () => {
   try {
     const res = await getAllCategories()
-    categories.value = res.data.map(c => c.name)
+    categories.value = (res.data || []).map(c => c.name)
   } catch (e) {
     console.error('获取分类失败:', e)
+    categories.value = []
   }
 }
 
 const fetchMyReservations = async () => {
   try {
     const res = await getMyReservations({ page: 1, size: 100, status: 'pending' })
-    reservedBookIds.value = new Set(res.data.records.map(r => r.bookId))
+    reservedBookIds.value = new Set((res.data?.records || []).map(r => r.bookId))
   } catch (e) {
     console.error(e)
+    reservedBookIds.value = new Set()
   }
 }
 
@@ -194,12 +198,14 @@ onMounted(() => {
 
 <style scoped>
 .book-browse-page {
-  max-width: 1200px;
-  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  width: 100%;
+  max-width: 100%;
 }
 
 .search-section {
-  margin-bottom: 24px;
 }
 
 .search-bar {
@@ -217,8 +223,8 @@ onMounted(() => {
 
 .grid-container {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
-  gap: 20px;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 16px;
 }
 
 .book-card {

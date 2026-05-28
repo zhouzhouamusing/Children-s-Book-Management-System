@@ -112,14 +112,16 @@ const fetchRecords = async () => {
       size: pageSize.value,
       status: statusFilter.value === 'all' ? '' : statusFilter.value
     })
-    records.value = res.data.records
-    total.value = res.data.total
-    statsData.totalBorrows = res.data.totalBorrows
-    statsData.borrowingCount = res.data.borrowingCount
-    statsData.returnedCount = res.data.returnedCount
-    statsData.overdueCount = res.data.overdueCount
+    records.value = res.data?.records || []
+    total.value = res.data?.total || 0
+    statsData.totalBorrows = res.data?.totalBorrows || 0
+    statsData.borrowingCount = res.data?.borrowingCount || 0
+    statsData.returnedCount = res.data?.returnedCount || 0
+    statsData.overdueCount = res.data?.overdueCount || 0
   } catch (e) {
     console.error('获取借阅记录失败:', e)
+    records.value = []
+    total.value = 0
   } finally {
     loading.value = false
   }
@@ -130,15 +132,17 @@ onMounted(fetchRecords)
 
 <style scoped>
 .my-borrows-page {
-  max-width: 1200px;
-  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  width: 100%;
+  max-width: 100%;
 }
 
 .stats-row {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
   gap: 16px;
-  margin-bottom: 24px;
 }
 
 .stat-card {
@@ -180,7 +184,6 @@ onMounted(fetchRecords)
 }
 
 .filter-section {
-  margin-bottom: 20px;
 }
 
 .status-filter :deep(.el-radio-button__inner) {
@@ -195,6 +198,7 @@ onMounted(fetchRecords)
   border-radius: var(--radius-md);
   padding: 20px;
   box-shadow: var(--shadow-soft);
+  overflow-x: auto;
 }
 
 .book-title {

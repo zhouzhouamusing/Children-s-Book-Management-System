@@ -61,9 +61,11 @@
       <el-main class="content">
         <router-view v-slot="{ Component, route: childRoute }">
           <transition name="page-fade" mode="out-in">
-            <div :key="childRoute.path" class="page-wrapper">
-              <component :is="Component" />
-            </div>
+            <keep-alive :max="5">
+              <div :key="childRoute.path" class="page-wrapper">
+                <component :is="Component" />
+              </div>
+            </keep-alive>
           </transition>
         </router-view>
       </el-main>
@@ -224,11 +226,14 @@ const handleLogout = () => {
 
 .content {
   flex: 1;
-  padding: 24px;
+  padding: 20px;
   background: var(--bg-main);
+  overflow-x: hidden;
 }
 
 .page-wrapper {
+  width: 100%;
+  max-width: 100%;
   animation: slideInUp 0.3s ease;
 }
 

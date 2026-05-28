@@ -238,6 +238,25 @@ CREATE TABLE `reader_monthly_stats` (
     KEY `idx_reader_id` (`reader_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='读者月度统计表';
 
+-- 管理员申请表
+DROP TABLE IF EXISTS `admin_application`;
+CREATE TABLE `admin_application` (
+    `id` BIGINT NOT NULL AUTO_INCREMENT COMMENT '主键ID',
+    `reader_id` BIGINT NOT NULL COMMENT '读者ID',
+    `reader_name` VARCHAR(50) DEFAULT NULL COMMENT '读者姓名',
+    `username` VARCHAR(50) DEFAULT NULL COMMENT '读者账号用户名',
+    `reason` VARCHAR(500) NOT NULL COMMENT '申请理由',
+    `status` VARCHAR(20) DEFAULT 'pending' COMMENT '状态：pending-待审批 approved-已通过 rejected-已拒绝',
+    `reject_reason` VARCHAR(200) DEFAULT NULL COMMENT '拒绝原因',
+    `approved_by` BIGINT DEFAULT NULL COMMENT '审批人ID',
+    `approved_time` DATETIME DEFAULT NULL COMMENT '审批时间',
+    `create_time` DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+    `update_time` DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+    PRIMARY KEY (`id`),
+    KEY `idx_reader_id` (`reader_id`),
+    KEY `idx_status` (`status`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='管理员申请表';
+
 -- 示例积分记录
 INSERT INTO `reader_points_log` (`reader_id`, `points`, `type`, `description`, `borrow_record_id`, `create_time`) VALUES
 (1, 10, 'borrow', '借阅《小王子》', 1, '2025-12-01 10:00:00'),

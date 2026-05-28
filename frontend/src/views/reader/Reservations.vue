@@ -152,10 +152,12 @@ const fetchReservations = async () => {
       size: pageSize.value,
       status: statusFilter.value === 'all' ? '' : statusFilter.value
     })
-    reservations.value = res.data.records
-    total.value = res.data.total
+    reservations.value = res.data?.records || []
+    total.value = res.data?.total || 0
   } catch (e) {
     console.error('获取预约列表失败:', e)
+    reservations.value = []
+    total.value = 0
   } finally {
     loading.value = false
   }
@@ -182,15 +184,17 @@ onMounted(fetchReservations)
 
 <style scoped>
 .reservations-page {
-  max-width: 1200px;
-  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  width: 100%;
+  max-width: 100%;
 }
 
 .page-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 24px;
 }
 
 .section-title {
@@ -201,7 +205,6 @@ onMounted(fetchReservations)
 }
 
 .filter-section {
-  margin-bottom: 24px;
 }
 
 .status-filter :deep(.el-radio-button__inner) {
@@ -213,8 +216,8 @@ onMounted(fetchReservations)
 
 .card-container {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-  gap: 20px;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 16px;
 }
 
 .reservation-card {

@@ -168,13 +168,74 @@
         </transition>
       </el-form>
     </div>
+
+    <!-- Apply for Admin Section -->
+    <div class="admin-apply-section animate__animated animate__fadeInUp" style="animation-delay: 0.4s">
+      <div class="section-header">
+        <h3><span class="section-icon">🔑</span> 申请成为管理员</h3>
+      </div>
+      <div class="apply-content">
+        <div v-if="adminApp.loading" class="apply-loading">
+          <el-icon class="is-loading"><Loading /></el-icon> 加载中...
+        </div>
+        <div v-else-if="adminApp.hasApplication && adminApp.status === 'pending'" class="apply-status pending">
+          <div class="status-icon">⏳</div>
+          <div class="status-info">
+            <h4>申请审核中</h4>
+            <p>您的管理员申请已提交，请等待管理员审批。</p>
+            <p class="apply-time">申请时间：{{ formatDate(adminApp.createTime) }}</p>
+          </div>
+        </div>
+        <div v-else-if="adminApp.hasApplication && adminApp.status === 'approved'" class="apply-status approved">
+          <div class="status-icon">✅</div>
+          <div class="status-info">
+            <h4>申请已通过</h4>
+            <p>恭喜！您的管理员申请已通过，请使用同一账号以管理员身份登录。</p>
+          </div>
+        </div>
+        <div v-else-if="adminApp.hasApplication && adminApp.status === 'rejected'" class="apply-status rejected">
+          <div class="status-icon">❌</div>
+          <div class="status-info">
+            <h4>申请被拒绝</h4>
+            <p v-if="adminApp.rejectReason">原因：{{ adminApp.rejectReason }}</p>
+            <el-button type="primary" size="small" round @click="adminApp.showForm = true" style="margin-top: 8px">
+              重新申请
+            </el-button>
+          </div>
+        </div>
+        <div v-else class="apply-form-area">
+          <p class="apply-desc">如果您希望参与图书馆的管理工作，可以提交申请。审核通过后您的账号将获得管理员权限。</p>
+          <el-button type="primary" round @click="adminApp.showForm = true" v-if="!adminApp.showForm">
+            提交申请
+          </el-button>
+        </div>
+        <transition name="slide-fade">
+          <div v-if="adminApp.showForm" class="apply-form">
+            <el-input
+              v-model="adminApp.reason"
+              type="textarea"
+              :rows="3"
+              placeholder="请简要说明您申请成为管理员的理由..."
+              maxlength="200"
+              show-word-limit
+            />
+            <div class="apply-form-actions">
+              <el-button round @click="adminApp.showForm = false">取消</el-button>
+              <el-button type="primary" round :loading="adminApp.submitting" @click="submitAdminApplication">
+                提交申请
+              </el-button>
+            </div>
+          </div>
+        </transition>
+      </div>
+    </div>
   </div>
 </template>
 
 <script setup>
 import { ref, reactive, computed, onMounted } from 'vue'
 import { ElMessage } from 'element-plus'
-import { getMyProfile, updateMyProfile, getMyStatistics, getMyPoints } from '@/api'
+import { getMyProfile, updateMyProfile, getMyStatistics, getMyPoints, applyForAdmin, getMyApplicationStatus } from '@/api'
 
 const formRef = ref(null)
 const editing = ref(false)
@@ -333,27 +394,76 @@ const saveProfile = async () => {
   }
 }
 
+const adminApp = reactive({
+  loading: false,
+  hasApplication: false,
+  status: '',
+  reason: '',
+  rejectReason: '',
+  createTime: '',
+  showForm: false,
+  submitting: false
+})
+
+const fetchAdminAppStatus = async () => {
+  adminApp.loading = true
+  try {
+    const res = await getMyApplicationStatus()
+    const data = res.data
+    adminApp.hasApplication = data.hasApplication
+    adminApp.status = data.status || ''
+    adminApp.rejectReason = data.rejectReason || ''
+    adminApp.createTime = data.createTime || ''
+  } catch (e) {
+    console.error('获取申请状态失败:', e)
+  } finally {
+    adminApp.loading = false
+  }
+}
+
+const submitAdminApplication = async () => {
+  if (!adminApp.reason || adminApp.reason.trim().length < 5) {
+    ElMessage.warning('请填写至少5个字的申请理由')
+    return
+  }
+  adminApp.submitting = true
+  try {
+    await applyForAdmin({ reason: adminApp.reason })
+    ElMessage.success('申请已提交，请等待管理员审批')
+    adminApp.showForm = false
+    adminApp.hasApplication = true
+    adminApp.status = 'pending'
+  } catch (e) {
+    console.error('提交申请失败:', e)
+  } finally {
+    adminApp.submitting = false
+  }
+}
+
 onMounted(() => {
   fetchProfile()
   fetchStatistics()
+  fetchAdminAppStatus()
 })
 </script>
 
 <style scoped>
 .profile-page {
-  max-width: 960px;
-  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  width: 100%;
+  max-width: 100%;
 }
 
 .profile-header {
   background: white;
   border-radius: var(--radius-lg);
-  padding: 32px;
+  padding: 28px;
   box-shadow: var(--shadow-soft);
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 24px;
   position: relative;
   overflow: hidden;
 }
@@ -449,9 +559,8 @@ onMounted(() => {
 .profile-form-section {
   background: white;
   border-radius: var(--radius-lg);
-  padding: 28px 32px;
+  padding: 24px 28px;
   box-shadow: var(--shadow-soft);
-  margin-bottom: 24px;
 }
 
 .section-header {
@@ -685,6 +794,89 @@ onMounted(() => {
   padding-top: 16px;
   border-top: 1px solid #f5f5f5;
   margin-top: 12px;
+}
+
+/* Admin Application */
+.admin-apply-section {
+  background: white;
+  border-radius: var(--radius-lg);
+  padding: 24px 28px;
+  box-shadow: var(--shadow-soft);
+}
+
+.apply-content {
+  padding-top: 4px;
+}
+
+.apply-loading {
+  color: var(--text-secondary);
+  font-size: 14px;
+  padding: 12px 0;
+}
+
+.apply-status {
+  display: flex;
+  align-items: flex-start;
+  gap: 16px;
+  padding: 16px;
+  border-radius: var(--radius-sm);
+}
+
+.apply-status.pending {
+  background: #FFF8E1;
+}
+
+.apply-status.approved {
+  background: #E8F5E9;
+}
+
+.apply-status.rejected {
+  background: #FFEBEE;
+}
+
+.status-icon {
+  font-size: 32px;
+  flex-shrink: 0;
+}
+
+.status-info h4 {
+  margin: 0 0 4px;
+  font-size: 15px;
+  color: var(--text-primary);
+}
+
+.status-info p {
+  margin: 0;
+  font-size: 13px;
+  color: var(--text-secondary);
+}
+
+.apply-time {
+  margin-top: 4px;
+  font-size: 12px !important;
+}
+
+.apply-desc {
+  font-size: 14px;
+  color: var(--text-secondary);
+  margin: 0 0 16px;
+}
+
+.apply-form {
+  margin-top: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.apply-form-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+}
+
+.apply-form-area {
+  padding: 4px 0;
 }
 
 /* Transitions */

@@ -36,6 +36,14 @@
           <el-icon><Notebook /></el-icon>
           <template #title>借阅管理</template>
         </el-menu-item>
+        <el-menu-item index="/admin-applications">
+          <el-icon><Stamp /></el-icon>
+          <template #title>管理员审批</template>
+        </el-menu-item>
+        <el-menu-item index="/reader-view">
+          <el-icon><View /></el-icon>
+          <template #title>读者系统</template>
+        </el-menu-item>
       </el-menu>
     </el-aside>
 

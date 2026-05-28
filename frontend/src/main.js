@@ -18,4 +18,14 @@ app.use(createPinia())
 app.use(router)
 app.use(ElementPlus, { size: 'default' })
 
+app.config.errorHandler = (err, instance, info) => {
+  console.error('Global error:', err, info)
+  if (err.message && (
+    err.message.includes('Failed to fetch dynamically imported module') ||
+    err.message.includes('Loading chunk')
+  )) {
+    window.location.reload()
+  }
+}
+
 app.mount('#app')
