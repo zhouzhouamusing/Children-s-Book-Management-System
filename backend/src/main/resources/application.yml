@@ -10,8 +10,8 @@ spring:
   mail:
     host: smtp.qq.com
     port: 587
-    username: your-email@qq.com
-    password: your-smtp-auth-code
+    username: ${MAIL_USERNAME:test@qq.com}
+    password: ${MAIL_PASSWORD:test}
     properties:
       mail:
         smtp:
@@ -19,6 +19,9 @@ spring:
           starttls:
             enable: true
             required: true
+          connectiontimeout: 5000
+          timeout: 5000
+          writetimeout: 5000
         transport:
           protocol: smtp
 
