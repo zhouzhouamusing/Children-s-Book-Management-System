@@ -401,9 +401,7 @@ const fetchReaders = async () => {
     readerList.value = res.data.records
     total.value = res.data.total
   } catch (e) {
-    // mock data for frontend development
-    readerList.value = getMockReaders()
-    total.value = readerList.value.length
+    // handled by interceptor
   } finally {
     loading.value = false
   }
@@ -456,26 +454,7 @@ const handleSubmit = async () => {
     dialogVisible.value = false
     fetchReaders()
   } catch (e) {
-    if (isEdit.value) {
-      const idx = readerList.value.findIndex(r => r.id === form.id)
-      if (idx !== -1) {
-        readerList.value[idx] = { ...readerList.value[idx], ...form }
-        ElMessage.success('读者信息更新成功！')
-        dialogVisible.value = false
-      }
-    } else {
-      const newReader = {
-        ...form,
-        id: Date.now(),
-        status: 'normal',
-        borrowCount: 0,
-        overdueCount: 0
-      }
-      readerList.value.unshift(newReader)
-      total.value++
-      ElMessage.success('读者添加成功！')
-      dialogVisible.value = false
-    }
+    // handled by interceptor
   } finally {
     submitLoading.value = false
   }
@@ -496,11 +475,11 @@ const handleToggleStatus = (reader) => {
   ).then(async () => {
     try {
       await updateReaderStatus(reader.id, newStatus)
+      reader.status = newStatus
+      ElMessage.success(`已${actionText}`)
     } catch (e) {
-      // fallback for mock
+      // handled by interceptor
     }
-    reader.status = newStatus
-    ElMessage.success(`已${actionText}`)
   }).catch(() => {})
 }
 
@@ -517,12 +496,12 @@ const handleDelete = (reader) => {
   ).then(async () => {
     try {
       await deleteReader(reader.id)
+      readerList.value = readerList.value.filter(r => r.id !== reader.id)
+      total.value--
+      ElMessage.success('删除成功！')
     } catch (e) {
-      // fallback for mock
+      // handled by interceptor
     }
-    readerList.value = readerList.value.filter(r => r.id !== reader.id)
-    total.value--
-    ElMessage.success('删除成功！')
   }).catch(() => {})
 }
 
@@ -545,32 +524,10 @@ const fetchBorrowRecords = async () => {
     borrowRecords.value = res.data.records
     recordsTotal.value = res.data.total
   } catch (e) {
-    borrowRecords.value = getMockBorrowRecords()
-    recordsTotal.value = borrowRecords.value.length
+    // handled by interceptor
   } finally {
     recordsLoading.value = false
   }
-}
-
-function getMockReaders() {
-  return [
-    { id: 1, name: '小明', age: 8, gender: 'male', parentPhone: '13800138001', parentName: '张先生', status: 'normal', borrowCount: 12, overdueCount: 0, remark: '' },
-    { id: 2, name: '小红', age: 6, gender: 'female', parentPhone: '13800138002', parentName: '李女士', status: 'normal', borrowCount: 8, overdueCount: 1, remark: '喜欢绘本' },
-    { id: 3, name: '小刚', age: 10, gender: 'male', parentPhone: '13800138003', parentName: '王先生', status: 'suspended', borrowCount: 15, overdueCount: 4, remark: '' },
-    { id: 4, name: '小美', age: 7, gender: 'female', parentPhone: '13800138004', parentName: '赵女士', status: 'normal', borrowCount: 5, overdueCount: 0, remark: '对科普类感兴趣' },
-    { id: 5, name: '小杰', age: 9, gender: 'male', parentPhone: '13800138005', parentName: '刘先生', status: 'normal', borrowCount: 20, overdueCount: 2, remark: '' },
-    { id: 6, name: '小雪', age: 5, gender: 'female', parentPhone: '13800138006', parentName: '陈女士', status: 'normal', borrowCount: 3, overdueCount: 0, remark: '刚入学' },
-  ]
-}
-
-function getMockBorrowRecords() {
-  return [
-    { id: 1, bookTitle: '小王子', borrowDate: '2025-12-01', dueDate: '2025-12-15', returnDate: '2025-12-14', status: 'returned' },
-    { id: 2, bookTitle: '格林童话', borrowDate: '2025-12-10', dueDate: '2025-12-24', returnDate: null, status: 'overdue' },
-    { id: 3, bookTitle: '十万个为什么', borrowDate: '2026-01-05', dueDate: '2026-01-19', returnDate: '2026-01-18', status: 'returned' },
-    { id: 4, bookTitle: '安徒生童话', borrowDate: '2026-02-01', dueDate: '2026-02-15', returnDate: null, status: 'borrowing' },
-    { id: 5, bookTitle: '恐龙百科', borrowDate: '2026-03-01', dueDate: '2026-03-15', returnDate: '2026-03-10', status: 'returned' },
-  ]
 }
 
 onMounted(() => {
