@@ -10,6 +10,7 @@ import com.kidsbook.mapper.ReaderMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.CommandLineRunner;
+import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
 
@@ -21,14 +22,55 @@ public class DataInitializer implements CommandLineRunner {
     private final ReaderAccountMapper readerAccountMapper;
     private final ReaderMapper readerMapper;
     private final PasswordEncoder passwordEncoder;
+    private final JdbcTemplate jdbcTemplate;
 
     @Override
     public void run(String... args) {
         try {
+            initTables();
             initAdmin();
             initReaderAccount();
         } catch (Exception e) {
             log.error("数据初始化失败，请检查数据库连接和表结构: {}", e.getMessage(), e);
+        }
+    }
+
+    private void initTables() {
+        try {
+            jdbcTemplate.execute("CREATE TABLE IF NOT EXISTS `reading_progress` (" +
+                "`id` BIGINT AUTO_INCREMENT PRIMARY KEY, " +
+                "`reader_id` BIGINT NOT NULL, " +
+                "`book_id` BIGINT NOT NULL, " +
+                "`book_title` VARCHAR(200) DEFAULT '', " +
+                "`total_pages` INT DEFAULT 0, " +
+                "`current_page` INT DEFAULT 0, " +
+                "`progress_percent` INT DEFAULT 0, " +
+                "`reading_minutes` INT DEFAULT 0, " +
+                "`status` VARCHAR(20) DEFAULT 'reading', " +
+                "`notes` TEXT, " +
+                "`create_time` DATETIME DEFAULT CURRENT_TIMESTAMP, " +
+                "`update_time` DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP, " +
+                "INDEX `idx_rp_reader_id` (`reader_id`), " +
+                "INDEX `idx_rp_book_id` (`book_id`)" +
+                ") ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
+
+            jdbcTemplate.execute("CREATE TABLE IF NOT EXISTS `reading_note` (" +
+                "`id` BIGINT AUTO_INCREMENT PRIMARY KEY, " +
+                "`reader_id` BIGINT NOT NULL, " +
+                "`book_id` BIGINT NOT NULL, " +
+                "`progress_id` BIGINT, " +
+                "`book_title` VARCHAR(200) DEFAULT '', " +
+                "`content` TEXT NOT NULL, " +
+                "`page_number` INT DEFAULT 0, " +
+                "`create_time` DATETIME DEFAULT CURRENT_TIMESTAMP, " +
+                "`update_time` DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP, " +
+                "INDEX `idx_rn_reader_id` (`reader_id`), " +
+                "INDEX `idx_rn_book_id` (`book_id`)" +
+                ") ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
+
+            log.info("=== 阅读进度相关表已就绪 ===");
+        } catch (Exception e) {
+            log.warn("创建阅读进度表时出现警告: {}", e.getMessage());
         }
     }
 

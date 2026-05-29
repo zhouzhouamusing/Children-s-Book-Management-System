@@ -99,6 +99,18 @@ const routes = [
         meta: { title: '图书浏览', role: 'READER' }
       },
       {
+        path: 'recommend',
+        name: 'BookRecommend',
+        component: () => import('@/views/reader/BookRecommend.vue'),
+        meta: { title: '图书推荐', role: 'READER' }
+      },
+      {
+        path: 'reading-progress',
+        name: 'ReadingProgress',
+        component: () => import('@/views/reader/ReadingProgress.vue'),
+        meta: { title: '阅读进度', role: 'READER' }
+      },
+      {
         path: 'profile',
         name: 'ReaderProfile',
         component: () => import('@/views/reader/Profile.vue'),

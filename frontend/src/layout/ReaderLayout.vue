@@ -31,6 +31,14 @@
           <el-icon><Search /></el-icon>
           <template #title>图书浏览</template>
         </el-menu-item>
+        <el-menu-item index="/reader/recommend">
+          <el-icon><Star /></el-icon>
+          <template #title>图书推荐</template>
+        </el-menu-item>
+        <el-menu-item index="/reader/reading-progress">
+          <el-icon><TrendCharts /></el-icon>
+          <template #title>阅读进度</template>
+        </el-menu-item>
         <el-menu-item index="/reader/profile">
           <el-icon><User /></el-icon>
           <template #title>个人中心</template>

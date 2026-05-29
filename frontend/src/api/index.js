@@ -190,3 +190,58 @@ export function rejectApplication(id, data) {
   return request.put(`/admin-application/${id}/reject`, data)
 }
 
+// 图书推荐 API
+export function getRecommendByHistory(params) {
+  return request.get('/reader-center/recommend/by-history', { params })
+}
+
+export function getRecommendByAge(params) {
+  return request.get('/reader-center/recommend/by-age', { params })
+}
+
+export function getRecommendTop10() {
+  return request.get('/reader-center/recommend/top10')
+}
+
+export function getAllRecommendations() {
+  return request.get('/reader-center/recommend/all')
+}
+
+// 阅读进度 API
+export function getReadingProgressList(params) {
+  return request.get('/reader-center/reading-progress', { params })
+}
+
+export function createOrUpdateProgress(data) {
+  return request.post('/reader-center/reading-progress', data)
+}
+
+export function updateProgressStatus(id, data) {
+  return request.put(`/reader-center/reading-progress/${id}/status`, data)
+}
+
+export function deleteProgress(id) {
+  return request.delete(`/reader-center/reading-progress/${id}`)
+}
+
+export function getReadingStatistics() {
+  return request.get('/reader-center/reading-progress/statistics')
+}
+
+// 阅读笔记 API
+export function getReadingNotes(params) {
+  return request.get('/reader-center/reading-progress/notes', { params })
+}
+
+export function addReadingNote(data) {
+  return request.post('/reader-center/reading-progress/notes', data)
+}
+
+export function updateReadingNote(id, data) {
+  return request.put(`/reader-center/reading-progress/notes/${id}`, data)
+}
+
+export function deleteReadingNote(id) {
+  return request.delete(`/reader-center/reading-progress/notes/${id}`)
+}
+

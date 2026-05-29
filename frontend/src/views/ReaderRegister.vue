@@ -62,7 +62,7 @@
               size="large"
               clearable
               maxlength="20"
-              @input="form.name = form.name.replace(/[<>\"'&;]/g, '')"
+              @input="form.name = form.name.replace(/[<>&;]/g, '')"
             />
           </el-form-item>
           <el-form-item prop="parentPhone" label="家长手机号">

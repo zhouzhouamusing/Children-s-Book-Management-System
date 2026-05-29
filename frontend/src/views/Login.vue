@@ -75,6 +75,11 @@
               @blur="focusField = ''"
               @input="form.username = form.username.replace(/[^a-zA-Z0-9_一-龥]/g, '')"
             />
+            <transition name="hint-fade">
+              <div class="input-hint" v-if="focusField === 'username'">
+                <span class="hint-icon">💡</span> 3-20位，支持字母、数字、下划线和中文
+              </div>
+            </transition>
           </el-form-item>
           <el-form-item prop="password">
             <el-input
@@ -88,6 +93,11 @@
               @focus="focusField = 'password'"
               @blur="focusField = ''"
             />
+            <transition name="hint-fade">
+              <div class="input-hint" v-if="focusField === 'password'">
+                <span class="hint-icon">🔒</span> 密码长度为6-32位
+              </div>
+            </transition>
           </el-form-item>
           <div class="form-actions">
             <el-checkbox v-model="rememberMe" class="remember-me">记住我</el-checkbox>
@@ -392,6 +402,36 @@ const handleLogin = async () => {
 
 .login-form :deep(.el-input__wrapper) {
   padding: 4px 12px;
+}
+
+.input-hint {
+  font-size: 12px;
+  color: var(--purple);
+  margin-top: 6px;
+  padding: 4px 10px;
+  background: linear-gradient(135deg, #f8f5ff, #fff9fb);
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.hint-icon {
+  font-size: 12px;
+}
+
+.hint-fade-enter-active {
+  transition: all 0.3s ease;
+}
+
+.hint-fade-leave-active {
+  transition: all 0.2s ease;
+}
+
+.hint-fade-enter-from,
+.hint-fade-leave-to {
+  opacity: 0;
+  transform: translateY(-4px);
 }
 
 .form-actions {
