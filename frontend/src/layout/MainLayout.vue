@@ -44,6 +44,14 @@
           <el-icon><View /></el-icon>
           <template #title>读者系统</template>
         </el-menu-item>
+        <el-menu-item index="/resources">
+          <el-icon><FolderOpened /></el-icon>
+          <template #title>资源管理</template>
+        </el-menu-item>
+        <el-menu-item index="/reviews">
+          <el-icon><ChatDotRound /></el-icon>
+          <template #title>评价管理</template>
+        </el-menu-item>
       </el-menu>
     </el-aside>
 

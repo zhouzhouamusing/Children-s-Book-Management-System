@@ -253,3 +253,79 @@ export function deleteReadingNote(id) {
   return request.delete(`/reader-center/reading-progress/notes/${id}`)
 }
 
+// 文件上传 API
+export function uploadFile(data) {
+  return request.post('/files/upload', data, {
+    headers: { 'Content-Type': 'multipart/form-data' }
+  })
+}
+
+export function uploadFileBatch(data) {
+  return request.post('/files/upload-batch', data, {
+    headers: { 'Content-Type': 'multipart/form-data' }
+  })
+}
+
+export function getFileList(params) {
+  return request.get('/files/list', { params })
+}
+
+export function getBookFiles(bookId) {
+  return request.get(`/files/book/${bookId}`)
+}
+
+export function deleteFile(id) {
+  return request.delete(`/files/${id}`)
+}
+
+// 图书评价 API (读者端)
+export function createReview(data) {
+  return request.post('/reader-center/reviews', data)
+}
+
+export function getMyReviews(params) {
+  return request.get('/reader-center/reviews/my', { params })
+}
+
+export function updateReview(id, data) {
+  return request.put(`/reader-center/reviews/${id}`, data)
+}
+
+export function deleteMyReview(id) {
+  return request.delete(`/reader-center/reviews/${id}`)
+}
+
+export function getBookReviews(bookId, params) {
+  return request.get(`/reader-center/reviews/book/${bookId}`, { params })
+}
+
+export function checkCanReview(bookId) {
+  return request.get(`/reader-center/reviews/check/${bookId}`)
+}
+
+// 图书评价 API (管理端)
+export function getAdminReviews(params) {
+  return request.get('/reviews', { params })
+}
+
+export function approveReview(id) {
+  return request.put(`/reviews/${id}/approve`)
+}
+
+export function rejectReview(id) {
+  return request.put(`/reviews/${id}/reject`)
+}
+
+export function replyReview(id, data) {
+  return request.put(`/reviews/${id}/reply`, data)
+}
+
+export function adminDeleteReview(id) {
+  return request.delete(`/reviews/${id}`)
+}
+
+// 好评推荐
+export function getTopRatedBooks(params) {
+  return request.get('/reader-center/recommend/top-rated', { params })
+}
+

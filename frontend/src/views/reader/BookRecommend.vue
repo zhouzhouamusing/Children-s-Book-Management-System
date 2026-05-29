@@ -101,6 +101,38 @@
         </div>
         <div v-else class="empty-tip">暂无数据</div>
       </div>
+
+      <!-- 好评推荐 -->
+      <div class="recommend-section animate__animated animate__fadeInUp" style="animation-delay: 0.3s">
+        <div class="section-header">
+          <h3><span class="header-icon">⭐</span> 好评推荐</h3>
+          <span class="header-tip">读者评分最高的好书</span>
+        </div>
+        <div class="book-scroll" v-if="topRated.length">
+          <div
+            v-for="(book, index) in topRated"
+            :key="'r-' + book.id"
+            class="book-card"
+            :style="{ animationDelay: `${index * 0.08}s` }"
+          >
+            <div class="book-cover rated-cover">
+              <span class="cover-emoji">⭐</span>
+            </div>
+            <div class="book-info">
+              <h4 class="book-title">{{ book.title }}</h4>
+              <p class="book-author">{{ book.author }}</p>
+              <div class="book-rating">
+                <el-rate :model-value="Number(book.avgRating)" disabled allow-half size="small" :colors="['#FFB3BA', '#FFEAA7', '#B5EAD7']" />
+                <span class="rating-score">{{ book.avgRating }}</span>
+              </div>
+              <div class="book-tags">
+                <el-tag size="small" round effect="plain" class="category-tag">{{ book.category }}</el-tag>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div v-else class="empty-tip">暂无评分数据</div>
+      </div>
     </div>
   </div>
 </template>
@@ -113,6 +145,7 @@ const loading = ref(false)
 const byHistory = ref([])
 const byAge = ref([])
 const top10 = ref([])
+const topRated = ref([])
 
 const fetchRecommendations = async () => {
   loading.value = true
@@ -122,6 +155,7 @@ const fetchRecommendations = async () => {
     byHistory.value = data.byHistory || []
     byAge.value = data.byAge || []
     top10.value = data.top10 || []
+    topRated.value = data.topRated || []
   } catch (e) {
     console.error('获取推荐失败:', e)
   } finally {
@@ -426,5 +460,22 @@ onMounted(() => {
 @keyframes float {
   0%, 100% { transform: translateY(0); }
   50% { transform: translateY(-6px); }
+}
+
+.rated-cover {
+  background: linear-gradient(135deg, #FFEAA7, #FFD1D6);
+}
+
+.book-rating {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 6px;
+}
+
+.rating-score {
+  font-size: 12px;
+  font-weight: 600;
+  color: #FFEAA7;
 }
 </style>

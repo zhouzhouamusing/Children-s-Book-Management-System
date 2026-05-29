@@ -191,6 +191,54 @@
             placeholder="请输入图书简介"
           />
         </el-form-item>
+        <el-form-item label="封面上传">
+          <div class="upload-area">
+            <el-upload
+              class="cover-upload"
+              :action="'/api/files/upload'"
+              :headers="uploadHeaders"
+              :data="{ fileType: 'cover', bookId: bookForm.id || '' }"
+              :show-file-list="false"
+              :on-success="handleCoverSuccess"
+              :before-upload="beforeCoverUpload"
+              accept="image/jpeg,image/png,image/gif"
+            >
+              <div v-if="bookForm.coverUrl" class="cover-preview">
+                <img :src="bookForm.coverUrl" alt="封面" />
+                <div class="cover-mask">
+                  <el-icon><Plus /></el-icon>
+                  <span>更换封面</span>
+                </div>
+              </div>
+              <div v-else class="cover-placeholder">
+                <el-icon :size="32"><Plus /></el-icon>
+                <span>上传封面</span>
+              </div>
+            </el-upload>
+            <div class="upload-tip">支持 JPG/PNG/GIF，不超过10MB</div>
+          </div>
+        </el-form-item>
+        <el-form-item label="PDF绘本">
+          <el-upload
+            class="pdf-upload"
+            :action="'/api/files/upload'"
+            :headers="uploadHeaders"
+            :data="{ fileType: 'pdf', bookId: bookForm.id || '' }"
+            :on-success="handlePdfSuccess"
+            :before-upload="beforePdfUpload"
+            :file-list="pdfFileList"
+            accept="application/pdf"
+            :limit="5"
+          >
+            <el-button type="primary" plain>
+              <el-icon><Upload /></el-icon>
+              上传PDF
+            </el-button>
+            <template #tip>
+              <div class="upload-tip">支持PDF格式，单个不超过50MB，最多5个</div>
+            </template>
+          </el-upload>
+        </el-form-item>
       </el-form>
       <template #footer>
         <el-button @click="dialogVisible = false">取消</el-button>
@@ -203,10 +251,10 @@
 </template>
 
 <script setup>
-import { ref, reactive, onMounted } from 'vue'
+import { ref, reactive, computed, onMounted } from 'vue'
 import { useRoute } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import { getBooks, addBook, updateBook, deleteBook, getCategories, getAllCategories } from '@/api'
+import { getBooks, addBook, updateBook, deleteBook, getCategories, getAllCategories, getBookFiles } from '@/api'
 
 const route = useRoute()
 const tableLoading = ref(false)
@@ -223,6 +271,11 @@ const total = ref(0)
 const bookList = ref([])
 const categories = ref([])
 const categoryDetails = ref([])
+const pdfFileList = ref([])
+
+const uploadHeaders = computed(() => ({
+  Authorization: 'Bearer ' + localStorage.getItem('token')
+}))
 
 const bookForm = reactive({
   id: null,
@@ -307,13 +360,73 @@ const resetForm = () => {
 const handleAdd = () => {
   isEdit.value = false
   resetForm()
+  pdfFileList.value = []
   dialogVisible.value = true
 }
 
 const handleEdit = (row) => {
   isEdit.value = true
   Object.assign(bookForm, { ...row })
+  pdfFileList.value = []
   dialogVisible.value = true
+  if (row.id) {
+    loadBookFiles(row.id)
+  }
+}
+
+const loadBookFiles = async (bookId) => {
+  try {
+    const res = await getBookFiles(bookId)
+    const files = res.data || []
+    pdfFileList.value = files
+      .filter(f => f.fileType === 'pdf')
+      .map(f => ({ name: f.originalName, url: '/uploads/' + f.filePath }))
+  } catch (e) {}
+}
+
+const handleCoverSuccess = (response) => {
+  if (response.code === 200 && response.data) {
+    bookForm.coverUrl = '/uploads/' + response.data.filePath
+    ElMessage.success('封面上传成功')
+  } else {
+    ElMessage.error(response.message || '上传失败')
+  }
+}
+
+const beforeCoverUpload = (file) => {
+  const isImage = ['image/jpeg', 'image/png', 'image/gif'].includes(file.type)
+  const isLt10M = file.size / 1024 / 1024 < 10
+  if (!isImage) {
+    ElMessage.error('仅支持 JPG/PNG/GIF 格式的图片')
+    return false
+  }
+  if (!isLt10M) {
+    ElMessage.error('图片大小不能超过10MB')
+    return false
+  }
+  return true
+}
+
+const handlePdfSuccess = (response) => {
+  if (response.code === 200) {
+    ElMessage.success('PDF上传成功')
+  } else {
+    ElMessage.error(response.message || '上传失败')
+  }
+}
+
+const beforePdfUpload = (file) => {
+  const isPdf = file.type === 'application/pdf'
+  const isLt50M = file.size / 1024 / 1024 < 50
+  if (!isPdf) {
+    ElMessage.error('仅支持PDF格式')
+    return false
+  }
+  if (!isLt50M) {
+    ElMessage.error('文件大小不能超过50MB')
+    return false
+  }
+  return true
 }
 
 const handleSubmit = async () => {
@@ -495,5 +608,77 @@ onMounted(() => {
 .action-btn-delete:hover {
   background: linear-gradient(135deg, #FF4757, #FF6B81) !important;
   box-shadow: 0 3px 8px rgba(255, 107, 129, 0.4);
+}
+
+.upload-area {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.cover-upload :deep(.el-upload) {
+  border: 2px dashed #E0E5F5;
+  border-radius: 12px;
+  cursor: pointer;
+  overflow: hidden;
+  transition: all 0.3s ease;
+}
+
+.cover-upload :deep(.el-upload:hover) {
+  border-color: var(--purple);
+  box-shadow: 0 4px 12px rgba(149, 125, 173, 0.2);
+}
+
+.cover-preview {
+  position: relative;
+  width: 120px;
+  height: 160px;
+}
+
+.cover-preview img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.cover-mask {
+  position: absolute;
+  inset: 0;
+  background: rgba(0,0,0,0.5);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  color: #fff;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+  font-size: 12px;
+}
+
+.cover-preview:hover .cover-mask {
+  opacity: 1;
+}
+
+.cover-placeholder {
+  width: 120px;
+  height: 160px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  color: #999;
+  font-size: 13px;
+}
+
+.upload-tip {
+  font-size: 12px;
+  color: #999;
+}
+
+.pdf-upload :deep(.el-upload-list__item) {
+  border-radius: 8px;
+  transition: all 0.3s ease;
 }
 </style>

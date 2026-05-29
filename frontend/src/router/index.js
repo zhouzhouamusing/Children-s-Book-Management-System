@@ -71,6 +71,18 @@ const routes = [
         name: 'AdminReaderView',
         component: () => import('@/views/AdminReaderView.vue'),
         meta: { title: '读者系统', role: 'ADMIN' }
+      },
+      {
+        path: 'resources',
+        name: 'Resources',
+        component: () => import('@/views/Resources.vue'),
+        meta: { title: '资源管理', role: 'ADMIN' }
+      },
+      {
+        path: 'reviews',
+        name: 'Reviews',
+        component: () => import('@/views/Reviews.vue'),
+        meta: { title: '评价管理', role: 'ADMIN' }
       }
     ]
   },
@@ -109,6 +121,12 @@ const routes = [
         name: 'ReadingProgress',
         component: () => import('@/views/reader/ReadingProgress.vue'),
         meta: { title: '阅读进度', role: 'READER' }
+      },
+      {
+        path: 'my-reviews',
+        name: 'MyReviews',
+        component: () => import('@/views/reader/MyReviews.vue'),
+        meta: { title: '我的评价', role: 'READER' }
       },
       {
         path: 'profile',

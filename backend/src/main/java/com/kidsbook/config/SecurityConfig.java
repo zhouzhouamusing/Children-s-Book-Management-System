@@ -43,7 +43,8 @@ public class SecurityConfig {
         "/",
         "/index.html",
         "/favicon.svg",
-        "/assets/**"
+        "/assets/**",
+        "/uploads/**"
     };
 
     @Bean
@@ -72,6 +73,8 @@ public class SecurityConfig {
                 .requestMatchers("/api/admin-application/apply", "/api/admin-application/my-status").hasRole("READER")
                 .requestMatchers("/api/admin-application/list", "/api/admin-application/*/approve", "/api/admin-application/*/reject").hasRole("ADMIN")
                 .requestMatchers("/api/reader-center/**").hasAnyRole("READER", "ADMIN")
+                .requestMatchers("/api/files/**").hasRole("ADMIN")
+                .requestMatchers("/api/reviews/**").hasRole("ADMIN")
                 .requestMatchers("/api/books/**", "/api/categories/**", "/api/readers/**", "/api/borrows/**").hasRole("ADMIN")
                 .anyRequest().authenticated()
             )

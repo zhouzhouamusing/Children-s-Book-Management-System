@@ -46,6 +46,11 @@
           <div class="book-info">
             <h3 class="book-title">{{ book.title }}</h3>
             <p class="book-author">{{ book.author }}</p>
+            <div class="book-rating" v-if="book.avgRating > 0">
+              <el-rate :model-value="book.avgRating" disabled allow-half :colors="rateColors" size="small" />
+              <span class="rating-num">{{ book.avgRating }}</span>
+              <span class="review-count">{{ book.reviewCount }}条评价</span>
+            </div>
             <div class="book-meta">
               <el-tag size="small" effect="plain" round class="category-tag">
                 {{ book.category }}
@@ -67,6 +72,14 @@
               <template v-else-if="book.stock <= 0">暂无库存</template>
               <template v-else>预约此书</template>
             </el-button>
+            <div class="review-btns">
+              <el-button size="small" text type="primary" @click="openReviews(book)">
+                查看评价
+              </el-button>
+              <el-button size="small" text type="warning" @click="openWriteReview(book)">
+                写评价
+              </el-button>
+            </div>
           </div>
         </div>
       </TransitionGroup>
@@ -105,13 +118,55 @@
         </div>
       </div>
     </el-dialog>
+
+    <!-- 查看评价弹窗 -->
+    <el-dialog v-model="reviewsVisible" :title="'《' + reviewBookTitle + '》的评价'" width="560px" class="reviews-dialog">
+      <div v-loading="reviewsLoading" class="reviews-list">
+        <div v-for="review in bookReviewList" :key="review.id" class="review-item">
+          <div class="review-item-header">
+            <span class="reviewer">👤 {{ review.readerName }}</span>
+            <el-rate :model-value="review.rating" disabled :colors="rateColors" size="small" />
+          </div>
+          <p class="review-text" v-if="review.content">{{ review.content }}</p>
+          <p class="review-text empty" v-else>（无文字评价）</p>
+          <div v-if="review.adminReply" class="review-reply">
+            <span class="reply-badge">管理员回复：</span>{{ review.adminReply }}
+          </div>
+          <span class="review-time">{{ review.createTime }}</span>
+        </div>
+        <el-empty v-if="!reviewsLoading && bookReviewList.length === 0" description="暂无评价，快来写下第一条评价吧！" :image-size="80" />
+      </div>
+    </el-dialog>
+
+    <!-- 写评价弹窗 -->
+    <el-dialog v-model="writeReviewVisible" title="写评价" width="480px" class="write-review-dialog">
+      <div class="write-review-form">
+        <div class="review-book-title">📖 {{ reviewBookTitle }}</div>
+        <div class="review-form-rating">
+          <span class="form-label">我的评分：</span>
+          <el-rate v-model="reviewForm.rating" :colors="rateColors" show-text :texts="['很差', '较差', '一般', '推荐', '强烈推荐']" />
+        </div>
+        <el-input
+          v-model="reviewForm.content"
+          type="textarea"
+          :rows="4"
+          placeholder="分享你的阅读感受吧..."
+          maxlength="500"
+          show-word-limit
+        />
+      </div>
+      <template #footer>
+        <el-button @click="writeReviewVisible = false">取消</el-button>
+        <el-button type="primary" :loading="submitReviewLoading" @click="submitReview">提交评价</el-button>
+      </template>
+    </el-dialog>
   </div>
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, reactive, onMounted } from 'vue'
 import { ElMessage } from 'element-plus'
-import { browseBooks, createReservation, getMyReservations, getAllCategories } from '@/api'
+import { browseBooks, createReservation, getMyReservations, getAllCategories, getBookReviews, checkCanReview, createReview } from '@/api'
 
 const loading = ref(false)
 const books = ref([])
@@ -125,6 +180,17 @@ const reservedBookIds = ref(new Set())
 const reservingId = ref(null)
 const showSuccess = ref(false)
 const lastReservedBook = ref('')
+
+const rateColors = ['#FFB3BA', '#FFEAA7', '#B5EAD7']
+
+// Review state
+const reviewsVisible = ref(false)
+const reviewsLoading = ref(false)
+const reviewBookTitle = ref('')
+const bookReviewList = ref([])
+const writeReviewVisible = ref(false)
+const submitReviewLoading = ref(false)
+const reviewForm = reactive({ bookId: null, rating: 5, content: '' })
 
 let searchTimer = null
 const debouncedSearch = () => {
@@ -186,6 +252,58 @@ const handleReserve = async (book) => {
     console.error('预约失败:', e)
   } finally {
     reservingId.value = null
+  }
+}
+
+const openReviews = async (book) => {
+  reviewBookTitle.value = book.title
+  bookReviewList.value = []
+  reviewsVisible.value = true
+  reviewsLoading.value = true
+  try {
+    const res = await getBookReviews(book.id, { page: 1, size: 20 })
+    bookReviewList.value = res.data?.records || []
+  } catch (e) {} finally {
+    reviewsLoading.value = false
+  }
+}
+
+const openWriteReview = async (book) => {
+  try {
+    const res = await checkCanReview(book.id)
+    const { hasBorrowed, hasReviewed } = res.data
+    if (!hasBorrowed) {
+      ElMessage.warning('只能评价已借阅过的图书哦')
+      return
+    }
+    if (hasReviewed) {
+      ElMessage.info('您已经评价过这本书了，可在"我的评价"中修改')
+      return
+    }
+  } catch (e) {
+    ElMessage.error('检查失败，请稍后再试')
+    return
+  }
+  reviewForm.bookId = book.id
+  reviewForm.rating = 5
+  reviewForm.content = ''
+  reviewBookTitle.value = book.title
+  writeReviewVisible.value = true
+}
+
+const submitReview = async () => {
+  if (!reviewForm.rating) {
+    ElMessage.warning('请选择评分')
+    return
+  }
+  submitReviewLoading.value = true
+  try {
+    await createReview({ bookId: reviewForm.bookId, rating: reviewForm.rating, content: reviewForm.content })
+    ElMessage.success('评价提交成功，等待审核')
+    writeReviewVisible.value = false
+    fetchBooks()
+  } catch (e) {} finally {
+    submitReviewLoading.value = false
   }
 }
 
@@ -425,5 +543,123 @@ onMounted(() => {
 .card-list-leave-to {
   opacity: 0;
   transform: scale(0.9);
+}
+
+.book-rating {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 8px;
+}
+
+.rating-num {
+  font-size: 13px;
+  font-weight: 600;
+  color: #FFEAA7;
+}
+
+.review-count {
+  font-size: 11px;
+  color: var(--text-secondary);
+}
+
+.review-btns {
+  display: flex;
+  justify-content: center;
+  gap: 4px;
+  margin-top: 8px;
+}
+
+.reviews-dialog :deep(.el-dialog__header) {
+  background: linear-gradient(135deg, var(--green-light), var(--blue-light));
+  padding: 16px 20px;
+}
+
+.reviews-list {
+  max-height: 400px;
+  overflow-y: auto;
+}
+
+.review-item {
+  padding: 14px 0;
+  border-bottom: 1px solid #F5F5F5;
+}
+
+.review-item:last-child {
+  border-bottom: none;
+}
+
+.review-item-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+}
+
+.reviewer {
+  font-weight: 500;
+  font-size: 14px;
+  color: var(--text-primary);
+}
+
+.review-text {
+  margin: 0 0 8px 0;
+  font-size: 13px;
+  color: var(--text-primary);
+  line-height: 1.6;
+}
+
+.review-text.empty {
+  color: #CCC;
+  font-style: italic;
+}
+
+.review-reply {
+  background: #F8F9FA;
+  padding: 8px 12px;
+  border-radius: 8px;
+  font-size: 12px;
+  color: var(--text-secondary);
+  margin-bottom: 6px;
+  border-left: 3px solid var(--purple-light);
+}
+
+.reply-badge {
+  font-weight: 600;
+  color: var(--purple);
+}
+
+.review-time {
+  font-size: 11px;
+  color: #BBB;
+}
+
+.write-review-dialog :deep(.el-dialog__header) {
+  background: linear-gradient(135deg, var(--yellow-warm), var(--pink-light));
+  padding: 16px 20px;
+}
+
+.write-review-form {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.review-book-title {
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.review-form-rating {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.form-label {
+  font-size: 14px;
+  color: var(--text-secondary);
+  white-space: nowrap;
 }
 </style>

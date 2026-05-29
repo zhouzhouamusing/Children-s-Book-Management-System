@@ -72,6 +72,52 @@ public class DataInitializer implements CommandLineRunner {
         } catch (Exception e) {
             log.warn("创建阅读进度表时出现警告: {}", e.getMessage());
         }
+
+        try {
+            jdbcTemplate.execute("CREATE TABLE IF NOT EXISTS `book_resource` (" +
+                "`id` BIGINT NOT NULL AUTO_INCREMENT, " +
+                "`book_id` BIGINT DEFAULT NULL, " +
+                "`file_name` VARCHAR(255) NOT NULL, " +
+                "`original_name` VARCHAR(255) NOT NULL, " +
+                "`file_path` VARCHAR(500) NOT NULL, " +
+                "`file_type` VARCHAR(20) NOT NULL, " +
+                "`file_size` BIGINT NOT NULL DEFAULT 0, " +
+                "`mime_type` VARCHAR(100) DEFAULT NULL, " +
+                "`create_time` DATETIME DEFAULT CURRENT_TIMESTAMP, " +
+                "PRIMARY KEY (`id`), " +
+                "KEY `idx_br_book_id` (`book_id`)" +
+                ") ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
+
+            jdbcTemplate.execute("CREATE TABLE IF NOT EXISTS `book_review` (" +
+                "`id` BIGINT NOT NULL AUTO_INCREMENT, " +
+                "`book_id` BIGINT NOT NULL, " +
+                "`reader_id` BIGINT NOT NULL, " +
+                "`reader_name` VARCHAR(50) DEFAULT NULL, " +
+                "`book_title` VARCHAR(200) DEFAULT NULL, " +
+                "`rating` INT NOT NULL, " +
+                "`content` TEXT, " +
+                "`status` VARCHAR(20) NOT NULL DEFAULT 'pending', " +
+                "`admin_reply` TEXT DEFAULT NULL, " +
+                "`reply_time` DATETIME DEFAULT NULL, " +
+                "`create_time` DATETIME DEFAULT CURRENT_TIMESTAMP, " +
+                "`update_time` DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP, " +
+                "PRIMARY KEY (`id`), " +
+                "UNIQUE KEY `uk_book_reader` (`book_id`, `reader_id`), " +
+                "KEY `idx_brev_reader_id` (`reader_id`), " +
+                "KEY `idx_brev_status` (`status`)" +
+                ") ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
+
+            try {
+                jdbcTemplate.execute("ALTER TABLE `book` ADD COLUMN `avg_rating` DECIMAL(2,1) DEFAULT 0.0");
+            } catch (Exception ignored) {}
+            try {
+                jdbcTemplate.execute("ALTER TABLE `book` ADD COLUMN `review_count` INT DEFAULT 0");
+            } catch (Exception ignored) {}
+
+            log.info("=== 图书资源与评价相关表已就绪 ===");
+        } catch (Exception e) {
+            log.warn("创建资源/评价表时出现警告: {}", e.getMessage());
+        }
     }
 
     private void initAdmin() {

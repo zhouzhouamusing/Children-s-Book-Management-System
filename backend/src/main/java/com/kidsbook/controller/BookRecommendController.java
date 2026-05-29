@@ -69,7 +69,13 @@ public class BookRecommendController {
             data.put("byAge", recommendService.getTopBorrowedBooks(6));
         }
         data.put("top10", recommendService.getTopBorrowedBooksWithCount(10));
+        data.put("topRated", recommendService.getTopRatedBooks(6));
 
         return Result.success(data);
+    }
+
+    @GetMapping("/top-rated")
+    public Result<List<Book>> getTopRated(@RequestParam(defaultValue = "10") int limit) {
+        return Result.success(recommendService.getTopRatedBooks(limit));
     }
 }

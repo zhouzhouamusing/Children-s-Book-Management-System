@@ -39,6 +39,10 @@
           <el-icon><TrendCharts /></el-icon>
           <template #title>阅读进度</template>
         </el-menu-item>
+        <el-menu-item index="/reader/my-reviews">
+          <el-icon><ChatLineRound /></el-icon>
+          <template #title>我的评价</template>
+        </el-menu-item>
         <el-menu-item index="/reader/profile">
           <el-icon><User /></el-icon>
           <template #title>个人中心</template>

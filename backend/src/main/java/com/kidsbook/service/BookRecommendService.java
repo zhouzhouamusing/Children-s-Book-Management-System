@@ -57,6 +57,7 @@ public class BookRecommendService {
         bookWrapper.in(Book::getCategory, topCategories)
                 .eq(Book::getStatus, 1)
                 .notIn(Book::getId, borrowedBookIds)
+                .orderByDesc(Book::getAvgRating)
                 .orderByDesc(Book::getCreateTime)
                 .last("LIMIT " + limit);
 
@@ -164,5 +165,15 @@ public class BookRecommendService {
         if (age <= 9) return "6-9";
         if (age <= 12) return "9-12";
         return "12";
+    }
+
+    public List<Book> getTopRatedBooks(int limit) {
+        LambdaQueryWrapper<Book> wrapper = new LambdaQueryWrapper<>();
+        wrapper.eq(Book::getStatus, 1)
+                .gt(Book::getReviewCount, 0)
+                .orderByDesc(Book::getAvgRating)
+                .orderByDesc(Book::getReviewCount)
+                .last("LIMIT " + limit);
+        return bookMapper.selectList(wrapper);
     }
 }
