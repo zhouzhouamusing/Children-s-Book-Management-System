@@ -145,7 +145,7 @@ onMounted(() => {
 .recommend-page {
   display: flex;
   flex-direction: column;
-  gap: 28px;
+  gap: 32px;
 }
 
 .page-header {
@@ -180,6 +180,11 @@ onMounted(() => {
   border-radius: var(--radius-md);
   padding: 28px;
   box-shadow: var(--shadow-soft);
+  transition: all 0.3s ease;
+}
+
+.recommend-section:hover {
+  box-shadow: 0 8px 30px rgba(149, 125, 173, 0.08);
 }
 
 .section-header {

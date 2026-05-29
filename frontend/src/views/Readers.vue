@@ -326,42 +326,50 @@
     <!-- 阅读进度统计弹窗 -->
     <el-dialog
       v-model="readingStatsDialogVisible"
-      :title="`${currentReader.name} 的阅读进度`"
-      width="650px"
+      width="680px"
       destroy-on-close
       class="reading-stats-dialog"
     >
+      <template #header>
+        <div class="rs-dialog-header">
+          <span class="rs-dialog-icon">📊</span>
+          <div class="rs-dialog-title-group">
+            <h3 class="rs-dialog-title">{{ currentReader.name }} 的阅读进度</h3>
+            <span class="rs-dialog-subtitle">阅读数据概览与进度追踪</span>
+          </div>
+        </div>
+      </template>
       <div v-loading="readingStatsLoading">
         <div class="reading-stats-summary">
-          <div class="rs-stat-item">
+          <div class="rs-stat-item" style="--card-accent: var(--blue-light)">
             <span class="rs-stat-icon">⏱️</span>
             <div class="rs-stat-detail">
               <span class="rs-stat-value">{{ readingStats.totalReadingHours || 0 }}</span>
               <span class="rs-stat-label">阅读时长(小时)</span>
             </div>
           </div>
-          <div class="rs-stat-item">
+          <div class="rs-stat-item" style="--card-accent: var(--green-light)">
             <span class="rs-stat-icon">📖</span>
             <div class="rs-stat-detail">
               <span class="rs-stat-value">{{ readingStats.completedBooks || 0 }}</span>
               <span class="rs-stat-label">读完图书</span>
             </div>
           </div>
-          <div class="rs-stat-item">
+          <div class="rs-stat-item" style="--card-accent: var(--purple-light)">
             <span class="rs-stat-icon">📊</span>
             <div class="rs-stat-detail">
               <span class="rs-stat-value">{{ readingStats.completionRate || 0 }}%</span>
               <span class="rs-stat-label">完成率</span>
             </div>
           </div>
-          <div class="rs-stat-item">
+          <div class="rs-stat-item" style="--card-accent: var(--pink-light)">
             <span class="rs-stat-icon">📝</span>
             <div class="rs-stat-detail">
               <span class="rs-stat-value">{{ readingStats.noteCount || 0 }}</span>
               <span class="rs-stat-label">阅读笔记</span>
             </div>
           </div>
-          <div class="rs-stat-item">
+          <div class="rs-stat-item" style="--card-accent: var(--yellow)">
             <span class="rs-stat-icon">📅</span>
             <div class="rs-stat-detail">
               <span class="rs-stat-value">{{ readingStats.totalReadingDays || 0 }}</span>
@@ -371,11 +379,16 @@
         </div>
 
         <div class="reading-progress-list" v-if="readerProgressList.length > 0">
-          <h4 class="rp-list-title">阅读进度列表</h4>
+          <h4 class="rp-list-title">
+            <span class="rp-title-icon">📚</span> 阅读进度列表
+          </h4>
           <div class="rp-item" v-for="item in readerProgressList" :key="item.id">
             <div class="rp-item-info">
-              <span class="rp-book-title">{{ item.bookTitle || '未知图书' }}</span>
-              <el-tag size="small" :type="item.status === 'completed' ? 'success' : item.status === 'paused' ? 'warning' : 'primary'">
+              <div class="rp-book-info">
+                <span class="rp-book-emoji">📘</span>
+                <span class="rp-book-title">{{ item.bookTitle || '未知图书' }}</span>
+              </div>
+              <el-tag size="small" round :type="item.status === 'completed' ? 'success' : item.status === 'paused' ? 'warning' : 'primary'">
                 {{ item.status === 'completed' ? '已完成' : item.status === 'paused' ? '已暂停' : '阅读中' }}
               </el-tag>
             </div>
@@ -384,6 +397,10 @@
                 <div class="rp-bar-fill" :style="{ width: item.progressPercent + '%' }"></div>
               </div>
               <span class="rp-percent">{{ item.progressPercent }}%</span>
+            </div>
+            <div class="rp-item-meta">
+              <span>{{ item.currentPage || 0 }}/{{ item.totalPages || '?' }}页</span>
+              <span>{{ formatReadingTime(item.readingMinutes) }}</span>
             </div>
           </div>
         </div>
@@ -624,6 +641,14 @@ const handleViewReadingStats = async (reader) => {
   } finally {
     readingStatsLoading.value = false
   }
+}
+
+const formatReadingTime = (minutes) => {
+  if (!minutes) return '0分钟'
+  if (minutes < 60) return `${minutes}分钟`
+  const h = Math.floor(minutes / 60)
+  const m = minutes % 60
+  return m > 0 ? `${h}h${m}m` : `${h}小时`
 }
 
 onMounted(() => {
@@ -1124,20 +1149,58 @@ onMounted(() => {
 }
 
 /* 阅读进度统计弹窗 */
+.rs-dialog-header {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.rs-dialog-icon {
+  font-size: 32px;
+}
+
+.rs-dialog-title-group {
+  display: flex;
+  flex-direction: column;
+}
+
+.rs-dialog-title {
+  font-size: 18px;
+  font-weight: 700;
+  margin: 0;
+  background: linear-gradient(135deg, var(--purple), #B48EE0);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.rs-dialog-subtitle {
+  font-size: 12px;
+  color: var(--text-secondary);
+  margin-top: 2px;
+}
+
 .reading-stats-summary {
   display: grid;
   grid-template-columns: repeat(5, 1fr);
-  gap: 14px;
-  margin-bottom: 24px;
+  gap: 12px;
+  margin-bottom: 28px;
 }
 
 .rs-stat-item {
   display: flex;
   align-items: center;
   gap: 10px;
-  padding: 14px;
-  background: linear-gradient(135deg, #fafbff, #fff8fa);
+  padding: 16px 12px;
+  background: var(--card-accent, #fafbff);
   border-radius: var(--radius-sm);
+  transition: all 0.3s ease;
+  border: 1px solid rgba(0, 0, 0, 0.03);
+}
+
+.rs-stat-item:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(149, 125, 173, 0.1);
 }
 
 .rs-stat-icon {
@@ -1158,36 +1221,61 @@ onMounted(() => {
 .rs-stat-label {
   font-size: 11px;
   color: var(--text-secondary);
+  margin-top: 2px;
+}
+
+.reading-progress-list {
+  background: linear-gradient(135deg, #fafbff, #fff9fc);
+  border-radius: var(--radius-md);
+  padding: 20px;
 }
 
 .rp-list-title {
   font-size: 15px;
   font-weight: 600;
   color: var(--text-primary);
-  margin: 0 0 14px;
-  padding-bottom: 10px;
-  border-bottom: 1px solid #f5f5f5;
+  margin: 0 0 16px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid #f0f0f5;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.rp-title-icon {
+  font-size: 16px;
 }
 
 .rp-item {
-  padding: 12px 0;
-  border-bottom: 1px solid #f9f9f9;
+  padding: 14px 0;
+  border-bottom: 1px solid #f5f5fa;
 }
 
 .rp-item:last-child {
   border-bottom: none;
+  padding-bottom: 0;
 }
 
 .rp-item-info {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  margin-bottom: 8px;
+  margin-bottom: 10px;
+}
+
+.rp-book-info {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.rp-book-emoji {
+  font-size: 16px;
 }
 
 .rp-book-title {
   font-size: 14px;
-  font-weight: 500;
+  font-weight: 600;
   color: var(--text-primary);
 }
 
@@ -1199,25 +1287,33 @@ onMounted(() => {
 
 .rp-bar-bg {
   flex: 1;
-  height: 6px;
-  border-radius: 3px;
+  height: 8px;
+  border-radius: 4px;
   background: #f0f0f5;
   overflow: hidden;
 }
 
 .rp-bar-fill {
   height: 100%;
-  border-radius: 3px;
+  border-radius: 4px;
   background: linear-gradient(90deg, var(--green), var(--blue), var(--purple));
-  transition: width 0.6s ease;
+  transition: width 0.6s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .rp-percent {
-  font-size: 12px;
+  font-size: 13px;
   font-weight: 600;
   color: var(--purple);
-  min-width: 36px;
+  min-width: 40px;
   text-align: right;
+}
+
+.rp-item-meta {
+  display: flex;
+  gap: 16px;
+  margin-top: 6px;
+  font-size: 12px;
+  color: var(--text-secondary);
 }
 
 .card-btn.reading-stats {
