@@ -97,6 +97,14 @@ export function updateReaderStatus(id, status) {
   return request.put(`/readers/${id}/status`, { status })
 }
 
+export function getReaderReadingProgress(id, params) {
+  return request.get(`/readers/${id}/reading-progress`, { params })
+}
+
+export function getReaderReadingStatistics(id) {
+  return request.get(`/readers/${id}/reading-statistics`)
+}
+
 // 借阅管理 API
 export function getBorrows(params) {
   return request.get('/borrows', { params })

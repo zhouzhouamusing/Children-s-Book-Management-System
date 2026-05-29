@@ -1,15 +1,19 @@
 package com.kidsbook.controller;
 
+import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.kidsbook.common.Result;
 import com.kidsbook.dto.ReaderRequest;
 import com.kidsbook.entity.BorrowRecord;
+import com.kidsbook.entity.ReadingProgress;
 import com.kidsbook.entity.Reader;
 import com.kidsbook.service.ReaderService;
+import com.kidsbook.service.ReadingProgressService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.HashMap;
 import java.util.Map;
 
 @RestController
@@ -18,6 +22,7 @@ import java.util.Map;
 public class ReaderController {
 
     private final ReaderService readerService;
+    private final ReadingProgressService readingProgressService;
 
     @GetMapping
     public Result<Page<Reader>> list(
@@ -82,5 +87,34 @@ public class ReaderController {
     @GetMapping("/statistics")
     public Result<Map<String, Object>> statistics() {
         return Result.success(readerService.getStatistics());
+    }
+
+    @GetMapping("/{id}/reading-progress")
+    public Result<Map<String, Object>> getReadingProgress(
+            @PathVariable Long id,
+            @RequestParam(defaultValue = "1") int page,
+            @RequestParam(defaultValue = "10") int size,
+            @RequestParam(required = false) String status) {
+        Reader reader = readerService.getById(id);
+        if (reader == null) {
+            return Result.error("读者不存在");
+        }
+        IPage<ReadingProgress> result = readingProgressService.getProgressList(id, page, size, status);
+        Map<String, Object> data = new HashMap<>();
+        data.put("records", result.getRecords());
+        data.put("total", result.getTotal());
+        return Result.success(data);
+    }
+
+    @GetMapping("/{id}/reading-statistics")
+    public Result<Map<String, Object>> getReadingStatistics(@PathVariable Long id) {
+        Reader reader = readerService.getById(id);
+        if (reader == null) {
+            return Result.error("读者不存在");
+        }
+        Map<String, Object> stats = readingProgressService.getStatistics(id);
+        stats.put("readerName", reader.getName());
+        stats.put("totalReadingDays", reader.getTotalReadingDays() != null ? reader.getTotalReadingDays() : 0);
+        return Result.success(stats);
     }
 }

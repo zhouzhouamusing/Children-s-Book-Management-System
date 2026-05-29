@@ -4,9 +4,11 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.kidsbook.entity.Book;
+import com.kidsbook.entity.Reader;
 import com.kidsbook.entity.ReadingNote;
 import com.kidsbook.entity.ReadingProgress;
 import com.kidsbook.mapper.BookMapper;
+import com.kidsbook.mapper.ReaderMapper;
 import com.kidsbook.mapper.ReadingNoteMapper;
 import com.kidsbook.mapper.ReadingProgressMapper;
 import lombok.RequiredArgsConstructor;
@@ -25,6 +27,8 @@ public class ReadingProgressService {
     private final ReadingProgressMapper progressMapper;
     private final ReadingNoteMapper noteMapper;
     private final BookMapper bookMapper;
+    private final ReaderMapper readerMapper;
+    private final ReaderPointsService readerPointsService;
 
     public IPage<ReadingProgress> getProgressList(Long readerId, int page, int size, String status) {
         LambdaQueryWrapper<ReadingProgress> wrapper = new LambdaQueryWrapper<>();
@@ -46,6 +50,8 @@ public class ReadingProgressService {
         Book book = bookMapper.selectById(bookId);
         String bookTitle = book != null ? book.getTitle() : "";
 
+        boolean wasNotCompleted = true;
+
         if (progress == null) {
             progress = new ReadingProgress();
             progress.setReaderId(readerId);
@@ -58,6 +64,7 @@ public class ReadingProgressService {
             progress.setStatus(progress.getProgressPercent() >= 100 ? "completed" : "reading");
             progressMapper.insert(progress);
         } else {
+            wasNotCompleted = !"completed".equals(progress.getStatus());
             if (totalPages != null) progress.setTotalPages(totalPages);
             if (currentPage != null) progress.setCurrentPage(currentPage);
             if (readingMinutes != null) progress.setReadingMinutes(progress.getReadingMinutes() + readingMinutes);
@@ -65,6 +72,10 @@ public class ReadingProgressService {
             progress.setProgressPercent(calcPercent(progress.getCurrentPage(), progress.getTotalPages()));
             progress.setStatus(progress.getProgressPercent() >= 100 ? "completed" : "reading");
             progressMapper.updateById(progress);
+        }
+
+        if ("completed".equals(progress.getStatus()) && wasNotCompleted) {
+            onReadingCompleted(readerId, bookTitle);
         }
 
         return progress;
@@ -76,12 +87,31 @@ public class ReadingProgressService {
         if (progress == null || !progress.getReaderId().equals(readerId)) {
             throw new RuntimeException("阅读进度不存在");
         }
+        boolean wasNotCompleted = !"completed".equals(progress.getStatus());
         progress.setStatus(status);
         if ("completed".equals(status)) {
             progress.setProgressPercent(100);
             progress.setCurrentPage(progress.getTotalPages());
         }
         progressMapper.updateById(progress);
+
+        if ("completed".equals(status) && wasNotCompleted) {
+            onReadingCompleted(readerId, progress.getBookTitle());
+        }
+    }
+
+    private void onReadingCompleted(Long readerId, String bookTitle) {
+        readerPointsService.awardPoints(readerId, 15, "reading_complete",
+                "完成阅读《" + bookTitle + "》", null);
+
+        Reader reader = readerMapper.selectById(readerId);
+        if (reader != null) {
+            int days = reader.getTotalReadingDays() != null ? reader.getTotalReadingDays() : 0;
+            reader.setTotalReadingDays(days + 1);
+            readerMapper.updateById(reader);
+        }
+
+        log.info("阅读完成: readerId={}, book={}", readerId, bookTitle);
     }
 
     @Transactional
@@ -109,14 +139,20 @@ public class ReadingProgressService {
     @Transactional
     public ReadingNote addNote(Long readerId, Long bookId, Long progressId, String content, Integer pageNumber) {
         Book book = bookMapper.selectById(bookId);
+        String bookTitle = book != null ? book.getTitle() : "";
+
         ReadingNote note = new ReadingNote();
         note.setReaderId(readerId);
         note.setBookId(bookId);
         note.setProgressId(progressId);
-        note.setBookTitle(book != null ? book.getTitle() : "");
+        note.setBookTitle(bookTitle);
         note.setContent(content);
         note.setPageNumber(pageNumber != null ? pageNumber : 0);
         noteMapper.insert(note);
+
+        readerPointsService.awardPoints(readerId, 3, "reading_note",
+                "为《" + bookTitle + "》添加阅读笔记", null);
+
         return note;
     }
 

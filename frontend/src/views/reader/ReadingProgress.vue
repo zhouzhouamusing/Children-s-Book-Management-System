@@ -67,9 +67,9 @@
               <span class="book-emoji">📘</span>
               <div class="book-detail">
                 <h4>{{ item.bookTitle || '未知图书' }}</h4>
-                <span class="progress-status" :class="'status-' + item.status">
+                <el-tag size="small" round :type="statusType(item.status)">
                   {{ statusLabel(item.status) }}
-                </span>
+                </el-tag>
               </div>
             </div>
             <el-dropdown trigger="click" @command="(cmd) => handleCommand(cmd, item)">
@@ -131,7 +131,7 @@
             <div class="note-book">
               <span class="note-emoji">📝</span>
               <span class="note-book-title">{{ note.bookTitle || '未知图书' }}</span>
-              <el-tag size="small" v-if="note.pageNumber" class="page-tag">第{{ note.pageNumber }}页</el-tag>
+              <el-tag size="small" round type="info" v-if="note.pageNumber">第{{ note.pageNumber }}页</el-tag>
             </div>
             <div class="note-actions">
               <el-button text size="small" @click="handleEditNote(note)">
@@ -506,6 +506,11 @@ const statusLabel = (s) => {
   return map[s] || s
 }
 
+const statusType = (s) => {
+  const map = { reading: 'primary', completed: 'success', paused: 'warning' }
+  return map[s] || 'info'
+}
+
 const formatMinutes = (minutes) => {
   if (!minutes) return '0分钟'
   if (minutes < 60) return `${minutes}分钟`
@@ -529,13 +534,13 @@ onMounted(() => {
 .progress-page {
   display: flex;
   flex-direction: column;
-  gap: 20px;
+  gap: 24px;
 }
 
 .stats-row {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
-  gap: 16px;
+  gap: 18px;
 }
 
 .stat-card {
@@ -606,7 +611,7 @@ onMounted(() => {
 .list-container {
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 14px;
 }
 
 .progress-card {
@@ -644,28 +649,6 @@ onMounted(() => {
   font-weight: 600;
   color: var(--text-primary);
   margin: 0 0 4px;
-}
-
-.progress-status {
-  font-size: 11px;
-  padding: 2px 8px;
-  border-radius: 8px;
-  font-weight: 500;
-}
-
-.status-reading {
-  background: var(--blue-light);
-  color: #3b82f6;
-}
-
-.status-completed {
-  background: var(--green-light);
-  color: #10b981;
-}
-
-.status-paused {
-  background: var(--yellow);
-  color: #f59e0b;
 }
 
 .more-btn {
@@ -751,13 +734,6 @@ onMounted(() => {
   font-size: 14px;
   font-weight: 600;
   color: var(--text-primary);
-}
-
-.page-tag {
-  font-size: 10px !important;
-  background: var(--purple-light) !important;
-  color: var(--purple) !important;
-  border: none !important;
 }
 
 .note-actions {

@@ -29,7 +29,7 @@
               <h4 class="book-title">{{ book.title }}</h4>
               <p class="book-author">{{ book.author }}</p>
               <div class="book-tags">
-                <el-tag size="small" round effect="plain" class="cat-tag">{{ book.category }}</el-tag>
+                <el-tag size="small" round effect="plain" class="category-tag">{{ book.category }}</el-tag>
                 <span class="age-badge" v-if="book.ageRange">{{ book.ageRange }}</span>
               </div>
             </div>
@@ -58,7 +58,7 @@
               <h4 class="book-title">{{ book.title }}</h4>
               <p class="book-author">{{ book.author }}</p>
               <div class="book-tags">
-                <el-tag size="small" round effect="plain" class="cat-tag">{{ book.category }}</el-tag>
+                <el-tag size="small" round effect="plain" class="category-tag">{{ book.category }}</el-tag>
                 <span class="age-badge" v-if="book.ageRange">{{ book.ageRange }}</span>
               </div>
             </div>
@@ -91,7 +91,7 @@
               <p>{{ item.author }}</p>
             </div>
             <div class="top10-meta">
-              <el-tag size="small" round effect="plain" class="cat-tag" v-if="item.category">{{ item.category }}</el-tag>
+              <el-tag size="small" round effect="plain" class="category-tag" v-if="item.category">{{ item.category }}</el-tag>
               <span class="borrow-count">
                 <el-icon><Reading /></el-icon>
                 {{ item.borrowCount }}次借阅
@@ -145,12 +145,12 @@ onMounted(() => {
 .recommend-page {
   display: flex;
   flex-direction: column;
-  gap: 24px;
+  gap: 28px;
 }
 
 .page-header {
   text-align: center;
-  padding: 20px 0 10px;
+  padding: 24px 0 12px;
 }
 
 .section-title {
@@ -178,7 +178,7 @@ onMounted(() => {
 .recommend-section {
   background: white;
   border-radius: var(--radius-md);
-  padding: 24px;
+  padding: 28px;
   box-shadow: var(--shadow-soft);
 }
 
@@ -186,8 +186,8 @@ onMounted(() => {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  margin-bottom: 20px;
-  padding-bottom: 12px;
+  margin-bottom: 24px;
+  padding-bottom: 14px;
   border-bottom: 1px solid #f5f5f5;
 }
 
@@ -216,16 +216,17 @@ onMounted(() => {
 .book-scroll {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-  gap: 16px;
+  gap: 20px;
 }
 
 .book-card {
   background: linear-gradient(135deg, #fafbff, #fff8fa);
   border-radius: var(--radius-sm);
-  padding: 16px;
+  padding: 18px;
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   cursor: pointer;
   animation: fadeInUp 0.4s ease both;
+  border: 1px solid rgba(149, 125, 173, 0.06);
 }
 
 .book-card:hover {
@@ -281,41 +282,36 @@ onMounted(() => {
 .book-tags {
   display: flex;
   align-items: center;
-  gap: 6px;
-  margin-top: 6px;
-}
-
-.cat-tag {
-  font-size: 10px !important;
-  background: linear-gradient(135deg, var(--blue-light), var(--purple-light)) !important;
-  color: var(--purple) !important;
-  border: none !important;
+  gap: 8px;
+  margin-top: 8px;
 }
 
 .age-badge {
   font-size: 10px;
   color: var(--text-secondary);
   background: var(--yellow);
-  padding: 2px 6px;
-  border-radius: 6px;
+  padding: 2px 8px;
+  border-radius: 8px;
+  font-weight: 500;
 }
 
 /* TOP10 列表 */
 .top10-list {
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 12px;
 }
 
 .top10-item {
   display: flex;
   align-items: center;
-  gap: 14px;
-  padding: 12px 16px;
+  gap: 16px;
+  padding: 14px 18px;
   border-radius: var(--radius-sm);
   background: linear-gradient(135deg, #fafbff, #fff9fc);
   transition: all 0.3s ease;
   animation: fadeInUp 0.4s ease both;
+  border: 1px solid rgba(149, 125, 173, 0.06);
 }
 
 .top10-item:hover {
