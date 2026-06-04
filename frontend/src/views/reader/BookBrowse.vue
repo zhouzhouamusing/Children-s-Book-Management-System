@@ -74,7 +74,7 @@
               <template v-else>预约此书</template>
             </el-button>
             <div class="review-btns">
-              <el-button size="small" text type="primary" @click="openReviews(book)">
+              <el-button v-permission="'READER_REVIEW_READ'" size="small" text type="primary" @click="openReviews(book)">
                 查看评价
               </el-button>
               <el-button v-permission="'READER_REVIEW_CREATE'" size="small" text type="warning" @click="openWriteReview(book)">

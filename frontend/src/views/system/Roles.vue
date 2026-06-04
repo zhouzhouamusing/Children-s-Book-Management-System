@@ -188,12 +188,20 @@
                 <el-radio-button label="menu">菜单</el-radio-button>
                 <el-radio-button label="button">按钮</el-radio-button>
               </el-radio-group>
-              <div class="perm-tab-stats">
-                已选 <strong>{{ roleForm.permissionIds.length }}</strong> 项
-                <span v-if="inheritedPermIds.length > 0" class="inherited-tip">
-                  （含继承 {{ inheritedPermIds.length }} 项）
-                </span>
-              </div>
+              <el-button size="small" type="info" plain @click="selectAllReadOnly">
+                一键只读
+              </el-button>
+              <el-button size="small" plain @click="clearAllPermissions">
+                清空选择
+              </el-button>
+            </div>
+            <div class="perm-tab-summary">
+              <span class="summary-item">
+                已选 <strong>{{ selectedMenuCount }}</strong> 个菜单，<strong>{{ selectedButtonCount }}</strong> 个按钮
+              </span>
+              <span v-if="inheritedPermIds.length > 0" class="inherited-tip">
+                （继承 {{ inheritedPermIds.length }} 项）
+              </span>
             </div>
             <div class="perm-tab-hint" v-if="roleForm.level > 10">
               <el-alert type="info" :closable="false" show-icon>
@@ -201,33 +209,81 @@
               </el-alert>
             </div>
             <div class="perm-tree-wrapper">
-              <div v-for="(perms, module) in filteredTreePermissions" :key="module" class="perm-module-group">
+              <div v-for="(pageGroup, module) in filteredPageTree" :key="module" class="perm-module-group">
                 <div class="perm-module-header">
                   <el-checkbox
-                    :model-value="isModuleAllChecked(module, perms)"
-                    :indeterminate="isModuleIndeterminate(module, perms)"
-                    @change="(val) => toggleModule(module, perms, val)"
+                    :model-value="isPageGroupAllChecked(pageGroup)"
+                    :indeterminate="isPageGroupIndeterminate(pageGroup)"
+                    @change="(val) => togglePageGroup(pageGroup, val)"
                   >
                     <span class="perm-module-title">📋 {{ module }}</span>
                   </el-checkbox>
-                  <el-tag size="small" type="info">{{ perms.length }}</el-tag>
+                  <div class="module-header-right">
+                    <el-tag size="small" type="success" effect="light" v-if="getPageGroupMenuCount(pageGroup)">{{ getPageGroupMenuCount(pageGroup) }} 菜单</el-tag>
+                    <el-tag size="small" type="warning" effect="light" v-if="getPageGroupButtonCount(pageGroup)">{{ getPageGroupButtonCount(pageGroup) }} 按钮</el-tag>
+                  </div>
                 </div>
-                <div class="perm-module-items">
-                  <div v-for="p in perms" :key="p.id" class="perm-tree-item" :class="{ inherited: isInherited(p.id) }">
-                    <el-checkbox
-                      :model-value="roleForm.permissionIds.includes(p.id) || isInherited(p.id)"
-                      :disabled="isInherited(p.id) && !roleForm.permissionIds.includes(p.id)"
-                      @change="(val) => togglePerm(p.id, val)"
-                    >
-                      <span class="perm-tree-label">
-                        <span class="perm-type-dot" :class="p.type === 'menu' ? 'dot-menu' : 'dot-button'"></span>
-                        {{ p.name }}
+                <div class="perm-page-tree">
+                  <div v-for="page in pageGroup.pages" :key="page.menuPerm.id" class="perm-page-node">
+                    <!-- 页面级（菜单权限）-->
+                    <div class="page-node-header" :class="{ inherited: isInherited(page.menuPerm.id) }">
+                      <el-checkbox
+                        :model-value="roleForm.permissionIds.includes(page.menuPerm.id) || isInherited(page.menuPerm.id)"
+                        :disabled="isInherited(page.menuPerm.id) && !roleForm.permissionIds.includes(page.menuPerm.id)"
+                        @change="(val) => togglePagePerm(page, val)"
+                      >
+                        <span class="page-node-label">
+                          <span class="perm-type-dot dot-menu"></span>
+                          <span class="page-name">{{ page.menuPerm.name }}</span>
+                          <el-tag size="small" type="success" class="perm-type-tag">页面</el-tag>
+                        </span>
+                      </el-checkbox>
+                      <span class="page-btn-count" v-if="page.buttons.length">{{ page.buttons.length }} 个按钮</span>
+                    </div>
+                    <!-- 按钮级权限（子节点）-->
+                    <div class="page-buttons" v-if="page.buttons.length > 0">
+                      <div v-for="btn in page.buttons" :key="btn.id" class="button-node" :class="{ inherited: isInherited(btn.id) }">
+                        <div class="button-connector"></div>
+                        <el-checkbox
+                          :model-value="roleForm.permissionIds.includes(btn.id) || isInherited(btn.id)"
+                          :disabled="isInherited(btn.id) && !roleForm.permissionIds.includes(btn.id)"
+                          @change="(val) => toggleButtonPerm(page, btn.id, val)"
+                        >
+                          <span class="button-node-label">
+                            <span class="perm-type-dot dot-button"></span>
+                            <span class="btn-name">{{ btn.name }}</span>
+                            <el-tag size="small" type="warning" class="perm-type-tag">按钮</el-tag>
+                          </span>
+                        </el-checkbox>
+                        <span class="btn-page-hint">{{ permPageMap[btn.code] || '' }}</span>
+                      </div>
+                    </div>
+                  </div>
+                  <!-- 未归类的按钮（无对应菜单权限的）-->
+                  <div v-if="pageGroup.ungrouped && pageGroup.ungrouped.length > 0" class="perm-page-node">
+                    <div class="page-node-header ungrouped-header">
+                      <span class="page-node-label">
+                        <span class="perm-type-dot dot-button"></span>
+                        <span class="page-name">其他操作权限</span>
                       </span>
-                      <el-tag size="small" :type="p.type === 'menu' ? 'success' : 'warning'" class="perm-type-tag">
-                        {{ p.type === 'menu' ? '菜单' : '按钮' }}
-                      </el-tag>
-                      <span class="perm-page-hint" v-if="permPageMap[p.code]">{{ permPageMap[p.code] }}</span>
-                    </el-checkbox>
+                    </div>
+                    <div class="page-buttons">
+                      <div v-for="btn in pageGroup.ungrouped" :key="btn.id" class="button-node" :class="{ inherited: isInherited(btn.id) }">
+                        <div class="button-connector"></div>
+                        <el-checkbox
+                          :model-value="roleForm.permissionIds.includes(btn.id) || isInherited(btn.id)"
+                          :disabled="isInherited(btn.id) && !roleForm.permissionIds.includes(btn.id)"
+                          @change="(val) => togglePerm(btn.id, val)"
+                        >
+                          <span class="button-node-label">
+                            <span class="perm-type-dot dot-button"></span>
+                            <span class="btn-name">{{ btn.name }}</span>
+                            <el-tag size="small" type="warning" class="perm-type-tag">按钮</el-tag>
+                          </span>
+                        </el-checkbox>
+                        <span class="btn-page-hint">{{ permPageMap[btn.code] || '' }}</span>
+                      </div>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -485,6 +541,163 @@ function togglePerm(permId, checked) {
   } else {
     roleForm.permissionIds = roleForm.permissionIds.filter(id => id !== permId)
   }
+}
+
+// Page→Button tree structure for permission tab
+const filteredPageTree = computed(() => {
+  let perms = allPermissions.value
+  if (permTypeFilter.value) {
+    perms = perms.filter(p => p.type === permTypeFilter.value)
+  }
+  if (permSearchKeyword.value) {
+    const kw = permSearchKeyword.value.toLowerCase()
+    perms = perms.filter(p => p.name.toLowerCase().includes(kw) || p.code.toLowerCase().includes(kw))
+  }
+
+  const grouped = {}
+  perms.forEach(p => {
+    const mod = p.module || '其他'
+    if (!grouped[mod]) grouped[mod] = { pages: [], ungrouped: [] }
+  })
+
+  const menuPerms = perms.filter(p => p.type === 'menu')
+  const buttonPerms = perms.filter(p => p.type === 'button')
+
+  const moduleMenuMap = {}
+  menuPerms.forEach(p => {
+    const mod = p.module || '其他'
+    if (!moduleMenuMap[mod]) moduleMenuMap[mod] = []
+    moduleMenuMap[mod].push(p)
+  })
+
+  const assignedButtonIds = new Set()
+
+  Object.keys(grouped).forEach(mod => {
+    const menus = moduleMenuMap[mod] || []
+    const modButtons = buttonPerms.filter(p => (p.module || '其他') === mod)
+
+    const pages = menus.map(menu => {
+      const menuCodePrefix = menu.code.replace(/_READ$/, '')
+      const children = modButtons.filter(btn => {
+        if (assignedButtonIds.has(btn.id)) return false
+        const btnPrefix = btn.code.replace(/_(CREATE|UPDATE|DELETE|CANCEL|REVIEW|ASSIGN|MANAGE|APPLY|STATUS|BROWSE)$/, '')
+        return btnPrefix === menuCodePrefix
+      })
+      children.forEach(c => assignedButtonIds.add(c.id))
+      return { menuPerm: menu, buttons: children }
+    })
+
+    const ungrouped = modButtons.filter(btn => !assignedButtonIds.has(btn.id))
+    ungrouped.forEach(btn => assignedButtonIds.add(btn.id))
+
+    grouped[mod] = { pages, ungrouped }
+  })
+
+  // Remove empty modules
+  Object.keys(grouped).forEach(mod => {
+    if (grouped[mod].pages.length === 0 && (!grouped[mod].ungrouped || grouped[mod].ungrouped.length === 0)) {
+      delete grouped[mod]
+    }
+  })
+
+  return grouped
+})
+
+const selectedMenuCount = computed(() => {
+  const menuIds = allPermissions.value.filter(p => p.type === 'menu').map(p => p.id)
+  return roleForm.permissionIds.filter(id => menuIds.includes(id)).length
+})
+
+const selectedButtonCount = computed(() => {
+  const btnIds = allPermissions.value.filter(p => p.type === 'button').map(p => p.id)
+  return roleForm.permissionIds.filter(id => btnIds.includes(id)).length
+})
+
+function isPageGroupAllChecked(pageGroup) {
+  const allIds = getAllPageGroupPermIds(pageGroup)
+  return allIds.length > 0 && allIds.every(id => roleForm.permissionIds.includes(id) || isInherited(id))
+}
+
+function isPageGroupIndeterminate(pageGroup) {
+  const allIds = getAllPageGroupPermIds(pageGroup)
+  const checked = allIds.filter(id => roleForm.permissionIds.includes(id) || isInherited(id))
+  return checked.length > 0 && checked.length < allIds.length
+}
+
+function getAllPageGroupPermIds(pageGroup) {
+  const ids = []
+  pageGroup.pages.forEach(page => {
+    ids.push(page.menuPerm.id)
+    page.buttons.forEach(btn => ids.push(btn.id))
+  })
+  if (pageGroup.ungrouped) {
+    pageGroup.ungrouped.forEach(btn => ids.push(btn.id))
+  }
+  return ids
+}
+
+function togglePageGroup(pageGroup, checked) {
+  const allIds = getAllPageGroupPermIds(pageGroup)
+  if (checked) {
+    allIds.forEach(id => {
+      if (!roleForm.permissionIds.includes(id) && !isInherited(id)) {
+        roleForm.permissionIds.push(id)
+      }
+    })
+  } else {
+    roleForm.permissionIds = roleForm.permissionIds.filter(id => !allIds.includes(id))
+  }
+}
+
+function getPageGroupMenuCount(pageGroup) {
+  return pageGroup.pages.length
+}
+
+function getPageGroupButtonCount(pageGroup) {
+  let count = 0
+  pageGroup.pages.forEach(page => { count += page.buttons.length })
+  if (pageGroup.ungrouped) count += pageGroup.ungrouped.length
+  return count
+}
+
+function togglePagePerm(page, checked) {
+  if (checked) {
+    if (!roleForm.permissionIds.includes(page.menuPerm.id)) {
+      roleForm.permissionIds.push(page.menuPerm.id)
+    }
+  } else {
+    roleForm.permissionIds = roleForm.permissionIds.filter(id => id !== page.menuPerm.id)
+    // Uncheck all child buttons when unchecking page
+    const btnIds = page.buttons.map(b => b.id)
+    roleForm.permissionIds = roleForm.permissionIds.filter(id => !btnIds.includes(id))
+  }
+}
+
+function toggleButtonPerm(page, btnId, checked) {
+  if (checked) {
+    if (!roleForm.permissionIds.includes(btnId)) {
+      roleForm.permissionIds.push(btnId)
+    }
+    // Auto-check parent page permission
+    if (!roleForm.permissionIds.includes(page.menuPerm.id) && !isInherited(page.menuPerm.id)) {
+      roleForm.permissionIds.push(page.menuPerm.id)
+    }
+  } else {
+    roleForm.permissionIds = roleForm.permissionIds.filter(id => id !== btnId)
+  }
+}
+
+function selectAllReadOnly() {
+  const readPerms = allPermissions.value.filter(p => p.type === 'menu' || p.code.endsWith('_READ'))
+  readPerms.forEach(p => {
+    if (!roleForm.permissionIds.includes(p.id) && !isInherited(p.id)) {
+      roleForm.permissionIds.push(p.id)
+    }
+  })
+}
+
+function clearAllPermissions() {
+  roleForm.permissionIds = []
 }
 
 // Permission drawer state
@@ -1217,6 +1430,144 @@ async function removeUserFromRole(user) {
 .user-item-name {
   font-size: 14px;
   font-weight: 500;
+}
+
+/* Page→Button tree structure */
+.perm-tab-summary {
+  font-size: 13px;
+  color: var(--text-secondary);
+  margin-bottom: 10px;
+  padding: 8px 12px;
+  background: linear-gradient(135deg, var(--green-light), var(--blue-light));
+  border-radius: 8px;
+}
+
+.perm-tab-summary .summary-item strong {
+  color: var(--purple);
+  font-size: 15px;
+}
+
+.module-header-right {
+  display: flex;
+  gap: 6px;
+}
+
+.perm-page-tree {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.perm-page-node {
+  border: 1px solid #F0F0F0;
+  border-radius: 10px;
+  padding: 10px 14px;
+  background: white;
+  transition: all 0.2s ease;
+}
+
+.perm-page-node:hover {
+  border-color: var(--purple-light);
+  box-shadow: 0 2px 8px rgba(149, 125, 173, 0.08);
+}
+
+.page-node-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.page-node-header.inherited {
+  opacity: 0.55;
+}
+
+.page-node-label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+}
+
+.page-name {
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.page-btn-count {
+  font-size: 11px;
+  color: var(--text-secondary);
+  background: var(--bg-main);
+  padding: 2px 8px;
+  border-radius: 10px;
+}
+
+.page-buttons {
+  margin-top: 8px;
+  margin-left: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.button-node {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  border-radius: 6px;
+  transition: background 0.2s ease;
+  position: relative;
+}
+
+.button-node:hover {
+  background: rgba(149, 125, 173, 0.06);
+}
+
+.button-node.inherited {
+  opacity: 0.55;
+}
+
+.button-connector {
+  position: absolute;
+  left: -8px;
+  top: 50%;
+  width: 8px;
+  height: 1px;
+  background: #E0E0E0;
+}
+
+.button-connector::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: -12px;
+  width: 1px;
+  height: 24px;
+  background: #E0E0E0;
+}
+
+.button-node-label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+}
+
+.btn-name {
+  color: var(--text-primary);
+}
+
+.btn-page-hint {
+  font-size: 11px;
+  color: var(--text-secondary);
+  margin-left: auto;
+  opacity: 0.7;
+}
+
+.ungrouped-header {
+  padding: 4px 0;
+  border-bottom: 1px dashed #E8E8E8;
+  margin-bottom: 4px;
 }
 
 @media (max-width: 1200px) {

@@ -78,12 +78,12 @@
               </el-button>
               <template #dropdown>
                 <el-dropdown-menu>
-                  <el-dropdown-item command="update">更新进度</el-dropdown-item>
-                  <el-dropdown-item command="complete" v-if="item.status !== 'completed'">标记完成</el-dropdown-item>
-                  <el-dropdown-item command="pause" v-if="item.status === 'reading'">暂停阅读</el-dropdown-item>
-                  <el-dropdown-item command="resume" v-if="item.status === 'paused'">继续阅读</el-dropdown-item>
-                  <el-dropdown-item command="addNote">添加笔记</el-dropdown-item>
-                  <el-dropdown-item command="delete" divided>删除</el-dropdown-item>
+                  <el-dropdown-item v-permission="'READING_PROGRESS_UPDATE'" command="update">更新进度</el-dropdown-item>
+                  <el-dropdown-item v-permission="'READING_PROGRESS_UPDATE'" command="complete" v-if="item.status !== 'completed'">标记完成</el-dropdown-item>
+                  <el-dropdown-item v-permission="'READING_PROGRESS_UPDATE'" command="pause" v-if="item.status === 'reading'">暂停阅读</el-dropdown-item>
+                  <el-dropdown-item v-permission="'READING_PROGRESS_UPDATE'" command="resume" v-if="item.status === 'paused'">继续阅读</el-dropdown-item>
+                  <el-dropdown-item v-permission="'READING_PROGRESS_CREATE'" command="addNote">添加笔记</el-dropdown-item>
+                  <el-dropdown-item v-permission="'READING_PROGRESS_DELETE'" command="delete" divided>删除</el-dropdown-item>
                 </el-dropdown-menu>
               </template>
             </el-dropdown>

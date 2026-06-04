@@ -9,6 +9,19 @@ function hasPermission(code) {
   } catch { return false }
 }
 
+function hasAnyPermission(codes) {
+  try {
+    const perms = JSON.parse(localStorage.getItem('permissions') || '[]')
+    return codes.some(c => perms.includes(c))
+  } catch { return false }
+}
+
+function getUserRoles() {
+  try {
+    return JSON.parse(localStorage.getItem('roles') || '[]')
+  } catch { return [] }
+}
+
 const routes = [
   {
     path: '/login',
@@ -73,13 +86,13 @@ const routes = [
         path: 'admin-applications',
         name: 'AdminApplications',
         component: () => import('@/views/AdminApplications.vue'),
-        meta: { title: '管理员审批', roles: ['ADMIN', 'SUPER_ADMIN'], permission: 'APPLICATION_READ' }
+        meta: { title: '管理员审批', roles: ['ADMIN', 'SUPER_ADMIN'], permission: 'ADMIN_APPLICATION_REVIEW' }
       },
       {
         path: 'reader-view',
         name: 'AdminReaderView',
         component: () => import('@/views/AdminReaderView.vue'),
-        meta: { title: '读者系统', roles: ['ADMIN', 'SUPER_ADMIN'] }
+        meta: { title: '读者系统', roles: ['ADMIN', 'SUPER_ADMIN'], permission: 'READER_PROFILE_READ' }
       },
       {
         path: 'resources',
@@ -129,37 +142,37 @@ const routes = [
         path: 'my-borrows',
         name: 'MyBorrows',
         component: () => import('@/views/reader/MyBorrows.vue'),
-        meta: { title: '我的借阅', roles: ['READER'], permission: 'READER_BORROW' }
+        meta: { title: '我的借阅', roles: ['READER'], permission: 'READER_BORROW_READ' }
       },
       {
         path: 'reservations',
         name: 'Reservations',
         component: () => import('@/views/reader/Reservations.vue'),
-        meta: { title: '预约图书', roles: ['READER'], permission: 'READER_RESERVE' }
+        meta: { title: '预约图书', roles: ['READER'], permission: 'READER_RESERVATION_READ' }
       },
       {
         path: 'books',
         name: 'ReaderBooks',
         component: () => import('@/views/reader/BookBrowse.vue'),
-        meta: { title: '图书浏览', roles: ['READER'], permission: 'READER_BROWSE' }
+        meta: { title: '图书浏览', roles: ['READER'], permission: 'READER_BOOK_BROWSE' }
       },
       {
         path: 'recommend',
         name: 'BookRecommend',
         component: () => import('@/views/reader/BookRecommend.vue'),
-        meta: { title: '图书推荐', roles: ['READER'], permission: 'READER_RECOMMEND' }
+        meta: { title: '图书推荐', roles: ['READER'], permission: 'READER_BOOK_BROWSE' }
       },
       {
         path: 'reading-progress',
         name: 'ReadingProgress',
         component: () => import('@/views/reader/ReadingProgress.vue'),
-        meta: { title: '阅读进度', roles: ['READER'], permission: 'READER_PROGRESS' }
+        meta: { title: '阅读进度', roles: ['READER'], permission: 'READING_PROGRESS_READ' }
       },
       {
         path: 'my-reviews',
         name: 'MyReviews',
         component: () => import('@/views/reader/MyReviews.vue'),
-        meta: { title: '我的评价', roles: ['READER'], permission: 'READER_REVIEW' }
+        meta: { title: '我的评价', roles: ['READER'], permission: 'READER_REVIEW_READ' }
       },
       {
         path: 'appeals',
@@ -171,7 +184,7 @@ const routes = [
         path: 'profile',
         name: 'ReaderProfile',
         component: () => import('@/views/reader/Profile.vue'),
-        meta: { title: '个人中心', roles: ['READER'], permission: 'READER_PROFILE' }
+        meta: { title: '个人中心', roles: ['READER'], permission: 'READER_PROFILE_READ' }
       }
     ]
   },
@@ -189,6 +202,7 @@ const router = createRouter({
 router.beforeEach(async (to, from) => {
   const token = localStorage.getItem('token')
 
+  // 公开路由无需验证
   if (to.meta.public) {
     if (token && !isTokenExpired(token) && to.path === '/login') {
       const role = getRoleFromToken(token)
@@ -198,6 +212,7 @@ router.beforeEach(async (to, from) => {
     return true
   }
 
+  // Token不存在或已过期
   if (!token || isTokenExpired(token)) {
     clearAuth()
     return '/login'
@@ -209,6 +224,7 @@ router.beforeEach(async (to, from) => {
     return '/login'
   }
 
+  // 定期向服务器验证token有效性并刷新权限数据
   if (Date.now() - authState.lastValidated > VALIDATION_INTERVAL) {
     try {
       const { default: request } = await import('@/utils/request')
@@ -239,27 +255,40 @@ router.beforeEach(async (to, from) => {
 
   localStorage.setItem('role', role)
 
-  // Check route role access
+  // 第一层检查：基于角色的路由访问控制
   if (to.meta.roles) {
-    const userRoles = JSON.parse(localStorage.getItem('roles') || '[]')
-    const effectiveRole = role
-    const hasAccess = to.meta.roles.some(r => {
-      if (r === 'ADMIN') return effectiveRole === 'ADMIN' || userRoles.includes('ADMIN') || userRoles.includes('SUPER_ADMIN')
+    const userRoles = getUserRoles()
+    const hasRoleAccess = to.meta.roles.some(r => {
+      if (r === 'ADMIN') return role === 'ADMIN' || userRoles.includes('ADMIN') || userRoles.includes('SUPER_ADMIN')
       if (r === 'SUPER_ADMIN') return userRoles.includes('SUPER_ADMIN')
-      return r === effectiveRole || userRoles.includes(r)
+      return r === role || userRoles.includes(r)
     })
-    if (!hasAccess) {
+    if (!hasRoleAccess) {
       return role === 'READER' ? '/reader/my-borrows' : '/dashboard'
     }
   }
 
-  // Check route-level permission
+  // 第二层检查：基于权限码的路由访问控制
   if (to.meta.permission) {
-    if (!hasPermission(to.meta.permission)) {
+    const permCode = to.meta.permission
+    if (!hasPermission(permCode)) {
+      // 查找用户有权限的第一个同级路由作为fallback
+      const parent = to.matched[to.matched.length - 2]
+      if (parent && parent.children) {
+        const fallback = parent.children.find(child => {
+          if (!child.meta?.permission) return true
+          return hasPermission(child.meta.permission)
+        })
+        if (fallback) {
+          const fallbackPath = parent.path ? `${parent.path}/${fallback.path}` : `/${fallback.path}`
+          if (fallbackPath !== to.path) return fallbackPath
+        }
+      }
       return role === 'READER' ? '/reader/my-borrows' : '/dashboard'
     }
   }
 
+  // 第三层检查：被封禁的读者只能访问个人中心
   if (role === 'READER' && localStorage.getItem('suspended') === 'true') {
     const allowedPaths = ['/reader/profile']
     const currentPath = to.path

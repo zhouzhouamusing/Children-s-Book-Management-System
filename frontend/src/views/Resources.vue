@@ -62,7 +62,7 @@
           @clear="fetchResources"
           @keyup.enter="fetchResources"
         />
-        <el-button @click="fetchResources">
+        <el-button v-permission="'FILE_READ'" @click="fetchResources">
           <el-icon><Search /></el-icon>
           筛选
         </el-button>
@@ -115,7 +115,7 @@
         <el-table-column prop="createTime" label="上传时间" width="170" />
         <el-table-column label="操作" width="140" fixed="right">
           <template #default="{ row }">
-            <el-button size="small" type="primary" plain @click="handlePreview(row)">
+            <el-button v-permission="'FILE_READ'" size="small" type="primary" plain @click="handlePreview(row)">
               预览
             </el-button>
             <el-button v-permission="'FILE_DELETE'" size="small" type="danger" plain @click="handleDelete(row)">

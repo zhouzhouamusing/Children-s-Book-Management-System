@@ -26,7 +26,7 @@
           <el-option label="已通过" value="approved" />
           <el-option label="已拒绝" value="rejected" />
         </el-select>
-        <el-button @click="handleFilter">
+        <el-button v-permission="'REVIEW_READ'" @click="handleFilter">
           <el-icon><Search /></el-icon>
           筛选
         </el-button>
