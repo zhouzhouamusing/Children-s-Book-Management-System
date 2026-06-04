@@ -110,7 +110,7 @@
             </div>
           </div>
           <div class="card-footer">
-            <el-button class="card-btn view" size="small" @click="handleViewBooks(cat)">
+            <el-button v-permission="'CATEGORY_READ'" class="card-btn view" size="small" @click="handleViewBooks(cat)">
               <el-icon><View /></el-icon> 查看图书
             </el-button>
             <el-button v-permission="'CATEGORY_UPDATE'" class="card-btn edit" size="small" @click="handleEdit(cat)">

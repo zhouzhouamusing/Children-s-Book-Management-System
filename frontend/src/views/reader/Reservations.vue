@@ -2,7 +2,7 @@
   <div class="reservations-page">
     <div class="page-header animate__animated animate__fadeInDown">
       <h2 class="section-title">我的预约</h2>
-      <el-button type="primary" round @click="$router.push('/reader/books')">
+      <el-button v-permission="'READER_RESERVATION_CREATE'" type="primary" round @click="$router.push('/reader/books')">
         <el-icon><Plus /></el-icon>
         新建预约
       </el-button>

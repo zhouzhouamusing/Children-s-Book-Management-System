@@ -155,7 +155,7 @@
         ></iframe>
         <div v-else class="preview-placeholder">
           <p>📎 {{ previewResource?.originalName }}</p>
-          <el-button type="primary" @click="downloadFile">下载文件</el-button>
+          <el-button v-permission="'FILE_READ'" type="primary" @click="downloadFile">下载文件</el-button>
         </div>
       </div>
     </el-dialog>

@@ -97,7 +97,7 @@
         description="暂无申诉记录"
         class="empty-state"
       >
-        <el-button type="primary" round @click="dialogVisible = true">提交第一条申诉</el-button>
+        <el-button v-permission="'READER_APPEAL_CREATE'" type="primary" round @click="dialogVisible = true">提交第一条申诉</el-button>
       </el-empty>
 
       <!-- Pagination -->

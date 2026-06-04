@@ -2,24 +2,44 @@ import { createRouter, createWebHashHistory } from 'vue-router'
 import { isTokenExpired, getRoleFromToken, clearAuth, VALIDATION_INTERVAL, markValidated } from '@/utils/auth'
 import * as authState from '@/utils/auth'
 
+// 权限缓存 - 避免每次导航重复解析JSON
+let permCacheStr = ''
+let permCacheSet = new Set()
+let rolesCacheStr = ''
+let rolesCacheArr = []
+
+function getPermissionsSet() {
+  const raw = localStorage.getItem('permissions') || '[]'
+  if (raw !== permCacheStr) {
+    permCacheStr = raw
+    try { permCacheSet = new Set(JSON.parse(raw)) } catch { permCacheSet = new Set() }
+  }
+  return permCacheSet
+}
+
 function hasPermission(code) {
-  try {
-    const perms = JSON.parse(localStorage.getItem('permissions') || '[]')
-    return perms.includes(code)
-  } catch { return false }
+  return getPermissionsSet().has(code)
 }
 
 function hasAnyPermission(codes) {
-  try {
-    const perms = JSON.parse(localStorage.getItem('permissions') || '[]')
-    return codes.some(c => perms.includes(c))
-  } catch { return false }
+  const perms = getPermissionsSet()
+  return codes.some(c => perms.has(c))
 }
 
 function getUserRoles() {
-  try {
-    return JSON.parse(localStorage.getItem('roles') || '[]')
-  } catch { return [] }
+  const raw = localStorage.getItem('roles') || '[]'
+  if (raw !== rolesCacheStr) {
+    rolesCacheStr = raw
+    try { rolesCacheArr = JSON.parse(raw) } catch { rolesCacheArr = [] }
+  }
+  return rolesCacheArr
+}
+
+// 路由权限检查失败时通知前端展示提示
+function emitPermDenied(to, reason) {
+  window.dispatchEvent(new CustomEvent('permission-denied', {
+    detail: { path: to.path, reason }
+  }))
 }
 
 const routes = [
@@ -236,20 +256,22 @@ router.beforeEach(async (to, from) => {
         }
         if (res.data.roles) {
           localStorage.setItem('roles', JSON.stringify(res.data.roles))
+          rolesCacheStr = ''
         }
         if (res.data.permissions) {
           localStorage.setItem('permissions', JSON.stringify(res.data.permissions))
+          permCacheStr = ''
         }
         const { usePermissionStore } = await import('@/stores/permission')
         const permStore = usePermissionStore()
         permStore.loadFromStorage()
       }
     } catch (e) {
-      if (e?.response?.status === 403 || e?.response?.data?.code === 403) {
+      if (e?.response?.status === 401 || e?.response?.status === 403 || e?.response?.data?.code === 403) {
         localStorage.setItem('authError', '账号已被禁用或权限不足')
+        clearAuth()
+        return '/login'
       }
-      clearAuth()
-      return '/login'
     }
   }
 
@@ -264,23 +286,41 @@ router.beforeEach(async (to, from) => {
       return r === role || userRoles.includes(r)
     })
     if (!hasRoleAccess) {
+      emitPermDenied(to, '角色权限不足')
       return role === 'READER' ? '/reader/my-borrows' : '/dashboard'
     }
   }
 
   // 第二层检查：基于权限码的路由访问控制
-  if (to.meta.permission) {
-    const permCode = to.meta.permission
-    if (!hasPermission(permCode)) {
+  // 支持 meta.permission (单个) 和 meta.permissions (数组，满足任一即可)
+  const requiredPerm = to.meta.permission
+  const requiredPerms = to.meta.permissions
+
+  if (requiredPerm || requiredPerms) {
+    let hasAccess = false
+    if (requiredPerm) {
+      hasAccess = hasPermission(requiredPerm)
+    }
+    if (!hasAccess && requiredPerms && Array.isArray(requiredPerms)) {
+      hasAccess = hasAnyPermission(requiredPerms)
+    }
+
+    if (!hasAccess) {
+      emitPermDenied(to, `缺少权限: ${requiredPerm || requiredPerms.join('/')}`)
       // 查找用户有权限的第一个同级路由作为fallback
       const parent = to.matched[to.matched.length - 2]
       if (parent && parent.children) {
         const fallback = parent.children.find(child => {
-          if (!child.meta?.permission) return true
-          return hasPermission(child.meta.permission)
+          if (child.path === to.matched[to.matched.length - 1]?.path) return false
+          if (!child.meta?.permission && !child.meta?.permissions) return true
+          if (child.meta.permission) return hasPermission(child.meta.permission)
+          if (child.meta.permissions) return hasAnyPermission(child.meta.permissions)
+          return false
         })
         if (fallback) {
-          const fallbackPath = parent.path ? `${parent.path}/${fallback.path}` : `/${fallback.path}`
+          const fallbackPath = parent.path
+            ? `${parent.path}/${fallback.path}`.replace(/\/\//g, '/')
+            : `/${fallback.path}`
           if (fallbackPath !== to.path) return fallbackPath
         }
       }
@@ -288,11 +328,12 @@ router.beforeEach(async (to, from) => {
     }
   }
 
-  // 第三层检查：被封禁的读者只能访问个人中心
+  // 第三层检查：被封禁的读者只能访问个人中心和申诉页
   if (role === 'READER' && localStorage.getItem('suspended') === 'true') {
-    const allowedPaths = ['/reader/profile']
+    const allowedPaths = ['/reader/profile', '/reader/appeals']
     const currentPath = to.path
     if (!allowedPaths.some(p => currentPath.startsWith(p))) {
+      emitPermDenied(to, '账号已被暂停，仅可访问个人中心和申诉')
       return '/reader/profile'
     }
   }

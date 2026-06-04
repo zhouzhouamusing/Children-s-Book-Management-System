@@ -132,10 +132,10 @@
             </div>
           </div>
           <div class="card-footer">
-            <el-button class="card-btn records" size="small" @click="handleViewRecords(reader)">
+            <el-button v-permission="'READER_READ'" class="card-btn records" size="small" @click="handleViewRecords(reader)">
               <el-icon><Document /></el-icon> 借阅记录
             </el-button>
-            <el-button class="card-btn reading-stats" size="small" @click="handleViewReadingStats(reader)">
+            <el-button v-permission="'READER_READ'" class="card-btn reading-stats" size="small" @click="handleViewReadingStats(reader)">
               <el-icon><TrendCharts /></el-icon> 阅读进度
             </el-button>
             <el-button v-permission="'READER_UPDATE'" class="card-btn edit" size="small" @click="handleEdit(reader)">
