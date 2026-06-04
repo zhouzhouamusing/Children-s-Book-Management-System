@@ -50,6 +50,7 @@
           </div>
           <div class="card-actions" v-if="item.status === 'pending'">
             <el-button
+              v-permission="'READER_RESERVATION_CANCEL'"
               type="danger"
               text
               size="small"

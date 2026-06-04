@@ -318,6 +318,29 @@ public class DataInitializer implements CommandLineRunner {
         } catch (Exception e) {
             log.warn("创建附加表时出现警告: {}", e.getMessage());
         }
+
+        try {
+            jdbcTemplate.execute("CREATE TABLE IF NOT EXISTS `appeal` (" +
+                "`id` BIGINT NOT NULL AUTO_INCREMENT, " +
+                "`reader_id` BIGINT NOT NULL, " +
+                "`reader_name` VARCHAR(50) DEFAULT NULL, " +
+                "`type` VARCHAR(30) NOT NULL DEFAULT 'suspension', " +
+                "`reason` TEXT NOT NULL, " +
+                "`evidence` VARCHAR(500) DEFAULT NULL, " +
+                "`status` VARCHAR(20) NOT NULL DEFAULT 'pending', " +
+                "`admin_feedback` TEXT DEFAULT NULL, " +
+                "`reviewed_by` VARCHAR(50) DEFAULT NULL, " +
+                "`reviewed_time` DATETIME DEFAULT NULL, " +
+                "`create_time` DATETIME DEFAULT CURRENT_TIMESTAMP, " +
+                "`update_time` DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP, " +
+                "PRIMARY KEY (`id`), " +
+                "KEY `idx_appeal_reader_id` (`reader_id`), " +
+                "KEY `idx_appeal_status` (`status`)" +
+                ") ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
+            log.info("=== 申诉表已就绪 ===");
+        } catch (Exception e) {
+            log.warn("创建申诉表时出现警告: {}", e.getMessage());
+        }
     }
 
     private void initAdmin() {
@@ -461,20 +484,6 @@ public class DataInitializer implements CommandLineRunner {
         try {
             Integer permCount = jdbcTemplate.queryForObject(
                 "SELECT COUNT(*) FROM sys_permission", Integer.class);
-            if (permCount != null && permCount > 0) {
-                // Update existing permissions with type field if missing
-                try {
-                    jdbcTemplate.update("UPDATE sys_permission SET type = 'menu' WHERE code IN (" +
-                        "'BOOK_READ','READER_READ','CATEGORY_READ','BORROW_READ','RESERVATION_READ'," +
-                        "'REVIEW_READ','FILE_READ','DASHBOARD_READ','AUDIT_LOG_READ','ROLE_MANAGE'," +
-                        "'PERMISSION_MANAGE','USER_ROLE_ASSIGN','READER_RESERVATION_READ','READER_REVIEW_READ'," +
-                        "'READING_PROGRESS_READ','ADMIN_APPLICATION_STATUS','READER_PROFILE_READ'," +
-                        "'READER_BOOK_BROWSE','READER_CATEGORY_BROWSE','READER_BORROW_READ') AND (type IS NULL OR type = '')");
-                    jdbcTemplate.update("UPDATE sys_permission SET type = 'button' WHERE type IS NULL OR type = ''");
-                } catch (Exception ignored) {}
-                log.info("=== RBAC数据已存在，已更新权限类型 ===");
-                return;
-            }
 
             Map<String, String> permNames = new LinkedHashMap<>();
             permNames.put("BOOK_CREATE", "创建图书");
@@ -521,13 +530,23 @@ public class DataInitializer implements CommandLineRunner {
             permNames.put("READER_BOOK_BROWSE", "浏览图书");
             permNames.put("READER_CATEGORY_BROWSE", "浏览分类");
             permNames.put("READER_BORROW_READ", "查看借阅记录");
-            permNames.put("READER_APPEAL_CREATE", "读者申诉");
+            permNames.put("READER_APPEAL_CREATE", "提交申诉");
+            permNames.put("READER_APPEAL_VIEW", "查看我的申诉");
+            permNames.put("APPEAL_READ", "查看申诉列表");
+            permNames.put("APPEAL_REVIEW", "审核申诉");
             permNames.put("ROLE_MANAGE", "角色管理");
             permNames.put("PERMISSION_MANAGE", "权限管理");
             permNames.put("USER_ROLE_ASSIGN", "用户角色分配");
 
             Map<String, String> moduleMap = new HashMap<>();
             moduleMap.put("BOOK", "图书管理");
+            moduleMap.put("READER_RE", "读者预约");
+            moduleMap.put("READER_REVIEW", "读者评论");
+            moduleMap.put("READER_PROFILE", "读者中心");
+            moduleMap.put("READER_BOOK", "读者浏览");
+            moduleMap.put("READER_CATEGORY", "读者浏览");
+            moduleMap.put("READER_BORROW", "读者借阅");
+            moduleMap.put("READER_APPEAL", "读者申诉");
             moduleMap.put("READER", "读者管理");
             moduleMap.put("CATEGORY", "分类管理");
             moduleMap.put("BORROW", "借阅管理");
@@ -538,20 +557,98 @@ public class DataInitializer implements CommandLineRunner {
             moduleMap.put("AUDIT_LOG", "审计日志");
             moduleMap.put("ADMIN_APPLICATION", "管理员申请");
             moduleMap.put("READING_PROGRESS", "阅读进度");
+            moduleMap.put("APPEAL", "申诉管理");
             moduleMap.put("ROLE", "系统管理");
             moduleMap.put("PERMISSION", "系统管理");
             moduleMap.put("USER_ROLE", "系统管理");
 
+            if (permCount != null && permCount > 0) {
+                // Incremental mode: insert new permissions that don't exist yet
+                int added = 0;
+                for (Map.Entry<String, String> entry : permNames.entrySet()) {
+                    String code = entry.getKey();
+                    String name = entry.getValue();
+                    String module = resolveModule(code, moduleMap);
+                    String type = inferPermissionType(code);
+                    try {
+                        jdbcTemplate.update(
+                            "INSERT IGNORE INTO sys_permission (code, name, module, type) VALUES (?, ?, ?, ?)",
+                            code, name, module, type);
+                        added++;
+                    } catch (Exception ignored) {}
+                }
+                // Update type field for existing permissions
+                try {
+                    jdbcTemplate.update("UPDATE sys_permission SET type = 'menu' WHERE code IN (" +
+                        "'BOOK_READ','READER_READ','CATEGORY_READ','BORROW_READ','RESERVATION_READ'," +
+                        "'REVIEW_READ','FILE_READ','DASHBOARD_READ','AUDIT_LOG_READ','ROLE_MANAGE'," +
+                        "'PERMISSION_MANAGE','USER_ROLE_ASSIGN','READER_RESERVATION_READ','READER_REVIEW_READ'," +
+                        "'READING_PROGRESS_READ','ADMIN_APPLICATION_STATUS','READER_PROFILE_READ'," +
+                        "'READER_BOOK_BROWSE','READER_CATEGORY_BROWSE','READER_BORROW_READ'," +
+                        "'READER_APPEAL_VIEW','APPEAL_READ') AND (type IS NULL OR type = '')");
+                    jdbcTemplate.update("UPDATE sys_permission SET type = 'button' WHERE type IS NULL OR type = ''");
+                } catch (Exception ignored) {}
+                // Ensure SUPER_ADMIN has all permissions
+                Long superAdminRoleId = null;
+                try {
+                    superAdminRoleId = jdbcTemplate.queryForObject(
+                        "SELECT id FROM sys_role WHERE code = 'SUPER_ADMIN'", Long.class);
+                } catch (Exception ignored) {}
+                if (superAdminRoleId != null) {
+                    jdbcTemplate.update(
+                        "INSERT IGNORE INTO sys_role_permission (role_id, permission_id) " +
+                        "SELECT ?, id FROM sys_permission WHERE id NOT IN " +
+                        "(SELECT permission_id FROM sys_role_permission WHERE role_id = ?)",
+                        superAdminRoleId, superAdminRoleId);
+                }
+                // Ensure ADMIN role has appeal permissions
+                Long adminRoleId = null;
+                try {
+                    adminRoleId = jdbcTemplate.queryForObject(
+                        "SELECT id FROM sys_role WHERE code = 'ADMIN'", Long.class);
+                } catch (Exception ignored) {}
+                if (adminRoleId != null) {
+                    for (Permission p : RolePermissions.getPermissions("ADMIN")) {
+                        try {
+                            jdbcTemplate.update(
+                                "INSERT IGNORE INTO sys_role_permission (role_id, permission_id) " +
+                                "SELECT ?, id FROM sys_permission WHERE code = ?",
+                                adminRoleId, p.name());
+                        } catch (Exception ignored) {}
+                    }
+                }
+                // Ensure READER role has reader permissions
+                Long readerRoleId = null;
+                try {
+                    readerRoleId = jdbcTemplate.queryForObject(
+                        "SELECT id FROM sys_role WHERE code = 'READER'", Long.class);
+                } catch (Exception ignored) {}
+                if (readerRoleId != null) {
+                    for (Permission p : RolePermissions.getPermissions("READER")) {
+                        try {
+                            jdbcTemplate.update(
+                                "INSERT IGNORE INTO sys_role_permission (role_id, permission_id) " +
+                                "SELECT ?, id FROM sys_permission WHERE code = ?",
+                                readerRoleId, p.name());
+                        } catch (Exception ignored) {}
+                    }
+                }
+                // Add appeal menu if not exists
+                try {
+                    Integer menuCount = jdbcTemplate.queryForObject(
+                        "SELECT COUNT(*) FROM sys_menu WHERE permission_code = 'APPEAL_READ'", Integer.class);
+                    if (menuCount == null || menuCount == 0) {
+                        jdbcTemplate.update("INSERT INTO sys_menu (parent_id, name, path, icon, sort_order, permission_code, type, status) VALUES (0, '申诉管理', '/appeals', 'Document', 7, 'APPEAL_READ', 1, 1)");
+                    }
+                } catch (Exception ignored) {}
+                log.info("=== RBAC数据已增量更新 ===");
+                return;
+            }
+
             for (Map.Entry<String, String> entry : permNames.entrySet()) {
                 String code = entry.getKey();
                 String name = entry.getValue();
-                String module = "其他";
-                for (Map.Entry<String, String> m : moduleMap.entrySet()) {
-                    if (code.startsWith(m.getKey())) {
-                        module = m.getValue();
-                        break;
-                    }
-                }
+                String module = resolveModule(code, moduleMap);
                 String type = inferPermissionType(code);
                 jdbcTemplate.update(
                     "INSERT INTO sys_permission (code, name, module, type) VALUES (?, ?, ?, ?)",
@@ -634,12 +731,13 @@ public class DataInitializer implements CommandLineRunner {
         jdbcTemplate.update("INSERT INTO sys_menu (parent_id, name, path, icon, sort_order, permission_code, type, status) VALUES (0, '读者管理', '/readers', 'UserFilled', 4, 'READER_READ', 1, 1)");
         jdbcTemplate.update("INSERT INTO sys_menu (parent_id, name, path, icon, sort_order, permission_code, type, status) VALUES (0, '借阅管理', '/borrows', 'Notebook', 5, 'BORROW_READ', 1, 1)");
         jdbcTemplate.update("INSERT INTO sys_menu (parent_id, name, path, icon, sort_order, permission_code, type, status) VALUES (0, '管理员审批', '/admin-applications', 'Stamp', 6, 'ADMIN_APPLICATION_REVIEW', 1, 1)");
-        jdbcTemplate.update("INSERT INTO sys_menu (parent_id, name, path, icon, sort_order, permission_code, type, status) VALUES (0, '读者系统', '/reader-view', 'View', 7, 'READER_PROFILE_READ', 1, 1)");
-        jdbcTemplate.update("INSERT INTO sys_menu (parent_id, name, path, icon, sort_order, permission_code, type, status) VALUES (0, '资源管理', '/resources', 'Files', 8, 'FILE_READ', 1, 1)");
-        jdbcTemplate.update("INSERT INTO sys_menu (parent_id, name, path, icon, sort_order, permission_code, type, status) VALUES (0, '评价管理', '/reviews', 'ChatDotRound', 9, 'REVIEW_READ', 1, 1)");
-        jdbcTemplate.update("INSERT INTO sys_menu (parent_id, name, path, icon, sort_order, permission_code, type, status) VALUES (0, '角色管理', '/system/roles', 'Key', 10, 'ROLE_MANAGE', 1, 1)");
-        jdbcTemplate.update("INSERT INTO sys_menu (parent_id, name, path, icon, sort_order, permission_code, type, status) VALUES (0, '权限管理', '/system/permissions', 'Lock', 11, 'PERMISSION_MANAGE', 1, 1)");
-        jdbcTemplate.update("INSERT INTO sys_menu (parent_id, name, path, icon, sort_order, permission_code, type, status) VALUES (0, '用户角色', '/system/user-roles', 'Avatar', 12, 'USER_ROLE_ASSIGN', 1, 1)");
+        jdbcTemplate.update("INSERT INTO sys_menu (parent_id, name, path, icon, sort_order, permission_code, type, status) VALUES (0, '申诉管理', '/appeals', 'Document', 7, 'APPEAL_READ', 1, 1)");
+        jdbcTemplate.update("INSERT INTO sys_menu (parent_id, name, path, icon, sort_order, permission_code, type, status) VALUES (0, '读者系统', '/reader-view', 'View', 8, 'READER_PROFILE_READ', 1, 1)");
+        jdbcTemplate.update("INSERT INTO sys_menu (parent_id, name, path, icon, sort_order, permission_code, type, status) VALUES (0, '资源管理', '/resources', 'Files', 9, 'FILE_READ', 1, 1)");
+        jdbcTemplate.update("INSERT INTO sys_menu (parent_id, name, path, icon, sort_order, permission_code, type, status) VALUES (0, '评价管理', '/reviews', 'ChatDotRound', 10, 'REVIEW_READ', 1, 1)");
+        jdbcTemplate.update("INSERT INTO sys_menu (parent_id, name, path, icon, sort_order, permission_code, type, status) VALUES (0, '角色管理', '/system/roles', 'Key', 11, 'ROLE_MANAGE', 1, 1)");
+        jdbcTemplate.update("INSERT INTO sys_menu (parent_id, name, path, icon, sort_order, permission_code, type, status) VALUES (0, '权限管理', '/system/permissions', 'Lock', 12, 'PERMISSION_MANAGE', 1, 1)");
+        jdbcTemplate.update("INSERT INTO sys_menu (parent_id, name, path, icon, sort_order, permission_code, type, status) VALUES (0, '用户角色', '/system/user-roles', 'Avatar', 13, 'USER_ROLE_ASSIGN', 1, 1)");
         log.info("=== 已初始化系统菜单 ===");
     }
 
@@ -650,8 +748,22 @@ public class DataInitializer implements CommandLineRunner {
             "AUDIT_LOG_READ", "ROLE_MANAGE", "PERMISSION_MANAGE", "USER_ROLE_ASSIGN",
             "READER_RESERVATION_READ", "READER_REVIEW_READ", "READING_PROGRESS_READ",
             "ADMIN_APPLICATION_STATUS", "READER_PROFILE_READ", "READER_BOOK_BROWSE",
-            "READER_CATEGORY_BROWSE", "READER_BORROW_READ"
+            "READER_CATEGORY_BROWSE", "READER_BORROW_READ", "READER_APPEAL_VIEW",
+            "APPEAL_READ"
         );
         return menuCodes.contains(code) ? "menu" : "button";
+    }
+
+    private String resolveModule(String code, Map<String, String> moduleMap) {
+        // Try longest prefix match first for more specific mappings
+        String bestMatch = null;
+        int bestLen = 0;
+        for (Map.Entry<String, String> m : moduleMap.entrySet()) {
+            if (code.startsWith(m.getKey()) && m.getKey().length() > bestLen) {
+                bestMatch = m.getValue();
+                bestLen = m.getKey().length();
+            }
+        }
+        return bestMatch != null ? bestMatch : "其他";
     }
 }

@@ -107,7 +107,7 @@
     <div class="profile-form-section animate__animated animate__fadeInUp" style="animation-delay: 0.3s">
       <div class="section-header">
         <h3><span class="section-icon">📝</span> 个人信息</h3>
-        <el-button v-if="!editing" type="primary" text @click="startEdit">
+        <el-button v-if="!editing" v-permission="'READER_PROFILE_UPDATE'" type="primary" text @click="startEdit">
           <el-icon><Edit /></el-icon> 编辑信息
         </el-button>
       </div>
@@ -161,7 +161,7 @@
         <transition name="slide-fade">
           <div class="form-actions" v-if="editing">
             <el-button @click="cancelEdit" round>取消</el-button>
-            <el-button type="primary" :loading="saving" @click="saveProfile" round>
+            <el-button v-permission="'READER_PROFILE_UPDATE'" type="primary" :loading="saving" @click="saveProfile" round>
               保存修改
             </el-button>
           </div>
@@ -198,14 +198,14 @@
           <div class="status-info">
             <h4>申请被拒绝</h4>
             <p v-if="adminApp.rejectReason">原因：{{ adminApp.rejectReason }}</p>
-            <el-button type="primary" size="small" round @click="adminApp.showForm = true" style="margin-top: 8px">
+            <el-button v-permission="'ADMIN_APPLICATION_APPLY'" type="primary" size="small" round @click="adminApp.showForm = true" style="margin-top: 8px">
               重新申请
             </el-button>
           </div>
         </div>
         <div v-else class="apply-form-area">
           <p class="apply-desc">如果您希望参与图书馆的管理工作，可以提交申请。审核通过后您的账号将获得管理员权限。</p>
-          <el-button type="primary" round @click="adminApp.showForm = true" v-if="!adminApp.showForm">
+          <el-button v-permission="'ADMIN_APPLICATION_APPLY'" type="primary" round @click="adminApp.showForm = true" v-if="!adminApp.showForm">
             提交申请
           </el-button>
         </div>
@@ -221,7 +221,7 @@
             />
             <div class="apply-form-actions">
               <el-button round @click="adminApp.showForm = false">取消</el-button>
-              <el-button type="primary" round :loading="adminApp.submitting" @click="submitAdminApplication">
+              <el-button v-permission="'ADMIN_APPLICATION_APPLY'" type="primary" round :loading="adminApp.submitting" @click="submitAdminApplication">
                 提交申请
               </el-button>
             </div>

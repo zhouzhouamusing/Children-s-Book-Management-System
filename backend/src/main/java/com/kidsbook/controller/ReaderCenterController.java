@@ -17,6 +17,7 @@ import com.kidsbook.entity.Reader;
 import com.kidsbook.mapper.BookMapper;
 import com.kidsbook.mapper.BorrowRecordMapper;
 import com.kidsbook.mapper.ReaderMapper;
+import com.kidsbook.service.AppealService;
 import com.kidsbook.service.AuditLogService;
 import com.kidsbook.service.BookReservationService;
 import com.kidsbook.service.BookReviewService;
@@ -47,6 +48,7 @@ public class ReaderCenterController {
     private final BookReviewService bookReviewService;
     private final AuditLogService auditLogService;
     private final BorrowService borrowService;
+    private final AppealService appealService;
     private final JwtUtil jwtUtil;
 
     private Long getCurrentReaderId() {
@@ -332,16 +334,52 @@ public class ReaderCenterController {
         if (readerId == null) {
             throw new BusinessException(401, "无法获取读者信息，请重新登录");
         }
-        Reader reader = readerMapper.selectById(readerId);
-        if (reader == null) {
-            throw new BusinessException(404, "读者信息不存在");
-        }
-        if (!"suspended".equals(reader.getStatus())) {
-            throw new BusinessException(400, "当前未被暂停，无需申诉");
-        }
         String reason = body != null ? body.getOrDefault("reason", "") : "";
-        auditLogService.log("SUSPENSION_APPEAL", "reader", readerId,
-            "读者[" + reader.getName() + "]提交暂停申诉: " + reason);
+        appealService.submitAppeal(readerId, "suspension", reason, null);
         return Result.success(null);
+    }
+
+    @PostMapping("/appeals")
+    @RequirePermission(Permission.READER_APPEAL_CREATE)
+    public Result<Object> submitAppeal(@RequestBody Map<String, String> body) {
+        Long readerId = getCurrentReaderId();
+        if (readerId == null) {
+            throw new BusinessException(401, "无法获取读者信息，请重新登录");
+        }
+        String type = body != null ? body.getOrDefault("type", "suspension") : "suspension";
+        String reason = body != null ? body.getOrDefault("reason", "") : "";
+        String evidence = body != null ? body.getOrDefault("evidence", null) : null;
+        if (reason.isEmpty()) {
+            throw new BusinessException(400, "申诉原因不能为空");
+        }
+        var appeal = appealService.submitAppeal(readerId, type, reason, evidence);
+        return Result.success(appeal);
+    }
+
+    @GetMapping("/appeals")
+    @RequirePermission(Permission.READER_APPEAL_VIEW)
+    public Result<Object> getMyAppeals(
+            @RequestParam(defaultValue = "1") int page,
+            @RequestParam(defaultValue = "10") int size) {
+        Long readerId = getCurrentReaderId();
+        if (readerId == null) {
+            throw new BusinessException(401, "无法获取读者信息，请重新登录");
+        }
+        var result = appealService.getMyAppeals(readerId, page, size);
+        return Result.success(PageResult.of(result));
+    }
+
+    @GetMapping("/appeals/{id}")
+    @RequirePermission(Permission.READER_APPEAL_VIEW)
+    public Result<Object> getAppealDetail(@PathVariable Long id) {
+        Long readerId = getCurrentReaderId();
+        if (readerId == null) {
+            throw new BusinessException(401, "无法获取读者信息，请重新登录");
+        }
+        var appeal = appealService.getAppealById(id);
+        if (!appeal.getReaderId().equals(readerId)) {
+            throw new BusinessException(403, "无权查看他人的申诉记录");
+        }
+        return Result.success(appeal);
     }
 }

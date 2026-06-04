@@ -61,6 +61,7 @@
           </div>
           <div class="book-action">
             <el-button
+              v-permission="'READER_RESERVATION_CREATE'"
               type="primary"
               round
               :disabled="book.stock <= 0 || reservedBookIds.has(book.id)"
@@ -76,7 +77,7 @@
               <el-button size="small" text type="primary" @click="openReviews(book)">
                 查看评价
               </el-button>
-              <el-button size="small" text type="warning" @click="openWriteReview(book)">
+              <el-button v-permission="'READER_REVIEW_CREATE'" size="small" text type="warning" @click="openWriteReview(book)">
                 写评价
               </el-button>
             </div>

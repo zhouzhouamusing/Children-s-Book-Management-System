@@ -5,6 +5,7 @@ export const adminMenus = [
   { path: '/readers', name: '读者管理', icon: 'UserFilled', permission: 'READER_READ' },
   { path: '/borrows', name: '借阅管理', icon: 'Notebook', permission: 'BORROW_READ' },
   { path: '/admin-applications', name: '管理员审批', icon: 'Stamp', permission: 'ADMIN_APPLICATION_REVIEW' },
+  { path: '/appeals', name: '申诉管理', icon: 'Document', permission: 'APPEAL_READ' },
   { path: '/reader-view', name: '读者系统', icon: 'View', permission: 'READER_PROFILE_READ' },
   { path: '/resources', name: '资源管理', icon: 'Files', permission: 'FILE_READ' },
   { path: '/reviews', name: '评价管理', icon: 'ChatDotRound', permission: 'REVIEW_READ' },
@@ -20,5 +21,6 @@ export const readerMenus = [
   { path: '/reader/recommend', name: '图书推荐', icon: 'Star', permission: 'READER_BOOK_BROWSE' },
   { path: '/reader/reading-progress', name: '阅读进度', icon: 'TrendCharts', permission: 'READING_PROGRESS_READ' },
   { path: '/reader/my-reviews', name: '我的评价', icon: 'ChatLineRound', permission: 'READER_REVIEW_READ' },
+  { path: '/reader/appeals', name: '我的申诉', icon: 'ChatLineSquare', permission: 'READER_APPEAL_CREATE' },
   { path: '/reader/profile', name: '个人中心', icon: 'User', permission: 'READER_PROFILE_READ' },
 ]

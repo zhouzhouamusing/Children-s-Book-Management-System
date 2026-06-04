@@ -226,6 +226,7 @@
                       <el-tag size="small" :type="p.type === 'menu' ? 'success' : 'warning'" class="perm-type-tag">
                         {{ p.type === 'menu' ? '菜单' : '按钮' }}
                       </el-tag>
+                      <span class="perm-page-hint" v-if="permPageMap[p.code]">{{ permPageMap[p.code] }}</span>
                     </el-checkbox>
                   </div>
                 </div>
@@ -370,6 +371,60 @@ const formRules = {
   code: [{ required: true, message: '请输入角色编码', trigger: 'blur' }],
   name: [{ required: true, message: '请输入角色名称', trigger: 'blur' }],
   level: [{ required: true, message: '请设置层级', trigger: 'blur' }]
+}
+
+const permPageMap = {
+  'BOOK_CREATE': '图书管理 → 新增图书',
+  'BOOK_READ': '图书管理 → 页面访问',
+  'BOOK_UPDATE': '图书管理 → 编辑按钮',
+  'BOOK_DELETE': '图书管理 → 删除按钮',
+  'READER_CREATE': '读者管理 → 新增读者',
+  'READER_READ': '读者管理 → 页面访问',
+  'READER_UPDATE': '读者管理 → 编辑/状态按钮',
+  'READER_DELETE': '读者管理 → 删除按钮',
+  'CATEGORY_CREATE': '分类管理 → 新增分类',
+  'CATEGORY_READ': '分类管理 → 页面访问',
+  'CATEGORY_UPDATE': '分类管理 → 编辑按钮',
+  'CATEGORY_DELETE': '分类管理 → 删除按钮',
+  'BORROW_CREATE': '借阅管理 → 新建借阅',
+  'BORROW_READ': '借阅管理 → 页面访问',
+  'BORROW_UPDATE': '借阅管理 → 归还/续借',
+  'RESERVATION_READ': '预约管理 → 页面访问',
+  'RESERVATION_UPDATE': '预约管理 → 审批按钮',
+  'REVIEW_READ': '评价管理 → 页面访问',
+  'REVIEW_UPDATE': '评价管理 → 通过/拒绝/回复',
+  'REVIEW_DELETE': '评价管理 → 删除按钮',
+  'FILE_CREATE': '资源管理 → 上传文件',
+  'FILE_READ': '资源管理 → 页面访问',
+  'FILE_DELETE': '资源管理 → 删除按钮',
+  'DASHBOARD_READ': '数据概览 → 页面访问',
+  'AUDIT_LOG_READ': '审计日志 → 页面访问',
+  'ADMIN_APPLICATION_REVIEW': '管理员审批 → 通过/拒绝',
+  'APPEAL_READ': '申诉管理 → 页面访问',
+  'APPEAL_REVIEW': '申诉管理 → 审核按钮',
+  'ROLE_MANAGE': '角色管理 → 页面及操作',
+  'PERMISSION_MANAGE': '权限管理 → 页面及操作',
+  'USER_ROLE_ASSIGN': '用户角色 → 分配操作',
+  'READER_RESERVATION_CREATE': '读者端 → 预约图书',
+  'READER_RESERVATION_READ': '读者端 → 预约列表',
+  'READER_RESERVATION_CANCEL': '读者端 → 取消预约',
+  'READER_REVIEW_CREATE': '读者端 → 写评价',
+  'READER_REVIEW_READ': '读者端 → 评价列表',
+  'READER_REVIEW_UPDATE': '读者端 → 修改评价',
+  'READER_REVIEW_DELETE': '读者端 → 删除评价',
+  'READING_PROGRESS_CREATE': '读者端 → 添加进度',
+  'READING_PROGRESS_READ': '读者端 → 进度列表',
+  'READING_PROGRESS_UPDATE': '读者端 → 编辑进度',
+  'READING_PROGRESS_DELETE': '读者端 → 删除进度',
+  'READER_PROFILE_READ': '读者端 → 个人中心',
+  'READER_PROFILE_UPDATE': '读者端 → 编辑资料',
+  'READER_BOOK_BROWSE': '读者端 → 图书浏览',
+  'READER_CATEGORY_BROWSE': '读者端 → 分类浏览',
+  'READER_BORROW_READ': '读者端 → 借阅记录',
+  'READER_APPEAL_CREATE': '读者端 → 提交申诉',
+  'READER_APPEAL_VIEW': '读者端 → 申诉列表',
+  'ADMIN_APPLICATION_APPLY': '读者端 → 申请管理员',
+  'ADMIN_APPLICATION_STATUS': '读者端 → 申请状态',
 }
 
 // Permission tab state
@@ -1034,6 +1089,15 @@ async function removeUserFromRole(user) {
   margin-left: 6px;
   font-size: 10px !important;
   transform: scale(0.85);
+}
+
+.perm-page-hint {
+  display: block;
+  font-size: 11px;
+  color: var(--text-secondary);
+  margin-top: 2px;
+  opacity: 0.7;
+  font-weight: 400;
 }
 
 /* 权限抽屉 */

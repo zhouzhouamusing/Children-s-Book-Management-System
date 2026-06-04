@@ -38,7 +38,10 @@ public enum Permission {
     // 读者借阅记录查看
     READER_BORROW_READ,
     // 读者申诉
-    READER_APPEAL_CREATE,
+    READER_APPEAL_CREATE, READER_APPEAL_VIEW,
+
+    // === 申诉管理（管理员） ===
+    APPEAL_READ, APPEAL_REVIEW,
 
     // === 系统管理权限 ===
     ROLE_MANAGE, PERMISSION_MANAGE, USER_ROLE_ASSIGN

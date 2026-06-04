@@ -1,6 +1,7 @@
 F:\tpzwt\Project001\backend\src\main\java\com\kidsbook\common\RequirePermission.java
 F:\tpzwt\Project001\backend\src\main\java\com\kidsbook\entity\ReaderAccount.java
 F:\tpzwt\Project001\backend\src\main\java\com\kidsbook\entity\ReaderMonthlyStats.java
+F:\tpzwt\Project001\backend\src\main\java\com\kidsbook\dto\UserWithRolesVO.java
 F:\tpzwt\Project001\backend\src\main\java\com\kidsbook\service\FileUploadService.java
 F:\tpzwt\Project001\backend\src\main\java\com\kidsbook\controller\ReaderAuthController.java
 F:\tpzwt\Project001\backend\src\main\java\com\kidsbook\entity\BookReview.java
@@ -17,6 +18,7 @@ F:\tpzwt\Project001\backend\src\main\java\com\kidsbook\entity\SysRolePermission.
 F:\tpzwt\Project001\backend\src\main\java\com\kidsbook\entity\Reader.java
 F:\tpzwt\Project001\backend\src\main\java\com\kidsbook\mapper\ReaderPointsLogMapper.java
 F:\tpzwt\Project001\backend\src\main\java\com\kidsbook\mapper\BorrowRecordMapper.java
+F:\tpzwt\Project001\backend\src\main\java\com\kidsbook\controller\AdminAppealController.java
 F:\tpzwt\Project001\backend\src\main\java\com\kidsbook\config\ScheduledTasks.java
 F:\tpzwt\Project001\backend\src\main\java\com\kidsbook\util\JwtUtil.java
 F:\tpzwt\Project001\backend\src\main\java\com\kidsbook\entity\SysMenu.java
@@ -40,6 +42,7 @@ F:\tpzwt\Project001\backend\src\main\java\com\kidsbook\dto\CategoryRequest.java
 F:\tpzwt\Project001\backend\src\main\java\com\kidsbook\service\AuditLogService.java
 F:\tpzwt\Project001\backend\src\main\java\com\kidsbook\mapper\SysPermissionMapper.java
 F:\tpzwt\Project001\backend\src\main\java\com\kidsbook\mapper\SysRolePermissionMapper.java
+F:\tpzwt\Project001\backend\src\main\java\com\kidsbook\entity\Appeal.java
 F:\tpzwt\Project001\backend\src\main\java\com\kidsbook\mapper\AuditLogMapper.java
 F:\tpzwt\Project001\backend\src\main\java\com\kidsbook\mapper\ReaderAccountMapper.java
 F:\tpzwt\Project001\backend\src\main\java\com\kidsbook\entity\SysRole.java
@@ -74,11 +77,13 @@ F:\tpzwt\Project001\backend\src\main\java\com\kidsbook\config\GlobalExceptionHan
 F:\tpzwt\Project001\backend\src\main\java\com\kidsbook\mapper\SysMenuMapper.java
 F:\tpzwt\Project001\backend\src\main\java\com\kidsbook\common\Result.java
 F:\tpzwt\Project001\backend\src\main\java\com\kidsbook\controller\CategoryController.java
+F:\tpzwt\Project001\backend\src\main\java\com\kidsbook\service\AppealService.java
 F:\tpzwt\Project001\backend\src\main\java\com\kidsbook\entity\AuditLog.java
 F:\tpzwt\Project001\backend\src\main\java\com\kidsbook\mapper\BookMapper.java
 F:\tpzwt\Project001\backend\src\main\java\com\kidsbook\service\AdminApplicationService.java
 F:\tpzwt\Project001\backend\src\main\java\com\kidsbook\entity\Category.java
 F:\tpzwt\Project001\backend\src\main\java\com\kidsbook\controller\AuthController.java
+F:\tpzwt\Project001\backend\src\main\java\com\kidsbook\mapper\AppealMapper.java
 F:\tpzwt\Project001\backend\src\main\java\com\kidsbook\service\RbacService.java
 F:\tpzwt\Project001\backend\src\main\java\com\kidsbook\controller\ReaderReviewController.java
 F:\tpzwt\Project001\backend\src\main\java\com\kidsbook\service\ReaderAccountService.java

@@ -476,3 +476,38 @@ export function getMyMenus() {
   return request.get('/sys/menus/my')
 }
 
+// 权限CRUD
+export function createPermission(data) {
+  return request.post('/sys/permissions', data)
+}
+
+export function updatePermission(id, data) {
+  return request.put(`/sys/permissions/${id}`, data)
+}
+
+export function deletePermission(id) {
+  return request.delete(`/sys/permissions/${id}`)
+}
+
+// 读者申诉
+export function submitAppeal(data) {
+  return request.post('/reader-center/appeals', data)
+}
+
+export function getMyAppeals(params) {
+  return request.get('/reader-center/appeals', { params })
+}
+
+export function getAppealDetail(id) {
+  return request.get(`/reader-center/appeals/${id}`)
+}
+
+// 管理员申诉管理
+export function getAdminAppeals(params) {
+  return request.get('/admin/appeals', { params })
+}
+
+export function reviewAppeal(id, data) {
+  return request.put(`/admin/appeals/${id}/review`, data)
+}
+

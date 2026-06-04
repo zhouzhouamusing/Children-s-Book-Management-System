@@ -57,6 +57,10 @@
           <el-icon><Search /></el-icon>
           搜索
         </el-button>
+        <el-button v-permission="'PERMISSION_MANAGE'" type="success" size="large" @click="handleAdd">
+          <el-icon><Plus /></el-icon>
+          新增权限
+        </el-button>
       </div>
     </el-card>
 
@@ -90,8 +94,17 @@
                   <el-tag size="small" :type="p.type === 'menu' ? 'success' : 'warning'" class="perm-type-badge">
                     {{ p.type === 'menu' ? '菜单' : '按钮' }}
                   </el-tag>
+                  <el-tag v-if="p.builtIn" size="small" type="info" effect="plain" class="perm-builtin-tag">内置</el-tag>
                 </div>
-                <el-tag size="small" class="perm-code-tag" effect="plain">{{ p.code }}</el-tag>
+                <div class="perm-item-actions">
+                  <el-tag size="small" class="perm-code-tag" effect="plain">{{ p.code }}</el-tag>
+                  <el-button v-permission="'PERMISSION_MANAGE'" size="small" class="action-btn-edit" @click="handleEdit(p)">
+                    <el-icon><Edit /></el-icon>
+                  </el-button>
+                  <el-button v-permission="'PERMISSION_MANAGE'" size="small" class="action-btn-delete" :disabled="p.builtIn" @click="handleDelete(p)">
+                    <el-icon><Delete /></el-icon>
+                  </el-button>
+                </div>
               </div>
               <div class="perm-item-roles" v-if="p.roles && p.roles.length > 0">
                 <span class="perm-roles-label">关联角色：</span>
@@ -117,12 +130,57 @@
     <el-empty v-if="!loading && Object.keys(filteredGroups).length === 0" description="未找到匹配的权限">
       <el-button type="primary" @click="clearFilters">清空筛选</el-button>
     </el-empty>
+
+    <!-- 新增/编辑 弹窗 -->
+    <el-dialog
+      v-model="dialogVisible"
+      :title="editingPerm ? '编辑权限' : '新增权限'"
+      width="520px"
+      :close-on-click-modal="false"
+      destroy-on-close
+      class="perm-dialog"
+    >
+      <el-form ref="formRef" :model="permForm" :rules="formRules" label-width="90px" class="perm-form">
+        <el-form-item label="权限编码" prop="code">
+          <el-input
+            v-model="permForm.code"
+            placeholder="如 BOOK_EXPORT（大写英文+下划线）"
+            :disabled="editingPerm && editingPerm.builtIn"
+            @input="permForm.code = permForm.code.toUpperCase()"
+          />
+        </el-form-item>
+        <el-form-item label="权限名称" prop="name">
+          <el-input v-model="permForm.name" placeholder="如 导出图书" maxlength="40" show-word-limit />
+        </el-form-item>
+        <el-form-item label="所属模块" prop="module">
+          <el-select v-model="permForm.module" filterable allow-create placeholder="选择或输入模块" style="width: 100%">
+            <el-option v-for="mod in modules" :key="mod" :label="mod" :value="mod" />
+          </el-select>
+        </el-form-item>
+        <el-form-item label="权限类型" prop="type">
+          <el-radio-group v-model="permForm.type">
+            <el-radio value="menu">菜单权限</el-radio>
+            <el-radio value="button">按钮权限</el-radio>
+          </el-radio-group>
+        </el-form-item>
+        <el-form-item label="描述">
+          <el-input v-model="permForm.description" type="textarea" :rows="2" placeholder="权限用途说明" maxlength="200" show-word-limit />
+        </el-form-item>
+      </el-form>
+      <template #footer>
+        <el-button @click="dialogVisible = false">取消</el-button>
+        <el-button type="primary" @click="submitForm" :loading="submitLoading">
+          {{ submitLoading ? '保存中...' : '确认保存' }}
+        </el-button>
+      </template>
+    </el-dialog>
   </div>
 </template>
 
 <script setup>
 import { ref, onMounted, computed } from 'vue'
-import { getPermissionsWithRoles, getPermissionModules } from '@/api'
+import { ElMessage, ElMessageBox } from 'element-plus'
+import { getPermissionsWithRoles, getPermissionModules, createPermission, updatePermission, deletePermission } from '@/api'
 
 const loading = ref(false)
 const allPermissions = ref([])
@@ -151,7 +209,24 @@ function getButtonCount(perms) {
   return perms.filter(p => p.type === 'button').length
 }
 
-onMounted(async () => {
+// Dialog state
+const dialogVisible = ref(false)
+const editingPerm = ref(null)
+const submitLoading = ref(false)
+const formRef = ref(null)
+const permForm = ref({ code: '', name: '', module: '', type: 'button', description: '' })
+const formRules = {
+  code: [{ required: true, message: '请输入权限编码', trigger: 'blur' }],
+  name: [{ required: true, message: '请输入权限名称', trigger: 'blur' }],
+  module: [{ required: true, message: '请选择所属模块', trigger: 'change' }],
+  type: [{ required: true, message: '请选择权限类型', trigger: 'change' }]
+}
+
+onMounted(() => {
+  loadData()
+})
+
+async function loadData() {
   loading.value = true
   try {
     const [permRes, modRes] = await Promise.all([getPermissionsWithRoles(), getPermissionModules()])
@@ -170,7 +245,7 @@ onMounted(async () => {
   } finally {
     loading.value = false
   }
-})
+}
 
 const filteredGroups = computed(() => {
   let result = { ...groupedPermissions.value }
@@ -213,6 +288,60 @@ function clearFilters() {
   selectedModule.value = ''
   selectedType.value = ''
   searchKeyword.value = ''
+}
+
+function handleAdd() {
+  editingPerm.value = null
+  permForm.value = { code: '', name: '', module: '', type: 'button', description: '' }
+  dialogVisible.value = true
+}
+
+function handleEdit(perm) {
+  editingPerm.value = perm
+  permForm.value = {
+    code: perm.code,
+    name: perm.name,
+    module: perm.module || '',
+    type: perm.type || 'button',
+    description: perm.description || ''
+  }
+  dialogVisible.value = true
+}
+
+async function submitForm() {
+  const valid = await formRef.value.validate().catch(() => false)
+  if (!valid) return
+  submitLoading.value = true
+  try {
+    if (editingPerm.value) {
+      await updatePermission(editingPerm.value.id, permForm.value)
+      ElMessage.success('权限更新成功')
+    } else {
+      await createPermission(permForm.value)
+      ElMessage.success('权限创建成功')
+    }
+    dialogVisible.value = false
+    loadData()
+  } catch (e) {
+    console.error(e)
+  } finally {
+    submitLoading.value = false
+  }
+}
+
+async function handleDelete(perm) {
+  if (perm.builtIn) {
+    ElMessage.warning('内置权限不可删除')
+    return
+  }
+  await ElMessageBox.confirm(`确定要删除权限「${perm.name}」(${perm.code}) 吗？删除后将移除所有角色的该权限关联。`, '警告', { type: 'warning' })
+  try {
+    await deletePermission(perm.id)
+    ElMessage.success('删除成功')
+    loadData()
+  } catch (e) {
+    console.error(e)
+  }
 }
 </script>
 
@@ -300,7 +429,7 @@ function clearFilters() {
 
 .modules-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(420px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(480px, 1fr));
   gap: 20px;
 }
 
@@ -371,6 +500,12 @@ function clearFilters() {
   gap: 10px;
 }
 
+.perm-item-actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
 .perm-dot {
   width: 8px;
   height: 8px;
@@ -397,6 +532,11 @@ function clearFilters() {
 .perm-type-badge {
   font-size: 10px !important;
   transform: scale(0.9);
+}
+
+.perm-builtin-tag {
+  font-size: 10px !important;
+  transform: scale(0.85);
 }
 
 .perm-code-tag {
@@ -427,6 +567,55 @@ function clearFilters() {
   height: 18px !important;
   line-height: 18px !important;
   padding: 0 6px !important;
+}
+
+.action-btn-edit {
+  background: linear-gradient(135deg, var(--btn-edit-from), var(--btn-edit-to)) !important;
+  border: none !important;
+  color: #fff !important;
+  font-size: 12px;
+  padding: 4px 8px !important;
+  height: 26px;
+  width: 26px;
+}
+
+.action-btn-edit:hover {
+  box-shadow: 0 3px 8px rgba(167, 139, 250, 0.3);
+}
+
+.action-btn-delete {
+  background: linear-gradient(135deg, var(--btn-delete-from), var(--btn-delete-to)) !important;
+  border: none !important;
+  color: #fff !important;
+  font-size: 12px;
+  padding: 4px 8px !important;
+  height: 26px;
+  width: 26px;
+}
+
+.action-btn-delete:hover {
+  box-shadow: 0 3px 8px rgba(255, 179, 186, 0.4);
+}
+
+.action-btn-delete:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+/* 弹窗 */
+.perm-dialog :deep(.el-dialog__header) {
+  background: linear-gradient(135deg, var(--purple-light), var(--blue-light));
+  margin-right: 0;
+  padding: 20px 24px;
+}
+
+.perm-dialog :deep(.el-dialog__title) {
+  font-weight: 600;
+  font-size: 18px;
+}
+
+.perm-form {
+  padding: 8px 0;
 }
 
 /* 列表过渡动画 */

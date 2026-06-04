@@ -26,6 +26,8 @@ public final class RolePermissions {
         Permission.AUDIT_LOG_READ,
         // 管理员申请审批
         Permission.ADMIN_APPLICATION_REVIEW,
+        // 申诉管理
+        Permission.APPEAL_READ, Permission.APPEAL_REVIEW,
         // 读者中心（管理员可查看但不可执行读者专属操作）
         Permission.READER_PROFILE_READ, Permission.READER_BORROW_READ,
         Permission.READER_RESERVATION_READ, Permission.READER_BOOK_BROWSE,
@@ -51,7 +53,7 @@ public final class RolePermissions {
         // 借阅记录
         Permission.READER_BORROW_READ,
         // 申诉
-        Permission.READER_APPEAL_CREATE
+        Permission.READER_APPEAL_CREATE, Permission.READER_APPEAL_VIEW
     );
 
     static {

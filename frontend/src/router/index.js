@@ -94,6 +94,12 @@ const routes = [
         meta: { title: '评价管理', roles: ['ADMIN', 'SUPER_ADMIN'], permission: 'REVIEW_READ' }
       },
       {
+        path: 'appeals',
+        name: 'Appeals',
+        component: () => import('@/views/Appeals.vue'),
+        meta: { title: '申诉管理', roles: ['ADMIN', 'SUPER_ADMIN'], permission: 'APPEAL_READ' }
+      },
+      {
         path: 'system/roles',
         name: 'SystemRoles',
         component: () => import('@/views/system/Roles.vue'),
@@ -154,6 +160,12 @@ const routes = [
         name: 'MyReviews',
         component: () => import('@/views/reader/MyReviews.vue'),
         meta: { title: '我的评价', roles: ['READER'], permission: 'READER_REVIEW' }
+      },
+      {
+        path: 'appeals',
+        name: 'ReaderAppeals',
+        component: () => import('@/views/reader/Appeals.vue'),
+        meta: { title: '我的申诉', roles: ['READER'], permission: 'READER_APPEAL_CREATE' }
       },
       {
         path: 'profile',

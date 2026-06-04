@@ -46,7 +46,7 @@
           <el-option label="已完成" value="completed" />
           <el-option label="已暂停" value="paused" />
         </el-select>
-        <el-button type="primary" round @click="showAddDialog" class="add-btn">
+        <el-button v-permission="'READING_PROGRESS_CREATE'" type="primary" round @click="showAddDialog" class="add-btn">
           <el-icon><Plus /></el-icon>
           {{ activeTab === 'progress' ? '添加进度' : '添加笔记' }}
         </el-button>
@@ -134,10 +134,10 @@
               <el-tag size="small" round type="info" v-if="note.pageNumber">第{{ note.pageNumber }}页</el-tag>
             </div>
             <div class="note-actions">
-              <el-button text size="small" @click="handleEditNote(note)">
+              <el-button v-permission="'READING_PROGRESS_UPDATE'" text size="small" @click="handleEditNote(note)">
                 <el-icon><Edit /></el-icon>
               </el-button>
-              <el-button text size="small" type="danger" @click="handleDeleteNote(note)">
+              <el-button v-permission="'READING_PROGRESS_DELETE'" text size="small" type="danger" @click="handleDeleteNote(note)">
                 <el-icon><Delete /></el-icon>
               </el-button>
             </div>

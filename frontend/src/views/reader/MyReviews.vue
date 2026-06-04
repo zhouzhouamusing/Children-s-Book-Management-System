@@ -39,6 +39,7 @@
             <div class="card-actions">
               <el-button
                 v-if="review.status !== 'approved'"
+                v-permission="'READER_REVIEW_UPDATE'"
                 type="primary"
                 size="small"
                 plain
@@ -47,6 +48,7 @@
                 修改
               </el-button>
               <el-button
+                v-permission="'READER_REVIEW_DELETE'"
                 type="danger"
                 size="small"
                 plain
