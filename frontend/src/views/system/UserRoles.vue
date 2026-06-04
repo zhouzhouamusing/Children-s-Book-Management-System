@@ -39,6 +39,10 @@
           <el-option label="管理员" value="ADMIN" />
           <el-option label="读者" value="READER" />
         </el-select>
+        <el-select v-model="filterRoleStatus" placeholder="角色筛选" clearable size="large" class="type-select" @change="applyLocalFilter">
+          <el-option label="无角色用户" value="no_role" />
+          <el-option label="多角色用户" value="multi_role" />
+        </el-select>
         <el-input
           v-model="searchKeyword"
           placeholder="搜索用户名或昵称..."
@@ -58,7 +62,7 @@
 
     <!-- 用户表格 -->
     <el-card class="table-card animate__animated animate__fadeInUp" v-loading="loading" element-loading-text="加载用户数据中...">
-      <el-table :data="userList" stripe style="width: 100%" row-class-name="table-row">
+      <el-table :data="displayList" stripe style="width: 100%" row-class-name="table-row">
         <el-table-column type="index" label="#" width="50" />
         <el-table-column prop="username" label="用户名" width="140">
           <template #default="{ row }">
@@ -152,6 +156,30 @@
             </div>
           </el-checkbox-group>
         </div>
+        <!-- 权限预览区域 -->
+        <div class="perm-preview-section" v-if="selectedRoleIds.length > 0">
+          <div class="assign-section-title">
+            权限预览
+            <el-tag size="small" type="info" effect="light" class="perm-preview-count">{{ effectivePermCount }} 项</el-tag>
+          </div>
+          <div class="perm-preview-modules">
+            <div v-for="(perms, mod) in effectivePermsByModule" :key="mod" class="perm-preview-module">
+              <div class="perm-preview-mod-title">{{ mod }}</div>
+              <div class="perm-preview-tags">
+                <el-tag
+                  v-for="p in perms" :key="p.id"
+                  size="small"
+                  :type="p.type === 'menu' ? 'success' : 'warning'"
+                  :effect="p.inherited ? 'plain' : 'light'"
+                  class="perm-preview-tag"
+                >
+                  {{ p.name }}
+                  <span v-if="p.inherited" class="inherited-mark">继承</span>
+                </el-tag>
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
       <template #footer>
         <el-button @click="dialogVisible = false">取消</el-button>
@@ -164,14 +192,15 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, watch } from 'vue'
 import { ElMessage } from 'element-plus'
-import { getAllUsersWithRoles, getAllRoles, assignUserRoles, getUserRoles } from '@/api'
+import { getAllUsersWithRoles, getAllRoles, assignUserRoles, getUserRoles, getPermissions, getRolePermissions } from '@/api'
 
 const loading = ref(false)
 const userList = ref([])
 const searchKeyword = ref('')
 const filterType = ref('')
+const filterRoleStatus = ref('')
 const currentPage = ref(1)
 const pageSize = ref(20)
 const total = ref(0)
@@ -185,6 +214,19 @@ const stats = computed(() => {
   }
 })
 
+const displayList = computed(() => {
+  if (!filterRoleStatus.value) return userList.value
+  if (filterRoleStatus.value === 'no_role') {
+    return userList.value.filter(u => !u.roles || u.roles.length === 0)
+  }
+  if (filterRoleStatus.value === 'multi_role') {
+    return userList.value.filter(u => u.roles && u.roles.length > 1)
+  }
+  return userList.value
+})
+
+function applyLocalFilter() {}
+
 // Dialog state
 const dialogVisible = ref(false)
 const assignLoading = ref(false)
@@ -192,10 +234,67 @@ const saveLoading = ref(false)
 const editingUser = ref(null)
 const selectedRoleIds = ref([])
 const allRoles = ref([])
+const allPermissions = ref([])
+const rolePermCache = ref({})
+
+const effectivePermsByModule = computed(() => {
+  if (selectedRoleIds.value.length === 0) return {}
+  const selectedRoles = allRoles.value.filter(r => selectedRoleIds.value.includes(r.id))
+  const maxLevel = Math.max(...selectedRoles.map(r => r.level || 0), 0)
+  const inheritedRoles = allRoles.value.filter(r => r.level < maxLevel && r.status === 1 && !selectedRoleIds.value.includes(r.id))
+
+  const directPermIds = new Set()
+  const inheritedPermIds = new Set()
+
+  selectedRoles.forEach(role => {
+    const permIds = rolePermCache.value[role.id] || []
+    permIds.forEach(id => directPermIds.add(id))
+  })
+
+  inheritedRoles.forEach(role => {
+    const permIds = rolePermCache.value[role.id] || []
+    permIds.forEach(id => {
+      if (!directPermIds.has(id)) inheritedPermIds.add(id)
+    })
+  })
+
+  const allEffectiveIds = new Set([...directPermIds, ...inheritedPermIds])
+  const grouped = {}
+  allPermissions.value.forEach(p => {
+    if (!allEffectiveIds.has(p.id)) return
+    const mod = p.module || '其他'
+    if (!grouped[mod]) grouped[mod] = []
+    grouped[mod].push({ ...p, inherited: inheritedPermIds.has(p.id) })
+  })
+  return grouped
+})
+
+const effectivePermCount = computed(() => {
+  let count = 0
+  Object.values(effectivePermsByModule.value).forEach(perms => { count += perms.length })
+  return count
+})
+
+watch(selectedRoleIds, async (newIds) => {
+  const selectedRoles = allRoles.value.filter(r => newIds.includes(r.id))
+  const maxLevel = Math.max(...selectedRoles.map(r => r.level || 0), 0)
+  const relevantRoles = allRoles.value.filter(r => newIds.includes(r.id) || (r.level < maxLevel && r.status === 1))
+  for (const role of relevantRoles) {
+    if (!rolePermCache.value[role.id]) {
+      try {
+        const res = await getRolePermissions(role.id)
+        rolePermCache.value[role.id] = res.data || []
+      } catch (e) {
+        rolePermCache.value[role.id] = []
+      }
+    }
+  }
+}, { deep: true })
 
 onMounted(() => {
   loadUsers()
   loadAllRoles()
+  loadAllPermissions()
 })
 
 async function loadUsers() {
@@ -218,6 +317,15 @@ async function loadAllRoles() {
   try {
     const res = await getAllRoles()
     allRoles.value = res.data || []
+  } catch (e) {
+    console.error(e)
+  }
+}
+
+async function loadAllPermissions() {
+  try {
+    const res = await getPermissions()
+    allPermissions.value = res.data || []
   } catch (e) {
     console.error(e)
   }
@@ -448,6 +556,55 @@ async function saveUserRoles() {
   font-size: 12px;
   color: var(--text-secondary);
   margin-left: 4px;
+}
+
+/* 权限预览 */
+.perm-preview-section {
+  margin-top: 20px;
+  padding-top: 16px;
+  border-top: 1px dashed #E8E8E8;
+}
+
+.perm-preview-count {
+  margin-left: 8px;
+}
+
+.perm-preview-modules {
+  max-height: 200px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding-right: 4px;
+}
+
+.perm-preview-module {
+  padding: 10px 12px;
+  background: var(--bg-main);
+  border-radius: var(--radius-sm);
+}
+
+.perm-preview-mod-title {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  margin-bottom: 6px;
+}
+
+.perm-preview-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+.perm-preview-tag {
+  font-size: 11px !important;
+}
+
+.inherited-mark {
+  font-size: 9px;
+  margin-left: 3px;
+  opacity: 0.7;
 }
 
 @media (max-width: 1200px) {

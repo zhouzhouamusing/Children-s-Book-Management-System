@@ -61,8 +61,24 @@
           <el-icon><Plus /></el-icon>
           新增权限
         </el-button>
+        <el-button v-permission="'PERMISSION_MANAGE'" size="large" :type="batchMode ? 'warning' : 'info'" plain @click="toggleBatchMode">
+          {{ batchMode ? '退出批量' : '批量操作' }}
+        </el-button>
+        <el-button v-permission="'PERMISSION_MANAGE'" size="large" type="info" plain @click="exportPermissions">
+          <el-icon><Download /></el-icon>
+          导出清单
+        </el-button>
       </div>
     </el-card>
+
+    <!-- 批量操作栏 -->
+    <div v-if="batchMode" class="batch-bar animate__animated animate__fadeInDown">
+      <span class="batch-info">已选择 <strong>{{ batchSelected.length }}</strong> 个权限</span>
+      <el-button v-permission="'PERMISSION_MANAGE'" type="danger" size="small" :disabled="batchSelected.length === 0" @click="handleBatchDelete">
+        批量删除
+      </el-button>
+      <el-button size="small" @click="batchSelected = []">清空选择</el-button>
+    </div>
 
     <!-- 权限模块卡片网格 -->
     <div class="perm-modules" v-loading="loading" element-loading-text="加载权限数据中...">
@@ -86,15 +102,24 @@
             </div>
           </template>
           <div class="perm-list">
-            <div v-for="p in perms" :key="p.id" class="perm-item">
+            <div v-for="p in perms" :key="p.id" class="perm-item" :class="{ 'batch-selected': batchSelected.includes(p.id) }">
               <div class="perm-item-top">
                 <div class="perm-item-left">
+                  <el-checkbox
+                    v-if="batchMode && !p.builtIn"
+                    :model-value="batchSelected.includes(p.id)"
+                    @change="(val) => toggleBatchItem(p.id, val)"
+                    class="batch-checkbox"
+                  />
                   <span class="perm-dot" :class="p.type === 'menu' ? 'dot-menu' : 'dot-button'"></span>
                   <span class="perm-name">{{ p.name }}</span>
                   <el-tag size="small" :type="p.type === 'menu' ? 'success' : 'warning'" class="perm-type-badge">
                     {{ p.type === 'menu' ? '菜单' : '按钮' }}
                   </el-tag>
                   <el-tag v-if="p.builtIn" size="small" type="info" effect="plain" class="perm-builtin-tag">内置</el-tag>
+                  <el-tag v-if="p.roles && p.roles.length > 0" size="small" effect="light" class="perm-usage-tag">
+                    {{ p.roles.length }} 角色使用
+                  </el-tag>
                 </div>
                 <div class="perm-item-actions">
                   <el-tag size="small" class="perm-code-tag" effect="plain">{{ p.code }}</el-tag>
@@ -189,6 +214,8 @@ const selectedModule = ref('')
 const selectedType = ref('')
 const searchKeyword = ref('')
 const groupedPermissions = ref({})
+const batchMode = ref(false)
+const batchSelected = ref([])
 
 const permStats = computed(() => {
   const perms = allPermissions.value
@@ -342,6 +369,54 @@ async function handleDelete(perm) {
   } catch (e) {
     console.error(e)
   }
+}
+
+function toggleBatchMode() {
+  batchMode.value = !batchMode.value
+  batchSelected.value = []
+}
+
+function toggleBatchItem(id, checked) {
+  if (checked) {
+    if (!batchSelected.value.includes(id)) batchSelected.value.push(id)
+  } else {
+    batchSelected.value = batchSelected.value.filter(i => i !== id)
+  }
+}
+
+async function handleBatchDelete() {
+  if (batchSelected.value.length === 0) return
+  await ElMessageBox.confirm(`确定要删除选中的 ${batchSelected.value.length} 个权限吗？此操作不可恢复。`, '批量删除', { type: 'warning' })
+  try {
+    for (const id of batchSelected.value) {
+      await deletePermission(id)
+    }
+    ElMessage.success(`成功删除 ${batchSelected.value.length} 个权限`)
+    batchSelected.value = []
+    batchMode.value = false
+    loadData()
+  } catch (e) {
+    console.error(e)
+    ElMessage.error('部分权限删除失败')
+    loadData()
+  }
+}
+
+function exportPermissions() {
+  const perms = allPermissions.value
+  const lines = ['编码,名称,模块,类型,关联角色']
+  perms.forEach(p => {
+    const roles = (p.roles || []).map(r => r.name).join(';')
+    lines.push(`${p.code},${p.name},${p.module || ''},${p.type === 'menu' ? '菜单' : '按钮'},${roles}`)
+  })
+  const blob = new Blob(['﻿' + lines.join('\n')], { type: 'text/csv;charset=utf-8' })
+  const url = URL.createObjectURL(blob)
+  const a = document.createElement('a')
+  a.href = url
+  a.download = `权限清单_${new Date().toISOString().slice(0, 10)}.csv`
+  a.click()
+  URL.revokeObjectURL(url)
+  ElMessage.success('导出成功')
 }
 </script>
 
@@ -537,6 +612,44 @@ async function handleDelete(perm) {
 .perm-builtin-tag {
   font-size: 10px !important;
   transform: scale(0.85);
+}
+
+.perm-usage-tag {
+  font-size: 10px !important;
+  transform: scale(0.85);
+  background: linear-gradient(135deg, var(--blue-light), var(--purple-light)) !important;
+  color: var(--purple) !important;
+  border: none !important;
+}
+
+/* Batch mode */
+.batch-bar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 20px;
+  background: linear-gradient(135deg, #FFF3CD, #FFEAA7);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-soft);
+}
+
+.batch-info {
+  font-size: 14px;
+  color: var(--text-primary);
+}
+
+.batch-info strong {
+  color: var(--purple);
+  font-size: 16px;
+}
+
+.batch-checkbox {
+  margin-right: 4px;
+}
+
+.perm-item.batch-selected {
+  background: linear-gradient(135deg, var(--purple-light), var(--blue-light)) !important;
+  border: 1px solid var(--purple);
 }
 
 .perm-code-tag {

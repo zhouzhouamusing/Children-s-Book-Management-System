@@ -20,6 +20,12 @@
           <el-option label="已通过" value="approved" />
           <el-option label="已拒绝" value="rejected" />
         </el-select>
+        <el-select v-model="typeFilter" placeholder="全部类型" clearable @change="handleSearch" style="width: 140px">
+          <el-option label="全部" value="" />
+          <el-option label="暂停申诉" value="suspension" />
+          <el-option label="逾期申诉" value="overdue_penalty" />
+          <el-option label="其他" value="other" />
+        </el-select>
         <el-input v-model="keyword" placeholder="搜索读者姓名/原因..." prefix-icon="Search" clearable style="width: 240px" @keyup.enter="handleSearch" />
         <el-button type="primary" @click="handleSearch">
           <el-icon><Search /></el-icon> 搜索
@@ -173,6 +179,19 @@
           <span class="detail-label">管理员反馈：</span>
           <span class="detail-value">{{ detailDialog.data.feedback }}</span>
         </div>
+        <div v-if="detailDialog.data.review_time" class="detail-timeline">
+          <div class="timeline-title">📅 处理时间线</div>
+          <div class="timeline-item">
+            <span class="timeline-dot submitted"></span>
+            <span class="timeline-text">提交申诉</span>
+            <span class="timeline-time">{{ formatTime(detailDialog.data.create_time) }}</span>
+          </div>
+          <div class="timeline-item">
+            <span class="timeline-dot" :class="detailDialog.data.status === 'approved' ? 'approved' : 'rejected'"></span>
+            <span class="timeline-text">{{ detailDialog.data.status === 'approved' ? '审核通过' : '审核拒绝' }}</span>
+            <span class="timeline-time">{{ formatTime(detailDialog.data.review_time) }}</span>
+          </div>
+        </div>
       </div>
       <template #footer>
         <el-button @click="detailDialog.visible = false">关闭</el-button>
@@ -194,6 +213,7 @@ const currentPage = ref(1)
 const pageSize = ref(10)
 const keyword = ref('')
 const statusFilter = ref('')
+const typeFilter = ref('')
 
 const stats = reactive({ total: 0, pending: 0, approved: 0, rejected: 0 })
 
@@ -254,7 +274,8 @@ const fetchList = async () => {
       page: currentPage.value,
       size: pageSize.value,
       keyword: keyword.value,
-      status: statusFilter.value
+      status: statusFilter.value,
+      type: typeFilter.value
     })
     records.value = res.data.records || []
     total.value = res.data.total || 0
@@ -432,6 +453,59 @@ onMounted(fetchList)
   color: var(--text-primary);
   font-size: 14px;
   word-break: break-all;
+}
+
+/* Timeline */
+.detail-timeline {
+  margin-top: 16px;
+  padding: 14px;
+  background: linear-gradient(135deg, #f8f9fa, #eef0f8);
+  border-radius: var(--radius-sm);
+}
+
+.timeline-title {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin-bottom: 12px;
+}
+
+.timeline-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 6px 0;
+}
+
+.timeline-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.timeline-dot.submitted {
+  background: var(--blue);
+}
+
+.timeline-dot.approved {
+  background: var(--green);
+}
+
+.timeline-dot.rejected {
+  background: var(--pink);
+}
+
+.timeline-text {
+  font-size: 13px;
+  color: var(--text-primary);
+  font-weight: 500;
+}
+
+.timeline-time {
+  margin-left: auto;
+  font-size: 12px;
+  color: var(--text-secondary);
 }
 
 @media (max-width: 768px) {

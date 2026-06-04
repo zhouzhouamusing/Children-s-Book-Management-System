@@ -76,6 +76,11 @@
             <p>{{ appeal.reason }}</p>
           </div>
 
+          <div v-if="appeal.evidence" class="card-evidence">
+            <span class="evidence-label">📎 证据材料：</span>
+            <span class="evidence-text">{{ appeal.evidence }}</span>
+          </div>
+
           <div v-if="appeal.feedback" class="card-feedback">
             <div class="feedback-header">💬 管理员反馈</div>
             <p class="feedback-content">{{ appeal.feedback }}</p>
@@ -142,6 +147,17 @@
             show-word-limit
           />
         </div>
+        <div class="form-item">
+          <label class="form-label">证据材料 <span class="form-optional">（选填）</span></label>
+          <el-input
+            v-model="form.evidence"
+            type="textarea"
+            :rows="3"
+            placeholder="请提供相关证据描述或链接，如截图链接、借阅凭证编号等..."
+            maxlength="500"
+            show-word-limit
+          />
+        </div>
       </div>
       <template #footer>
         <el-button round @click="dialogVisible = false">取消</el-button>
@@ -182,7 +198,8 @@ const statsData = reactive({
 
 const form = reactive({
   type: '',
-  reason: ''
+  reason: '',
+  evidence: ''
 })
 
 const typeLabel = (type) => {
@@ -230,11 +247,12 @@ const handleSubmit = async () => {
   }
   submitLoading.value = true
   try {
-    await submitAppeal({ type: form.type, reason: form.reason.trim() })
+    await submitAppeal({ type: form.type, reason: form.reason.trim(), evidence: form.evidence.trim() || undefined })
     ElMessage.success('申诉提交成功，请耐心等待审核')
     dialogVisible.value = false
     form.type = ''
     form.reason = ''
+    form.evidence = ''
     currentPage.value = 1
     fetchAppeals()
   } catch (e) {
@@ -425,6 +443,32 @@ onMounted(() => {
   line-height: 1.7;
   font-size: 14px;
   word-break: break-word;
+}
+
+/* Evidence Section */
+.card-evidence {
+  background: linear-gradient(135deg, #FFF8E1, #FFFDF5);
+  padding: 10px 14px;
+  border-radius: var(--radius-sm);
+  margin-bottom: 14px;
+  border-left: 3px solid #F5A623;
+  font-size: 13px;
+}
+
+.evidence-label {
+  font-weight: 600;
+  color: #F5A623;
+}
+
+.evidence-text {
+  color: var(--text-primary);
+  word-break: break-word;
+}
+
+.form-optional {
+  font-weight: 400;
+  font-size: 12px;
+  color: var(--text-secondary);
 }
 
 /* Feedback Section */
