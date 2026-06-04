@@ -107,7 +107,7 @@
         <el-table-column prop="bookId" label="关联图书" width="140">
           <template #default="{ row }">
             <span v-if="row.bookId" class="book-link">ID: {{ row.bookId }}</span>
-            <el-button v-else size="small" type="warning" plain @click="openLinkDialog(row)">
+            <el-button v-else v-permission="'FILE_CREATE'" size="small" type="warning" plain @click="openLinkDialog(row)">
               关联图书
             </el-button>
           </template>

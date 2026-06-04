@@ -141,7 +141,7 @@
             <el-button v-permission="'READER_UPDATE'" class="card-btn edit" size="small" @click="handleEdit(reader)">
               <el-icon><Edit /></el-icon> 编辑
             </el-button>
-            <el-button class="card-btn status-btn" size="small" @click="handleToggleStatus(reader)">
+            <el-button v-permission="'READER_UPDATE'" class="card-btn status-btn" size="small" @click="handleToggleStatus(reader)">
               <el-icon><Switch /></el-icon> {{ reader.status === 'normal' ? '暂停' : '恢复' }}
             </el-button>
             <el-button v-permission="'READER_DELETE'" class="card-btn delete" size="small" @click="handleDelete(reader)">
@@ -152,7 +152,7 @@
       </transition-group>
 
       <el-empty v-if="!loading && readerList.length === 0" description="暂无读者数据，点击上方按钮添加第一位小读者吧~">
-        <el-button type="primary" @click="handleAdd">添加读者</el-button>
+        <el-button v-permission="'READER_CREATE'" type="primary" @click="handleAdd">添加读者</el-button>
       </el-empty>
     </div>
 

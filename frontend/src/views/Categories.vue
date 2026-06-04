@@ -124,7 +124,7 @@
       </transition-group>
 
       <el-empty v-if="!loading && categoryList.length === 0" description="暂无分类数据，点击上方按钮创建第一个分类吧~">
-        <el-button type="primary" @click="handleAdd">立即创建</el-button>
+        <el-button v-permission="'CATEGORY_CREATE'" type="primary" @click="handleAdd">立即创建</el-button>
       </el-empty>
     </div>
 

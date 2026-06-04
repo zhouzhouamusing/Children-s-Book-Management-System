@@ -87,6 +87,7 @@
                 拒绝
               </el-button>
               <el-button
+                v-permission="'REVIEW_UPDATE'"
                 type="primary"
                 size="small"
                 plain

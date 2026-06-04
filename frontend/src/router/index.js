@@ -202,8 +202,19 @@ router.beforeEach(async (to, from) => {
       const { default: request } = await import('@/utils/request')
       const res = await request.get('/auth/validate')
       markValidated()
-      if (res.data && res.data.suspended !== undefined) {
-        localStorage.setItem('suspended', res.data.suspended ? 'true' : 'false')
+      if (res.data) {
+        if (res.data.suspended !== undefined) {
+          localStorage.setItem('suspended', res.data.suspended ? 'true' : 'false')
+        }
+        if (res.data.roles) {
+          localStorage.setItem('roles', JSON.stringify(res.data.roles))
+        }
+        if (res.data.permissions) {
+          localStorage.setItem('permissions', JSON.stringify(res.data.permissions))
+        }
+        const { usePermissionStore } = await import('@/stores/permission')
+        const permStore = usePermissionStore()
+        permStore.loadFromStorage()
       }
     } catch (e) {
       if (e?.response?.status === 403 || e?.response?.data?.code === 403) {

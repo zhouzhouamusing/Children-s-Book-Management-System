@@ -12,6 +12,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 @RestController
@@ -31,9 +32,14 @@ public class AuthController {
         String username = jwtUtil.getUsernameFromToken(token);
         String role = jwtUtil.getRoleFromToken(token);
 
+        List<String> roles = jwtUtil.getRolesFromToken(token);
+        List<String> permissions = jwtUtil.getPermissionsFromToken(token);
+
         Map<String, Object> data = new HashMap<>();
         data.put("username", username);
         data.put("role", role);
+        data.put("roles", roles);
+        data.put("permissions", permissions);
         data.put("valid", true);
 
         if ("READER".equals(role)) {
