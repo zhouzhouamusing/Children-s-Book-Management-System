@@ -13,6 +13,7 @@ public class SysPermission {
     private String name;
     private String module;
     private String description;
+    private String type;
     @TableField(fill = FieldFill.INSERT)
     private LocalDateTime createTime;
 }

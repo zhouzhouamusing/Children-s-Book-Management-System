@@ -2,6 +2,13 @@ import { createRouter, createWebHashHistory } from 'vue-router'
 import { isTokenExpired, getRoleFromToken, clearAuth, VALIDATION_INTERVAL, markValidated } from '@/utils/auth'
 import * as authState from '@/utils/auth'
 
+function hasPermission(code) {
+  try {
+    const perms = JSON.parse(localStorage.getItem('permissions') || '[]')
+    return perms.includes(code)
+  } catch { return false }
+}
+
 const routes = [
   {
     path: '/login',
@@ -36,37 +43,37 @@ const routes = [
         path: 'dashboard',
         name: 'Dashboard',
         component: () => import('@/views/Dashboard.vue'),
-        meta: { title: '数据概览', roles: ['ADMIN', 'SUPER_ADMIN'] }
+        meta: { title: '数据概览', roles: ['ADMIN', 'SUPER_ADMIN'], permission: 'DASHBOARD_READ' }
       },
       {
         path: 'books',
         name: 'Books',
         component: () => import('@/views/Books.vue'),
-        meta: { title: '图书管理', roles: ['ADMIN', 'SUPER_ADMIN'] }
+        meta: { title: '图书管理', roles: ['ADMIN', 'SUPER_ADMIN'], permission: 'BOOK_READ' }
       },
       {
         path: 'categories',
         name: 'Categories',
         component: () => import('@/views/Categories.vue'),
-        meta: { title: '分类管理', roles: ['ADMIN', 'SUPER_ADMIN'] }
+        meta: { title: '分类管理', roles: ['ADMIN', 'SUPER_ADMIN'], permission: 'CATEGORY_READ' }
       },
       {
         path: 'readers',
         name: 'Readers',
         component: () => import('@/views/Readers.vue'),
-        meta: { title: '读者管理', roles: ['ADMIN', 'SUPER_ADMIN'] }
+        meta: { title: '读者管理', roles: ['ADMIN', 'SUPER_ADMIN'], permission: 'READER_READ' }
       },
       {
         path: 'borrows',
         name: 'Borrows',
         component: () => import('@/views/Borrows.vue'),
-        meta: { title: '借阅管理', roles: ['ADMIN', 'SUPER_ADMIN'] }
+        meta: { title: '借阅管理', roles: ['ADMIN', 'SUPER_ADMIN'], permission: 'BORROW_READ' }
       },
       {
         path: 'admin-applications',
         name: 'AdminApplications',
         component: () => import('@/views/AdminApplications.vue'),
-        meta: { title: '管理员审批', roles: ['ADMIN', 'SUPER_ADMIN'] }
+        meta: { title: '管理员审批', roles: ['ADMIN', 'SUPER_ADMIN'], permission: 'APPLICATION_READ' }
       },
       {
         path: 'reader-view',
@@ -78,25 +85,31 @@ const routes = [
         path: 'resources',
         name: 'Resources',
         component: () => import('@/views/Resources.vue'),
-        meta: { title: '资源管理', roles: ['ADMIN', 'SUPER_ADMIN'] }
+        meta: { title: '资源管理', roles: ['ADMIN', 'SUPER_ADMIN'], permission: 'FILE_READ' }
       },
       {
         path: 'reviews',
         name: 'Reviews',
         component: () => import('@/views/Reviews.vue'),
-        meta: { title: '评价管理', roles: ['ADMIN', 'SUPER_ADMIN'] }
+        meta: { title: '评价管理', roles: ['ADMIN', 'SUPER_ADMIN'], permission: 'REVIEW_READ' }
       },
       {
         path: 'system/roles',
         name: 'SystemRoles',
         component: () => import('@/views/system/Roles.vue'),
-        meta: { title: '角色管理', roles: ['ADMIN', 'SUPER_ADMIN'] }
+        meta: { title: '角色管理', roles: ['ADMIN', 'SUPER_ADMIN'], permission: 'ROLE_MANAGE' }
       },
       {
         path: 'system/permissions',
         name: 'SystemPermissions',
         component: () => import('@/views/system/Permissions.vue'),
-        meta: { title: '权限管理', roles: ['ADMIN', 'SUPER_ADMIN'] }
+        meta: { title: '权限管理', roles: ['ADMIN', 'SUPER_ADMIN'], permission: 'PERMISSION_MANAGE' }
+      },
+      {
+        path: 'system/user-roles',
+        name: 'SystemUserRoles',
+        component: () => import('@/views/system/UserRoles.vue'),
+        meta: { title: '用户角色', roles: ['ADMIN', 'SUPER_ADMIN'], permission: 'USER_ROLE_ASSIGN' }
       }
     ]
   },
@@ -110,43 +123,43 @@ const routes = [
         path: 'my-borrows',
         name: 'MyBorrows',
         component: () => import('@/views/reader/MyBorrows.vue'),
-        meta: { title: '我的借阅', roles: ['READER'] }
+        meta: { title: '我的借阅', roles: ['READER'], permission: 'READER_BORROW' }
       },
       {
         path: 'reservations',
         name: 'Reservations',
         component: () => import('@/views/reader/Reservations.vue'),
-        meta: { title: '预约图书', roles: ['READER'] }
+        meta: { title: '预约图书', roles: ['READER'], permission: 'READER_RESERVE' }
       },
       {
         path: 'books',
         name: 'ReaderBooks',
         component: () => import('@/views/reader/BookBrowse.vue'),
-        meta: { title: '图书浏览', roles: ['READER'] }
+        meta: { title: '图书浏览', roles: ['READER'], permission: 'READER_BROWSE' }
       },
       {
         path: 'recommend',
         name: 'BookRecommend',
         component: () => import('@/views/reader/BookRecommend.vue'),
-        meta: { title: '图书推荐', roles: ['READER'] }
+        meta: { title: '图书推荐', roles: ['READER'], permission: 'READER_RECOMMEND' }
       },
       {
         path: 'reading-progress',
         name: 'ReadingProgress',
         component: () => import('@/views/reader/ReadingProgress.vue'),
-        meta: { title: '阅读进度', roles: ['READER'] }
+        meta: { title: '阅读进度', roles: ['READER'], permission: 'READER_PROGRESS' }
       },
       {
         path: 'my-reviews',
         name: 'MyReviews',
         component: () => import('@/views/reader/MyReviews.vue'),
-        meta: { title: '我的评价', roles: ['READER'] }
+        meta: { title: '我的评价', roles: ['READER'], permission: 'READER_REVIEW' }
       },
       {
         path: 'profile',
         name: 'ReaderProfile',
         component: () => import('@/views/reader/Profile.vue'),
-        meta: { title: '个人中心', roles: ['READER'] }
+        meta: { title: '个人中心', roles: ['READER'], permission: 'READER_PROFILE' }
       }
     ]
   },
@@ -213,6 +226,13 @@ router.beforeEach(async (to, from) => {
       return r === effectiveRole || userRoles.includes(r)
     })
     if (!hasAccess) {
+      return role === 'READER' ? '/reader/my-borrows' : '/dashboard'
+    }
+  }
+
+  // Check route-level permission
+  if (to.meta.permission) {
+    if (!hasPermission(to.meta.permission)) {
       return role === 'READER' ? '/reader/my-borrows' : '/dashboard'
     }
   }

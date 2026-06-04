@@ -11,9 +11,11 @@ import com.kidsbook.dto.SysRoleDTO;
 import com.kidsbook.entity.SysRole;
 import com.kidsbook.entity.SysRolePermission;
 import com.kidsbook.entity.SysPermission;
+import com.kidsbook.entity.SysUserRole;
 import com.kidsbook.mapper.SysRoleMapper;
 import com.kidsbook.mapper.SysRolePermissionMapper;
 import com.kidsbook.mapper.SysPermissionMapper;
+import com.kidsbook.mapper.SysUserRoleMapper;
 import com.kidsbook.service.RbacService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
@@ -28,6 +30,7 @@ public class SysRoleController {
     private final SysRoleMapper sysRoleMapper;
     private final SysRolePermissionMapper sysRolePermissionMapper;
     private final SysPermissionMapper sysPermissionMapper;
+    private final SysUserRoleMapper sysUserRoleMapper;
     private final RbacService rbacService;
 
     @GetMapping
@@ -41,7 +44,31 @@ public class SysRoleController {
         }
         wrapper.orderByDesc(SysRole::getLevel);
         Page<SysRole> result = sysRoleMapper.selectPage(new Page<>(page, size), wrapper);
-        return Result.success(result);
+
+        // Attach user count for each role
+        List<Map<String, Object>> records = new ArrayList<>();
+        for (SysRole role : result.getRecords()) {
+            Map<String, Object> map = new HashMap<>();
+            map.put("id", role.getId());
+            map.put("code", role.getCode());
+            map.put("name", role.getName());
+            map.put("level", role.getLevel());
+            map.put("description", role.getDescription());
+            map.put("status", role.getStatus());
+            map.put("createTime", role.getCreateTime());
+            map.put("updateTime", role.getUpdateTime());
+            Long userCount = sysUserRoleMapper.selectCount(
+                new LambdaQueryWrapper<SysUserRole>().eq(SysUserRole::getRoleId, role.getId()));
+            map.put("userCount", userCount);
+            records.add(map);
+        }
+
+        Map<String, Object> pageResult = new HashMap<>();
+        pageResult.put("records", records);
+        pageResult.put("total", result.getTotal());
+        pageResult.put("current", result.getCurrent());
+        pageResult.put("size", result.getSize());
+        return Result.success(pageResult);
     }
 
     @GetMapping("/all")
@@ -67,6 +94,15 @@ public class SysRoleController {
         role.setDescription(dto.getDescription());
         role.setStatus(dto.getStatus() != null ? dto.getStatus() : 1);
         sysRoleMapper.insert(role);
+
+        if (dto.getPermissionIds() != null && !dto.getPermissionIds().isEmpty()) {
+            for (Long permId : dto.getPermissionIds()) {
+                SysRolePermission rp = new SysRolePermission();
+                rp.setRoleId(role.getId());
+                rp.setPermissionId(permId);
+                sysRolePermissionMapper.insert(rp);
+            }
+        }
         return Result.success(role);
     }
 
@@ -82,6 +118,17 @@ public class SysRoleController {
         if (dto.getDescription() != null) role.setDescription(dto.getDescription());
         if (dto.getStatus() != null) role.setStatus(dto.getStatus());
         sysRoleMapper.updateById(role);
+
+        if (dto.getPermissionIds() != null) {
+            sysRolePermissionMapper.delete(
+                new LambdaQueryWrapper<SysRolePermission>().eq(SysRolePermission::getRoleId, id));
+            for (Long permId : dto.getPermissionIds()) {
+                SysRolePermission rp = new SysRolePermission();
+                rp.setRoleId(id);
+                rp.setPermissionId(permId);
+                sysRolePermissionMapper.insert(rp);
+            }
+        }
         return Result.success(role);
     }
 

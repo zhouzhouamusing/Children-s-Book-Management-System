@@ -450,6 +450,10 @@ export function getPermissionModules() {
   return request.get('/sys/permissions/modules')
 }
 
+export function getPermissionsWithRoles() {
+  return request.get('/sys/permissions/with-roles')
+}
+
 // 用户角色分配
 export function getUserRoles(userType, userId) {
   return request.get(`/sys/user-roles/users/${userType}/${userId}/roles`)
@@ -457,6 +461,14 @@ export function getUserRoles(userType, userId) {
 
 export function assignUserRoles(userType, userId, data) {
   return request.put(`/sys/user-roles/users/${userType}/${userId}/roles`, data)
+}
+
+export function getAllUsersWithRoles(params) {
+  return request.get('/sys/user-roles/users', { params })
+}
+
+export function getRoleUsers(roleId) {
+  return request.get(`/sys/user-roles/roles/${roleId}/users`)
 }
 
 // 用户菜单

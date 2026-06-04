@@ -10,6 +10,7 @@ export const adminMenus = [
   { path: '/reviews', name: '评价管理', icon: 'ChatDotRound', permission: 'REVIEW_READ' },
   { path: '/system/roles', name: '角色管理', icon: 'Key', permission: 'ROLE_MANAGE' },
   { path: '/system/permissions', name: '权限管理', icon: 'Lock', permission: 'PERMISSION_MANAGE' },
+  { path: '/system/user-roles', name: '用户角色', icon: 'Avatar', permission: 'USER_ROLE_ASSIGN' },
 ]
 
 export const readerMenus = [

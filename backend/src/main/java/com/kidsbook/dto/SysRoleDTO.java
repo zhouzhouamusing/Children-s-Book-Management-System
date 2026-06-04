@@ -10,4 +10,5 @@ public class SysRoleDTO {
     private Integer level;
     private String description;
     private Integer status;
+    private List<Long> permissionIds;
 }

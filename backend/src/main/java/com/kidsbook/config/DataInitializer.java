@@ -390,10 +390,15 @@ public class DataInitializer implements CommandLineRunner {
                 "`name` VARCHAR(80) NOT NULL, " +
                 "`module` VARCHAR(40) DEFAULT NULL, " +
                 "`description` VARCHAR(200) DEFAULT NULL, " +
+                "`type` VARCHAR(20) DEFAULT 'button', " +
                 "`create_time` DATETIME DEFAULT CURRENT_TIMESTAMP, " +
                 "PRIMARY KEY (`id`), " +
                 "UNIQUE KEY `uk_perm_code` (`code`)" +
                 ") ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
+
+            try {
+                jdbcTemplate.execute("ALTER TABLE `sys_permission` ADD COLUMN `type` VARCHAR(20) DEFAULT 'button'");
+            } catch (Exception ignored) {}
 
             jdbcTemplate.execute("CREATE TABLE IF NOT EXISTS `sys_role` (" +
                 "`id` BIGINT NOT NULL AUTO_INCREMENT, " +
@@ -457,7 +462,17 @@ public class DataInitializer implements CommandLineRunner {
             Integer permCount = jdbcTemplate.queryForObject(
                 "SELECT COUNT(*) FROM sys_permission", Integer.class);
             if (permCount != null && permCount > 0) {
-                log.info("=== RBAC数据已存在，跳过初始化 ===");
+                // Update existing permissions with type field if missing
+                try {
+                    jdbcTemplate.update("UPDATE sys_permission SET type = 'menu' WHERE code IN (" +
+                        "'BOOK_READ','READER_READ','CATEGORY_READ','BORROW_READ','RESERVATION_READ'," +
+                        "'REVIEW_READ','FILE_READ','DASHBOARD_READ','AUDIT_LOG_READ','ROLE_MANAGE'," +
+                        "'PERMISSION_MANAGE','USER_ROLE_ASSIGN','READER_RESERVATION_READ','READER_REVIEW_READ'," +
+                        "'READING_PROGRESS_READ','ADMIN_APPLICATION_STATUS','READER_PROFILE_READ'," +
+                        "'READER_BOOK_BROWSE','READER_CATEGORY_BROWSE','READER_BORROW_READ') AND (type IS NULL OR type = '')");
+                    jdbcTemplate.update("UPDATE sys_permission SET type = 'button' WHERE type IS NULL OR type = ''");
+                } catch (Exception ignored) {}
+                log.info("=== RBAC数据已存在，已更新权限类型 ===");
                 return;
             }
 
@@ -537,9 +552,10 @@ public class DataInitializer implements CommandLineRunner {
                         break;
                     }
                 }
+                String type = inferPermissionType(code);
                 jdbcTemplate.update(
-                    "INSERT INTO sys_permission (code, name, module) VALUES (?, ?, ?)",
-                    code, name, module);
+                    "INSERT INTO sys_permission (code, name, module, type) VALUES (?, ?, ?, ?)",
+                    code, name, module, type);
             }
             log.info("=== 已初始化 {} 个权限 ===", permNames.size());
 
@@ -623,6 +639,19 @@ public class DataInitializer implements CommandLineRunner {
         jdbcTemplate.update("INSERT INTO sys_menu (parent_id, name, path, icon, sort_order, permission_code, type, status) VALUES (0, '评价管理', '/reviews', 'ChatDotRound', 9, 'REVIEW_READ', 1, 1)");
         jdbcTemplate.update("INSERT INTO sys_menu (parent_id, name, path, icon, sort_order, permission_code, type, status) VALUES (0, '角色管理', '/system/roles', 'Key', 10, 'ROLE_MANAGE', 1, 1)");
         jdbcTemplate.update("INSERT INTO sys_menu (parent_id, name, path, icon, sort_order, permission_code, type, status) VALUES (0, '权限管理', '/system/permissions', 'Lock', 11, 'PERMISSION_MANAGE', 1, 1)");
+        jdbcTemplate.update("INSERT INTO sys_menu (parent_id, name, path, icon, sort_order, permission_code, type, status) VALUES (0, '用户角色', '/system/user-roles', 'Avatar', 12, 'USER_ROLE_ASSIGN', 1, 1)");
         log.info("=== 已初始化系统菜单 ===");
+    }
+
+    private String inferPermissionType(String code) {
+        Set<String> menuCodes = Set.of(
+            "BOOK_READ", "READER_READ", "CATEGORY_READ", "BORROW_READ",
+            "RESERVATION_READ", "REVIEW_READ", "FILE_READ", "DASHBOARD_READ",
+            "AUDIT_LOG_READ", "ROLE_MANAGE", "PERMISSION_MANAGE", "USER_ROLE_ASSIGN",
+            "READER_RESERVATION_READ", "READER_REVIEW_READ", "READING_PROGRESS_READ",
+            "ADMIN_APPLICATION_STATUS", "READER_PROFILE_READ", "READER_BOOK_BROWSE",
+            "READER_CATEGORY_BROWSE", "READER_BORROW_READ"
+        );
+        return menuCodes.contains(code) ? "menu" : "button";
     }
 }
