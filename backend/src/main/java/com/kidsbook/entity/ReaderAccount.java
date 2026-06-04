@@ -15,6 +15,7 @@ public class ReaderAccount {
     private String username;
     private String password;
     private Long readerId;
+    private String email;
     private String status;
     private LocalDateTime createTime;
     private LocalDateTime updateTime;

@@ -7,16 +7,21 @@ import 'animate.css'
 import App from './App.vue'
 import router from './router'
 import './styles/global.css'
+import { validateToken } from './api'
+import { isTokenExpired, clearAuth } from './utils/auth'
+import { vPermission } from './directives/permission'
 
 const app = createApp(App)
+const pinia = createPinia()
 
 for (const [key, component] of Object.entries(ElementPlusIconsVue)) {
   app.component(key, component)
 }
 
-app.use(createPinia())
+app.use(pinia)
 app.use(router)
 app.use(ElementPlus, { size: 'default' })
+app.directive('permission', vPermission)
 
 app.config.errorHandler = (err, instance, info) => {
   console.error('Global error:', err, info)
@@ -26,6 +31,20 @@ app.config.errorHandler = (err, instance, info) => {
   )) {
     window.location.reload()
   }
+}
+
+// Restore permission store from localStorage on app init
+import { usePermissionStore } from './stores/permission'
+const permStore = usePermissionStore()
+permStore.loadFromStorage()
+
+const token = localStorage.getItem('token')
+if (token && !isTokenExpired(token)) {
+  validateToken().catch(() => {
+    clearAuth()
+    permStore.clear()
+    router.push('/login')
+  })
 }
 
 app.mount('#app')

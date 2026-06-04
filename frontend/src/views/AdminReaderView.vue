@@ -178,7 +178,8 @@ const fetchBooks = async () => {
 const fetchCategories = async () => {
   try {
     const res = await getAllCategories()
-    categories.value = res.data.map(c => c.name)
+    const list = res.data || []
+    categories.value = list.map(c => typeof c === 'string' ? c : c?.name).filter(Boolean)
   } catch (e) {
     console.error(e)
   }

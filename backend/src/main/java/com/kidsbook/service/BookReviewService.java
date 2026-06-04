@@ -2,14 +2,18 @@ package com.kidsbook.service;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
+import com.kidsbook.common.BusinessException;
 import com.kidsbook.dto.BookReviewRequest;
 import com.kidsbook.entity.Book;
 import com.kidsbook.entity.BookReview;
 import com.kidsbook.entity.BorrowRecord;
 import com.kidsbook.entity.Reader;
+import com.kidsbook.entity.ReaderAccount;
 import com.kidsbook.mapper.BookMapper;
 import com.kidsbook.mapper.BookReviewMapper;
 import com.kidsbook.mapper.BorrowRecordMapper;
+import com.kidsbook.mapper.ReaderAccountMapper;
 import com.kidsbook.mapper.ReaderMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -19,16 +23,19 @@ import org.springframework.transaction.annotation.Transactional;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.LocalDateTime;
+import java.util.List;
 
 @Slf4j
 @Service
 @RequiredArgsConstructor
-public class BookReviewService {
+public class BookReviewService extends ServiceImpl<BookReviewMapper, BookReview> {
     private final BookReviewMapper bookReviewMapper;
     private final BookMapper bookMapper;
     private final BorrowRecordMapper borrowRecordMapper;
     private final ReaderMapper readerMapper;
+    private final ReaderAccountMapper readerAccountMapper;
     private final ReaderPointsService readerPointsService;
+    private final EmailService emailService;
 
     @Transactional
     public BookReview createReview(Long readerId, BookReviewRequest request) {
@@ -37,20 +44,20 @@ public class BookReviewService {
                 .eq(BorrowRecord::getBookId, request.getBookId());
         Long borrowCount = borrowRecordMapper.selectCount(borrowWrapper);
         if (borrowCount == 0) {
-            throw new RuntimeException("只能评价已借阅过的图书");
+            throw new BusinessException(400, "只能评价已借阅过的图书");
         }
 
         LambdaQueryWrapper<BookReview> existWrapper = new LambdaQueryWrapper<>();
         existWrapper.eq(BookReview::getReaderId, readerId)
                 .eq(BookReview::getBookId, request.getBookId());
         if (bookReviewMapper.selectCount(existWrapper) > 0) {
-            throw new RuntimeException("您已经评价过这本书了");
+            throw new BusinessException(400, "您已经评价过这本书了");
         }
 
         Reader reader = readerMapper.selectById(readerId);
         Book book = bookMapper.selectById(request.getBookId());
         if (book == null) {
-            throw new RuntimeException("图书不存在");
+            throw new BusinessException(404, "图书不存在");
         }
 
         BookReview review = new BookReview();
@@ -70,16 +77,17 @@ public class BookReviewService {
         return review;
     }
 
+    @Transactional
     public BookReview updateReview(Long readerId, Long reviewId, BookReviewRequest request) {
         BookReview review = bookReviewMapper.selectById(reviewId);
         if (review == null) {
-            throw new RuntimeException("评价不存在");
+            throw new BusinessException(404, "评价不存在");
         }
         if (!review.getReaderId().equals(readerId)) {
-            throw new RuntimeException("只能修改自己的评价");
+            throw new BusinessException(403, "只能修改自己的评价");
         }
         if ("approved".equals(review.getStatus())) {
-            throw new RuntimeException("已审核通过的评价不可修改");
+            throw new BusinessException(400, "已审核通过的评价不可修改");
         }
 
         review.setRating(request.getRating());
@@ -90,13 +98,14 @@ public class BookReviewService {
         return review;
     }
 
+    @Transactional
     public void deleteOwnReview(Long readerId, Long reviewId) {
         BookReview review = bookReviewMapper.selectById(reviewId);
         if (review == null) {
-            throw new RuntimeException("评价不存在");
+            throw new BusinessException(404, "评价不存在");
         }
         if (!review.getReaderId().equals(readerId)) {
-            throw new RuntimeException("只能删除自己的评价");
+            throw new BusinessException(403, "只能删除自己的评价");
         }
         bookReviewMapper.deleteById(reviewId);
         refreshBookRating(review.getBookId());
@@ -136,30 +145,33 @@ public class BookReviewService {
     public void approveReview(Long reviewId) {
         BookReview review = bookReviewMapper.selectById(reviewId);
         if (review == null) {
-            throw new RuntimeException("评价不存在");
+            throw new BusinessException(404, "评价不存在");
         }
         review.setStatus("approved");
         review.setUpdateTime(LocalDateTime.now());
         bookReviewMapper.updateById(review);
         refreshBookRating(review.getBookId());
+        sendReviewNotification(review, "approved");
     }
 
     @Transactional
     public void rejectReview(Long reviewId) {
         BookReview review = bookReviewMapper.selectById(reviewId);
         if (review == null) {
-            throw new RuntimeException("评价不存在");
+            throw new BusinessException(404, "评价不存在");
         }
         review.setStatus("rejected");
         review.setUpdateTime(LocalDateTime.now());
         bookReviewMapper.updateById(review);
         refreshBookRating(review.getBookId());
+        sendReviewNotification(review, "rejected");
     }
 
+    @Transactional
     public void adminReply(Long reviewId, String reply) {
         BookReview review = bookReviewMapper.selectById(reviewId);
         if (review == null) {
-            throw new RuntimeException("评价不存在");
+            throw new BusinessException(404, "评价不存在");
         }
         review.setAdminReply(reply);
         review.setReplyTime(LocalDateTime.now());
@@ -171,7 +183,7 @@ public class BookReviewService {
     public void adminDeleteReview(Long reviewId) {
         BookReview review = bookReviewMapper.selectById(reviewId);
         if (review == null) {
-            throw new RuntimeException("评价不存在");
+            throw new BusinessException(404, "评价不存在");
         }
         Long bookId = review.getBookId();
         bookReviewMapper.deleteById(reviewId);
@@ -201,5 +213,29 @@ public class BookReviewService {
         wrapper.eq(BookReview::getReaderId, readerId)
                 .eq(BookReview::getBookId, bookId);
         return bookReviewMapper.selectCount(wrapper) > 0;
+    }
+
+    public void updateReaderName(Long readerId, String newName) {
+        LambdaQueryWrapper<BookReview> wrapper = new LambdaQueryWrapper<>();
+        wrapper.eq(BookReview::getReaderId, readerId);
+        List<BookReview> reviews = bookReviewMapper.selectList(wrapper);
+        for (BookReview review : reviews) {
+            review.setReaderName(newName);
+            bookReviewMapper.updateById(review);
+        }
+    }
+
+    private void sendReviewNotification(BookReview review, String result) {
+        try {
+            ReaderAccount account = readerAccountMapper.selectOne(
+                new LambdaQueryWrapper<ReaderAccount>().eq(ReaderAccount::getReaderId, review.getReaderId()));
+            if (account != null && account.getEmail() != null && !account.getEmail().isEmpty()) {
+                String readerName = review.getReaderName() != null ? review.getReaderName() : "读者";
+                emailService.sendReviewResultNotification(account.getEmail(), readerName,
+                    review.getBookTitle(), result);
+            }
+        } catch (Exception e) {
+            log.warn("评价审核通知发送失败: {}", e.getMessage());
+        }
     }
 }

@@ -68,6 +68,7 @@
             <div class="review-actions">
               <el-button
                 v-if="review.status === 'pending'"
+                v-permission="'REVIEW_UPDATE'"
                 type="success"
                 size="small"
                 plain
@@ -77,6 +78,7 @@
               </el-button>
               <el-button
                 v-if="review.status === 'pending'"
+                v-permission="'REVIEW_UPDATE'"
                 type="danger"
                 size="small"
                 plain
@@ -93,6 +95,7 @@
                 回复
               </el-button>
               <el-button
+                v-permission="'REVIEW_DELETE'"
                 type="danger"
                 size="small"
                 text

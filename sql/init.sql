@@ -34,6 +34,8 @@ CREATE TABLE `book` (
     `cover_url` VARCHAR(255) DEFAULT NULL COMMENT '封面图片URL',
     `description` TEXT DEFAULT NULL COMMENT '简介',
     `status` TINYINT DEFAULT 1 COMMENT '状态：1-上架 0-下架',
+    `avg_rating` DECIMAL(2,1) DEFAULT 0.0 COMMENT '平均评分',
+    `review_count` INT DEFAULT 0 COMMENT '评价数量',
     `create_time` DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
     `update_time` DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
     PRIMARY KEY (`id`),
@@ -270,3 +272,77 @@ INSERT INTO `reader_points_log` (`reader_id`, `points`, `type`, `description`, `
 (2, 10, 'borrow', '借阅《好饿的毛毛虫》', 5, '2026-01-10 10:00:00'),
 (2, -10, 'overdue_penalty', '逾期归还《好饿的毛毛虫》', 5, '2026-01-28 10:00:00'),
 (2, 10, 'borrow', '借阅《夏洛的网》', 6, '2026-04-01 10:00:00');
+
+-- 阅读进度表
+DROP TABLE IF EXISTS `reading_progress`;
+CREATE TABLE `reading_progress` (
+    `id` BIGINT AUTO_INCREMENT PRIMARY KEY,
+    `reader_id` BIGINT NOT NULL COMMENT '读者ID',
+    `book_id` BIGINT NOT NULL COMMENT '图书ID',
+    `book_title` VARCHAR(200) DEFAULT '' COMMENT '图书名称',
+    `total_pages` INT DEFAULT 0 COMMENT '总页数',
+    `current_page` INT DEFAULT 0 COMMENT '当前页码',
+    `progress_percent` INT DEFAULT 0 COMMENT '进度百分比',
+    `reading_minutes` INT DEFAULT 0 COMMENT '累计阅读分钟数',
+    `status` VARCHAR(20) DEFAULT 'reading' COMMENT '状态：reading/completed/paused',
+    `notes` TEXT COMMENT '备注',
+    `create_time` DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+    `update_time` DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+    INDEX `idx_reader_id` (`reader_id`),
+    INDEX `idx_book_id` (`book_id`),
+    INDEX `idx_status` (`status`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='阅读进度表';
+
+-- 阅读笔记表
+DROP TABLE IF EXISTS `reading_note`;
+CREATE TABLE `reading_note` (
+    `id` BIGINT AUTO_INCREMENT PRIMARY KEY,
+    `reader_id` BIGINT NOT NULL COMMENT '读者ID',
+    `book_id` BIGINT NOT NULL COMMENT '图书ID',
+    `progress_id` BIGINT COMMENT '关联阅读进度ID',
+    `book_title` VARCHAR(200) DEFAULT '' COMMENT '图书名称',
+    `content` TEXT NOT NULL COMMENT '笔记内容',
+    `page_number` INT DEFAULT 0 COMMENT '所在页码',
+    `create_time` DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+    `update_time` DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+    INDEX `idx_reader_id` (`reader_id`),
+    INDEX `idx_book_id` (`book_id`),
+    INDEX `idx_progress_id` (`progress_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='阅读笔记表';
+
+-- 图书资源文件表
+DROP TABLE IF EXISTS `book_resource`;
+CREATE TABLE `book_resource` (
+    `id` BIGINT NOT NULL AUTO_INCREMENT,
+    `book_id` BIGINT DEFAULT NULL COMMENT '关联图书ID',
+    `file_name` VARCHAR(255) NOT NULL COMMENT '存储文件名(UUID)',
+    `original_name` VARCHAR(255) NOT NULL COMMENT '原始文件名',
+    `file_path` VARCHAR(500) NOT NULL COMMENT '相对存储路径',
+    `file_type` VARCHAR(20) NOT NULL COMMENT '类型：cover/pdf/other',
+    `file_size` BIGINT NOT NULL DEFAULT 0 COMMENT '文件大小(bytes)',
+    `mime_type` VARCHAR(100) DEFAULT NULL COMMENT 'MIME类型',
+    `create_time` DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+    PRIMARY KEY (`id`),
+    KEY `idx_book_id` (`book_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='图书资源文件表';
+
+-- 图书评价表
+DROP TABLE IF EXISTS `book_review`;
+CREATE TABLE `book_review` (
+    `id` BIGINT NOT NULL AUTO_INCREMENT,
+    `book_id` BIGINT NOT NULL COMMENT '图书ID',
+    `reader_id` BIGINT NOT NULL COMMENT '读者ID',
+    `reader_name` VARCHAR(50) DEFAULT NULL COMMENT '读者姓名',
+    `book_title` VARCHAR(200) DEFAULT NULL COMMENT '图书名称',
+    `rating` INT NOT NULL COMMENT '1-5星评分',
+    `content` TEXT COMMENT '评价内容',
+    `status` VARCHAR(20) NOT NULL DEFAULT 'pending' COMMENT '状态：pending/approved/rejected',
+    `admin_reply` TEXT DEFAULT NULL COMMENT '管理员回复',
+    `reply_time` DATETIME DEFAULT NULL COMMENT '回复时间',
+    `create_time` DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+    `update_time` DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+    PRIMARY KEY (`id`),
+    UNIQUE KEY `uk_book_reader` (`book_id`, `reader_id`),
+    KEY `idx_reader_id` (`reader_id`),
+    KEY `idx_status` (`status`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='图书评价表';

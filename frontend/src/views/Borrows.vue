@@ -20,7 +20,7 @@
           <el-option label="逾期" value="overdue" />
         </el-select>
       </div>
-      <el-button type="primary" @click="showBorrowDialog = true">
+      <el-button v-permission="'BORROW_CREATE'" type="primary" @click="showBorrowDialog = true">
         <el-icon><Plus /></el-icon> 新增借阅
       </el-button>
     </div>
@@ -51,8 +51,8 @@
         <el-table-column label="操作" width="180" fixed="right">
           <template #default="{ row }">
             <template v-if="row.status === 'borrowing' || row.status === 'overdue'">
-              <el-button type="success" text size="small" @click="handleReturn(row)">归还</el-button>
-              <el-button v-if="row.status === 'borrowing'" type="primary" text size="small" @click="handleRenew(row)">续借</el-button>
+              <el-button v-permission="'BORROW_UPDATE'" type="success" text size="small" @click="handleReturn(row)">归还</el-button>
+              <el-button v-if="row.status === 'borrowing'" v-permission="'BORROW_UPDATE'" type="primary" text size="small" @click="handleRenew(row)">续借</el-button>
             </template>
             <span v-else class="text-muted">已完成</span>
           </template>

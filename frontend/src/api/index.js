@@ -1,5 +1,10 @@
 import request from '@/utils/request'
 
+// Token验证
+export function validateToken() {
+  return request.get('/auth/validate')
+}
+
 export function login(data) {
   return request.post('/admin/login', data)
 }
@@ -169,6 +174,10 @@ export function browseBooks(params) {
   return request.get('/reader-center/books', { params })
 }
 
+export function getReaderCategories() {
+  return request.get('/reader-center/categories')
+}
+
 export function getMyStatistics() {
   return request.get('/reader-center/statistics')
 }
@@ -213,6 +222,10 @@ export function getRecommendTop10() {
 
 export function getAllRecommendations() {
   return request.get('/reader-center/recommend/all')
+}
+
+export function getRecommendByProgress(params) {
+  return request.get('/reader-center/recommend/by-progress', { params })
 }
 
 // 阅读进度 API
@@ -327,5 +340,127 @@ export function adminDeleteReview(id) {
 // 好评推荐
 export function getTopRatedBooks(params) {
   return request.get('/reader-center/recommend/top-rated', { params })
+}
+
+// 数据面板 API
+export function getBorrowTrends(params) {
+  return request.get('/dashboard/borrow-trends', { params })
+}
+
+export function getOverdueAnalytics(params) {
+  return request.get('/dashboard/overdue-analytics', { params })
+}
+
+export function getTopReaders(params) {
+  return request.get('/dashboard/top-readers', { params })
+}
+
+export function getAuditLogs(params) {
+  return request.get('/dashboard/audit-logs', { params })
+}
+
+export function getReaderGrowth(params) {
+  return request.get('/dashboard/reader-growth', { params })
+}
+
+export function getBookUtilization(params) {
+  return request.get('/dashboard/book-utilization', { params })
+}
+
+export function getDashboardReadingStats() {
+  return request.get('/dashboard/reading-stats')
+}
+
+// 读者密码重置
+export function readerSendResetCode(data) {
+  return request.post('/reader/send-code', data)
+}
+
+export function readerResetPassword(data) {
+  return request.post('/reader/reset-password', data)
+}
+
+// 预约管理 (管理端)
+export function getAdminReservations(params) {
+  return request.get('/borrows/reservations', { params })
+}
+
+export function fulfillReservation(id) {
+  return request.put(`/borrows/reservations/${id}/fulfill`)
+}
+
+// 暂停申诉
+export function appealSuspension(data) {
+  return request.post('/reader-center/appeal-suspension', data)
+}
+
+export function getSuspensionAppeals(params) {
+  return request.get('/readers/suspension-appeals', { params })
+}
+
+export function resolveAppeal(readerId, data) {
+  return request.put(`/readers/${readerId}/resolve-appeal`, data)
+}
+
+// ===== RBAC 权限管理 API =====
+
+// 角色管理
+export function getRoles(params) {
+  return request.get('/sys/roles', { params })
+}
+
+export function getAllRoles() {
+  return request.get('/sys/roles/all')
+}
+
+export function createRole(data) {
+  return request.post('/sys/roles', data)
+}
+
+export function updateRole(id, data) {
+  return request.put(`/sys/roles/${id}`, data)
+}
+
+export function deleteRole(id) {
+  return request.delete(`/sys/roles/${id}`)
+}
+
+export function getRolePermissions(roleId) {
+  return request.get(`/sys/roles/${roleId}/permissions`)
+}
+
+export function getEffectivePermissions(roleId) {
+  return request.get(`/sys/roles/${roleId}/effective-permissions`)
+}
+
+export function assignRolePermissions(roleId, data) {
+  return request.put(`/sys/roles/${roleId}/permissions`, data)
+}
+
+// 权限管理
+export function getPermissions(params) {
+  return request.get('/sys/permissions', { params })
+}
+
+export function getPermissionsGrouped() {
+  return request.get('/sys/permissions/grouped')
+}
+
+export function getPermissionModules() {
+  return request.get('/sys/permissions/modules')
+}
+
+// 用户角色分配
+export function getUserRoles(userType, userId) {
+  return request.get(`/sys/user-roles/users/${userType}/${userId}/roles`)
+}
+
+export function assignUserRoles(userType, userId, data) {
+  return request.put(`/sys/user-roles/users/${userType}/${userId}/roles`, data)
+}
+
+// 用户菜单
+export function getMyMenus() {
+  return request.get('/sys/menus/my')
 }
 

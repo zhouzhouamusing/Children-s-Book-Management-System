@@ -1,0 +1,31 @@
+# ================================================
+# Production Configuration
+# Required environment variables:
+#   JWT_SECRET       - JWT signing key, minimum 32 characters (e.g. openssl rand -base64 48)
+#   MAIL_USERNAME    - QQ mail account for sending notifications (e.g. xxx@qq.com)
+#   MAIL_PASSWORD    - QQ mail app-specific password (not login password)
+#   UPLOAD_PATH      - Absolute path for file uploads (default: /data/kidsbook/uploads)
+#   DB_URL           - (optional) MySQL JDBC URL
+#   DB_USERNAME      - (optional) MySQL username
+#   DB_PASSWORD      - (optional) MySQL password
+# ================================================
+
+jwt:
+  secret: ${JWT_SECRET}
+
+spring:
+  datasource:
+    url: ${DB_URL:jdbc:mysql://localhost:3306/kids_book_db?useUnicode=true&characterEncoding=utf-8&useSSL=false&serverTimezone=GMT%2B8}
+    username: ${DB_USERNAME:root}
+    password: ${DB_PASSWORD:root}
+  mail:
+    username: ${MAIL_USERNAME}
+    password: ${MAIL_PASSWORD}
+
+kidsbook:
+  upload:
+    path: ${UPLOAD_PATH:/data/kidsbook/uploads}
+
+mybatis-plus:
+  configuration:
+    log-impl: org.apache.ibatis.logging.noop.NoOpImpl

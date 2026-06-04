@@ -11,6 +11,8 @@ spring:
     username: root
     password: root
     driver-class-name: com.mysql.cj.jdbc.Driver
+  # Mail configuration: set MAIL_USERNAME and MAIL_PASSWORD environment variables for production
+  # Default values are placeholders that disable email functionality
   mail:
     host: smtp.qq.com
     port: 587
@@ -41,9 +43,10 @@ mybatis-plus:
       logic-not-delete-value: 0
 
 jwt:
-  secret: kidsbook2024secretkey1234567890abcdef
+  secret: ${JWT_SECRET:kidsbook-secret-key-for-development-only-must-be-at-least-32-characters}
   expiration: 604800000
 
 kidsbook:
   upload:
-    path: ./uploads
+    # Use absolute path in production via UPLOAD_PATH environment variable
+    path: ${UPLOAD_PATH:./uploads}

@@ -1,6 +1,10 @@
 package com.kidsbook.controller;
 
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import com.kidsbook.common.BusinessException;
+import com.kidsbook.common.PageResult;
+import com.kidsbook.common.Permission;
+import com.kidsbook.common.RequirePermission;
 import com.kidsbook.common.Result;
 import com.kidsbook.dto.BookReviewRequest;
 import com.kidsbook.entity.BookReview;
@@ -24,70 +28,77 @@ public class ReaderReviewController {
 
     private Long getCurrentReaderId() {
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
-        String token = (String) auth.getCredentials();
-        return jwtUtil.getReaderIdFromToken(token);
+        if (auth == null || auth.getCredentials() == null) {
+            return null;
+        }
+        try {
+            String token = auth.getCredentials().toString();
+            return jwtUtil.getReaderIdFromToken(token);
+        } catch (Exception e) {
+            return null;
+        }
     }
 
     @PostMapping
+    @RequirePermission(Permission.READER_REVIEW_CREATE)
     public Result<?> create(@RequestBody @Valid BookReviewRequest request) {
         Long readerId = getCurrentReaderId();
         if (readerId == null) {
-            return Result.error("请使用读者账号登录");
+            throw new BusinessException(401, "请使用读者账号登录");
         }
         BookReview review = bookReviewService.createReview(readerId, request);
         return Result.success(review);
     }
 
     @GetMapping("/my")
-    public Result<?> myReviews(@RequestParam(defaultValue = "1") int page,
+    @RequirePermission(Permission.READER_REVIEW_READ)
+    public Result<PageResult<BookReview>> myReviews(@RequestParam(defaultValue = "1") int page,
                                @RequestParam(defaultValue = "10") int size) {
         Long readerId = getCurrentReaderId();
         if (readerId == null) {
-            return Result.error("请使用读者账号登录");
+            throw new BusinessException(401, "请使用读者账号登录");
         }
         Page<BookReview> result = bookReviewService.getMyReviews(readerId, page, size);
-        Map<String, Object> data = new HashMap<>();
-        data.put("records", result.getRecords());
-        data.put("total", result.getTotal());
-        return Result.success(data);
+        return Result.success(PageResult.of(result));
     }
 
     @PutMapping("/{id}")
+    @RequirePermission(Permission.READER_REVIEW_UPDATE)
     public Result<?> update(@PathVariable Long id, @RequestBody @Valid BookReviewRequest request) {
         Long readerId = getCurrentReaderId();
         if (readerId == null) {
-            return Result.error("请使用读者账号登录");
+            throw new BusinessException(401, "请使用读者账号登录");
         }
         BookReview review = bookReviewService.updateReview(readerId, id, request);
         return Result.success(review);
     }
 
     @DeleteMapping("/{id}")
+    @RequirePermission(Permission.READER_REVIEW_DELETE)
     public Result<?> delete(@PathVariable Long id) {
         Long readerId = getCurrentReaderId();
         if (readerId == null) {
-            return Result.error("请使用读者账号登录");
+            throw new BusinessException(401, "请使用读者账号登录");
         }
         bookReviewService.deleteOwnReview(readerId, id);
         return Result.success(null);
     }
 
     @GetMapping("/book/{bookId}")
-    public Result<?> bookReviews(@PathVariable Long bookId,
+    @RequirePermission(Permission.READER_REVIEW_READ)
+    public Result<PageResult<BookReview>> bookReviews(@PathVariable Long bookId,
                                  @RequestParam(defaultValue = "1") int page,
                                  @RequestParam(defaultValue = "10") int size) {
         Page<BookReview> result = bookReviewService.getBookReviews(bookId, page, size);
-        Map<String, Object> data = new HashMap<>();
-        data.put("records", result.getRecords());
-        data.put("total", result.getTotal());
-        return Result.success(data);
+        return Result.success(PageResult.of(result));
     }
 
     @GetMapping("/check/{bookId}")
+    @RequirePermission(Permission.READER_REVIEW_READ)
     public Result<?> checkCanReview(@PathVariable Long bookId) {
         Long readerId = getCurrentReaderId();
         if (readerId == null) {
-            return Result.error("请使用读者账号登录");
+            throw new BusinessException(401, "请使用读者账号登录");
         }
         Map<String, Object> data = new HashMap<>();
         data.put("hasBorrowed", bookReviewService.hasReaderBorrowedBook(readerId, bookId));

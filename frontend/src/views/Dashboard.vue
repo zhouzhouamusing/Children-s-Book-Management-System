@@ -16,54 +16,141 @@
       </div>
     </div>
 
-    <!-- 图表区域 -->
+    <!-- 图表区域第一行 -->
     <div class="chart-section">
       <el-card class="chart-card">
         <template #header>
           <div class="chart-header">
-            <span>📊 图书分类统计</span>
+            <span>借阅趋势</span>
+          </div>
+        </template>
+        <div ref="trendChartRef" class="chart-container"></div>
+      </el-card>
+
+      <el-card class="chart-card">
+        <template #header>
+          <div class="chart-header">
+            <span>图书分类统计</span>
           </div>
         </template>
         <div ref="chartRef" class="chart-container"></div>
+      </el-card>
+    </div>
+
+    <!-- 图表区域第二行 -->
+    <div class="chart-section" style="margin-top: 20px;">
+      <el-card class="chart-card">
+        <template #header>
+          <div class="chart-header">
+            <span>逾期统计</span>
+          </div>
+        </template>
+        <div ref="overdueChartRef" class="chart-container"></div>
       </el-card>
 
       <el-card class="recent-card">
         <template #header>
           <div class="chart-header">
-            <span>📖 快捷操作</span>
+            <span>活跃读者 TOP 10</span>
           </div>
         </template>
-        <div class="quick-actions">
-          <div class="action-item" @click="$router.push('/books')">
-            <div class="action-icon" style="background: var(--green-light)">📚</div>
-            <span>图书列表</span>
+        <div class="top-readers-list">
+          <div v-for="(reader, idx) in topReaders" :key="idx" class="reader-row">
+            <span class="rank" :class="'rank-' + (idx + 1)">{{ idx + 1 }}</span>
+            <span class="reader-name">{{ reader.name }}</span>
+            <span class="reader-level">{{ reader.level }}</span>
+            <span class="reader-count">{{ reader.borrowCount }}次</span>
           </div>
-          <div class="action-item" @click="$router.push('/borrows')">
-            <div class="action-icon" style="background: #F3EEFF">📖</div>
-            <span>借阅管理</span>
-          </div>
-          <div class="action-item" @click="$router.push('/readers')">
-            <div class="action-icon" style="background: var(--pink-light)">👦</div>
-            <span>读者管理</span>
-          </div>
-          <div class="action-item" @click="$router.push('/categories')">
-            <div class="action-icon" style="background: var(--blue-light)">📂</div>
-            <span>分类管理</span>
-          </div>
+          <el-empty v-if="!topReaders.length" description="暂无数据" :image-size="60" />
         </div>
       </el-card>
     </div>
+
+    <!-- 图表区域第三行 -->
+    <div class="chart-section" style="margin-top: 20px;">
+      <el-card class="chart-card">
+        <template #header>
+          <div class="chart-header">
+            <span>读者增长趋势</span>
+          </div>
+        </template>
+        <div ref="readerGrowthChartRef" class="chart-container"></div>
+      </el-card>
+
+      <el-card class="chart-card">
+        <template #header>
+          <div class="chart-header">
+            <span>审计日志（最近操作）</span>
+          </div>
+        </template>
+        <div class="top-readers-list">
+          <div v-for="(log, idx) in recentLogs" :key="idx" class="reader-row">
+            <span class="log-action">{{ log.action }}</span>
+            <span class="reader-name">{{ log.operatorUsername || '系统' }}</span>
+            <span class="reader-count">{{ log.detail }}</span>
+          </div>
+          <el-empty v-if="!recentLogs.length" description="暂无日志" :image-size="60" />
+        </div>
+      </el-card>
+    </div>
+
+    <!-- 快捷操作 -->
+    <el-card class="quick-card" style="margin-top: 20px;">
+      <template #header>
+        <div class="chart-header"><span>图书利用率 TOP 10</span></div>
+      </template>
+      <div class="top-readers-list">
+        <div v-for="(book, idx) in bookUtilization" :key="idx" class="reader-row">
+          <span class="rank" :class="'rank-' + (idx + 1)">{{ idx + 1 }}</span>
+          <span class="reader-name">{{ book.title }}</span>
+          <span class="reader-level">库存:{{ book.stock }}</span>
+          <span class="reader-count">借出{{ book.totalBorrows }}次</span>
+        </div>
+        <el-empty v-if="!bookUtilization.length" description="暂无数据" :image-size="60" />
+      </div>
+    </el-card>
+
+    <!-- 快捷操作 -->
+    <el-card class="quick-card" style="margin-top: 20px;">
+      <template #header>
+        <div class="chart-header"><span>快捷操作</span></div>
+      </template>
+      <div class="quick-actions">
+        <div class="action-item" @click="$router.push('/books')">
+          <div class="action-icon" style="background: var(--green-light)">📚</div>
+          <span>图书列表</span>
+        </div>
+        <div class="action-item" @click="$router.push('/borrows')">
+          <div class="action-icon" style="background: #F3EEFF">📖</div>
+          <span>借阅管理</span>
+        </div>
+        <div class="action-item" @click="$router.push('/readers')">
+          <div class="action-icon" style="background: var(--pink-light)">👦</div>
+          <span>读者管理</span>
+        </div>
+        <div class="action-item" @click="$router.push('/categories')">
+          <div class="action-icon" style="background: var(--blue-light)">📂</div>
+          <span>分类管理</span>
+        </div>
+      </div>
+    </el-card>
   </div>
 </template>
 
 <script setup>
 import { ref, onMounted, computed, nextTick } from 'vue'
-import { getStatistics } from '@/api'
+import { getStatistics, getBorrowTrends, getOverdueAnalytics, getTopReaders, getReaderGrowth, getAuditLogs, getBookUtilization } from '@/api'
 import * as echarts from 'echarts'
 
 const loading = ref(true)
 const chartRef = ref(null)
+const trendChartRef = ref(null)
+const overdueChartRef = ref(null)
+const readerGrowthChartRef = ref(null)
 const stats = ref({ totalBooks: 0, totalStock: 0, categoryStats: [], totalBorrows: 0, activeBorrows: 0, overdueBorrows: 0, totalReaders: 0, activeReaders: 0 })
+const topReaders = ref([])
+const recentLogs = ref([])
+const bookUtilization = ref([])
 
 const statCards = computed(() => [
   {
@@ -92,7 +179,7 @@ const statCards = computed(() => [
   }
 ])
 
-const initChart = () => {
+const initCategoryChart = () => {
   if (!chartRef.value || !stats.value.categoryStats?.length) return
   const chart = echarts.init(chartRef.value)
   const data = stats.value.categoryStats.map(item => ({
@@ -108,22 +195,107 @@ const initChart = () => {
         type: 'pie',
         radius: ['40%', '70%'],
         avoidLabelOverlap: false,
-        itemStyle: {
-          borderRadius: 10,
-          borderColor: '#fff',
-          borderWidth: 2
-        },
+        itemStyle: { borderRadius: 10, borderColor: '#fff', borderWidth: 2 },
         label: { show: false },
-        emphasis: {
-          label: { show: true, fontSize: 16, fontWeight: 'bold' }
-        },
+        emphasis: { label: { show: true, fontSize: 16, fontWeight: 'bold' } },
         data,
         color: ['#FFB3BA', '#B5EAD7', '#C7CEEA', '#FFDAC1', '#957DAD', '#FFFFD1']
       }
     ]
   })
-
   window.addEventListener('resize', () => chart.resize())
+}
+
+const initTrendChart = async () => {
+  if (!trendChartRef.value) return
+  try {
+    const res = await getBorrowTrends({ months: 6 })
+    const trends = res.data || []
+    const chart = echarts.init(trendChartRef.value)
+    chart.setOption({
+      tooltip: { trigger: 'axis' },
+      legend: { data: ['借出', '归还'], bottom: '5%' },
+      grid: { top: '10%', left: '3%', right: '4%', bottom: '18%', containLabel: true },
+      xAxis: { type: 'category', data: trends.map(t => t.month), axisLabel: { fontSize: 11 } },
+      yAxis: { type: 'value', minInterval: 1 },
+      series: [
+        { name: '借出', type: 'line', smooth: true, data: trends.map(t => t.borrowCount), itemStyle: { color: '#957DAD' }, areaStyle: { color: 'rgba(149,125,173,0.1)' } },
+        { name: '归还', type: 'line', smooth: true, data: trends.map(t => t.returnCount), itemStyle: { color: '#B5EAD7' }, areaStyle: { color: 'rgba(181,234,215,0.1)' } }
+      ]
+    })
+    window.addEventListener('resize', () => chart.resize())
+  } catch (e) {
+    console.warn('加载借阅趋势失败', e)
+  }
+}
+
+const initOverdueChart = async () => {
+  if (!overdueChartRef.value) return
+  try {
+    const res = await getOverdueAnalytics({ months: 6 })
+    const data = res.data || []
+    const chart = echarts.init(overdueChartRef.value)
+    chart.setOption({
+      tooltip: { trigger: 'axis' },
+      grid: { top: '10%', left: '3%', right: '4%', bottom: '12%', containLabel: true },
+      xAxis: { type: 'category', data: data.map(d => d.month), axisLabel: { fontSize: 11 } },
+      yAxis: { type: 'value', minInterval: 1 },
+      series: [
+        { name: '逾期数', type: 'bar', data: data.map(d => d.overdueCount), itemStyle: { color: '#FFB3BA', borderRadius: [4, 4, 0, 0] } }
+      ]
+    })
+    window.addEventListener('resize', () => chart.resize())
+  } catch (e) {
+    console.warn('加载逾期统计失败', e)
+  }
+}
+
+const loadTopReaders = async () => {
+  try {
+    const res = await getTopReaders({ limit: 10 })
+    topReaders.value = res.data || []
+  } catch (e) {
+    console.warn('加载读者排行失败', e)
+  }
+}
+
+const initReaderGrowthChart = async () => {
+  if (!readerGrowthChartRef.value) return
+  try {
+    const res = await getReaderGrowth({ months: 12 })
+    const data = res.data || []
+    const chart = echarts.init(readerGrowthChartRef.value)
+    chart.setOption({
+      tooltip: { trigger: 'axis' },
+      grid: { top: '10%', left: '3%', right: '4%', bottom: '12%', containLabel: true },
+      xAxis: { type: 'category', data: data.map(d => d.month), axisLabel: { fontSize: 11 } },
+      yAxis: { type: 'value', minInterval: 1 },
+      series: [
+        { name: '新增读者', type: 'bar', data: data.map(d => d.newReaders), itemStyle: { color: '#C7CEEA', borderRadius: [4, 4, 0, 0] } }
+      ]
+    })
+    window.addEventListener('resize', () => chart.resize())
+  } catch (e) {
+    console.warn('加载读者增长趋势失败', e)
+  }
+}
+
+const loadRecentLogs = async () => {
+  try {
+    const res = await getAuditLogs({ page: 1, size: 10 })
+    recentLogs.value = res.data?.records || []
+  } catch (e) {
+    console.warn('加载审计日志失败', e)
+  }
+}
+
+const loadBookUtilization = async () => {
+  try {
+    const res = await getBookUtilization({ limit: 10 })
+    bookUtilization.value = res.data || []
+  } catch (e) {
+    console.warn('加载图书利用率失败', e)
+  }
 }
 
 onMounted(async () => {
@@ -136,7 +308,13 @@ onMounted(async () => {
   } finally {
     loading.value = false
     await nextTick()
-    initChart()
+    initCategoryChart()
+    initTrendChart()
+    initOverdueChart()
+    initReaderGrowthChart()
+    loadTopReaders()
+    loadRecentLogs()
+    loadBookUtilization()
   }
 })
 </script>
@@ -193,7 +371,7 @@ onMounted(async () => {
 
 .chart-section {
   display: grid;
-  grid-template-columns: 1.5fr 1fr;
+  grid-template-columns: 1fr 1fr;
   gap: 20px;
 }
 
@@ -203,12 +381,12 @@ onMounted(async () => {
 }
 
 .chart-container {
-  height: 320px;
+  height: 300px;
 }
 
 .quick-actions {
   display: grid;
-  grid-template-columns: repeat(2, 1fr);
+  grid-template-columns: repeat(4, 1fr);
   gap: 16px;
   padding: 10px 0;
 }
@@ -244,12 +422,79 @@ onMounted(async () => {
   color: var(--text-secondary);
 }
 
+.top-readers-list {
+  max-height: 300px;
+  overflow-y: auto;
+}
+
+.reader-row {
+  display: flex;
+  align-items: center;
+  padding: 10px 8px;
+  border-bottom: 1px solid #f5f5f5;
+  gap: 12px;
+}
+
+.reader-row:last-child {
+  border-bottom: none;
+}
+
+.rank {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  font-weight: bold;
+  background: #f0f0f0;
+  color: #666;
+}
+
+.rank-1 { background: #FFD700; color: #fff; }
+.rank-2 { background: #C0C0C0; color: #fff; }
+.rank-3 { background: #CD7F32; color: #fff; }
+
+.reader-name {
+  flex: 1;
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.reader-level {
+  font-size: 12px;
+  color: #957DAD;
+  background: #F3EEFF;
+  padding: 2px 8px;
+  border-radius: 10px;
+}
+
+.reader-count {
+  font-size: 13px;
+  color: var(--text-secondary);
+  min-width: 50px;
+  text-align: right;
+}
+
+.log-action {
+  font-size: 12px;
+  color: #409EFF;
+  background: #ECF5FF;
+  padding: 2px 8px;
+  border-radius: 10px;
+  white-space: nowrap;
+}
+
 @media (max-width: 1200px) {
   .stat-cards {
     grid-template-columns: repeat(2, 1fr);
   }
   .chart-section {
     grid-template-columns: 1fr;
+  }
+  .quick-actions {
+    grid-template-columns: repeat(2, 1fr);
   }
 }
 </style>

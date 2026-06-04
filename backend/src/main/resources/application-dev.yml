@@ -1,0 +1,7 @@
+# =======================================================
+# DEVELOPMENT ONLY - DO NOT USE IN PRODUCTION
+# Production must use environment variables for all secrets
+# =======================================================
+
+jwt:
+  secret: DEV_ONLY_kidsbook_2024_unsafe_dev_secret_key_do_not_use_in_production_min32chars

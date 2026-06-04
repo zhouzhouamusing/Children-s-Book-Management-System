@@ -3,6 +3,8 @@ package com.kidsbook.service;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
+import com.kidsbook.common.BusinessException;
 import com.kidsbook.entity.Book;
 import com.kidsbook.entity.Reader;
 import com.kidsbook.entity.ReadingNote;
@@ -23,7 +25,7 @@ import java.util.Map;
 @Slf4j
 @Service
 @RequiredArgsConstructor
-public class ReadingProgressService {
+public class ReadingProgressService extends ServiceImpl<ReadingProgressMapper, ReadingProgress> {
     private final ReadingProgressMapper progressMapper;
     private final ReadingNoteMapper noteMapper;
     private final BookMapper bookMapper;
@@ -85,7 +87,7 @@ public class ReadingProgressService {
     public void updateProgressStatus(Long readerId, Long progressId, String status) {
         ReadingProgress progress = progressMapper.selectById(progressId);
         if (progress == null || !progress.getReaderId().equals(readerId)) {
-            throw new RuntimeException("阅读进度不存在");
+            throw new BusinessException(404, "阅读进度不存在");
         }
         boolean wasNotCompleted = !"completed".equals(progress.getStatus());
         progress.setStatus(status);
@@ -118,7 +120,7 @@ public class ReadingProgressService {
     public void deleteProgress(Long readerId, Long progressId) {
         ReadingProgress progress = progressMapper.selectById(progressId);
         if (progress == null || !progress.getReaderId().equals(readerId)) {
-            throw new RuntimeException("阅读进度不存在");
+            throw new BusinessException(404, "阅读进度不存在");
         }
         progressMapper.deleteById(progressId);
         LambdaQueryWrapper<ReadingNote> noteWrapper = new LambdaQueryWrapper<>();
@@ -160,7 +162,7 @@ public class ReadingProgressService {
     public void updateNote(Long readerId, Long noteId, String content, Integer pageNumber) {
         ReadingNote note = noteMapper.selectById(noteId);
         if (note == null || !note.getReaderId().equals(readerId)) {
-            throw new RuntimeException("笔记不存在");
+            throw new BusinessException(404, "笔记不存在");
         }
         note.setContent(content);
         if (pageNumber != null) note.setPageNumber(pageNumber);
@@ -171,7 +173,7 @@ public class ReadingProgressService {
     public void deleteNote(Long readerId, Long noteId) {
         ReadingNote note = noteMapper.selectById(noteId);
         if (note == null || !note.getReaderId().equals(readerId)) {
-            throw new RuntimeException("笔记不存在");
+            throw new BusinessException(404, "笔记不存在");
         }
         noteMapper.deleteById(noteId);
     }

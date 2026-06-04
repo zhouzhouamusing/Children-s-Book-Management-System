@@ -61,7 +61,7 @@
           <el-icon><Search /></el-icon>
           搜索
         </el-button>
-        <el-button type="success" size="large" @click="handleAdd">
+        <el-button v-permission="'CATEGORY_CREATE'" type="success" size="large" @click="handleAdd">
           <el-icon><Plus /></el-icon>
           新增分类
         </el-button>
@@ -113,10 +113,10 @@
             <el-button class="card-btn view" size="small" @click="handleViewBooks(cat)">
               <el-icon><View /></el-icon> 查看图书
             </el-button>
-            <el-button class="card-btn edit" size="small" @click="handleEdit(cat)">
+            <el-button v-permission="'CATEGORY_UPDATE'" class="card-btn edit" size="small" @click="handleEdit(cat)">
               <el-icon><Edit /></el-icon> 编辑
             </el-button>
-            <el-button class="card-btn delete" size="small" @click="handleDelete(cat)">
+            <el-button v-permission="'CATEGORY_DELETE'" class="card-btn delete" size="small" @click="handleDelete(cat)">
               <el-icon><Delete /></el-icon> 删除
             </el-button>
           </div>
@@ -661,27 +661,27 @@ onMounted(() => {
 }
 
 .card-btn.edit {
-  background: linear-gradient(135deg, #7C5CFC, #A78BFA) !important;
+  background: linear-gradient(135deg, var(--btn-edit-from), var(--btn-edit-to)) !important;
   border: none !important;
   color: #fff !important;
   font-size: 12px;
 }
 
 .card-btn.edit:hover {
-  background: linear-gradient(135deg, #6C4DE6, #7C5CFC) !important;
-  box-shadow: 0 3px 8px rgba(124, 92, 252, 0.4);
+  background: linear-gradient(135deg, var(--btn-edit-to), var(--btn-edit-from)) !important;
+  box-shadow: 0 3px 8px rgba(167, 139, 250, 0.3);
 }
 
 .card-btn.delete {
-  background: linear-gradient(135deg, #FF6B81, #FF8A9E) !important;
+  background: linear-gradient(135deg, var(--btn-delete-from), var(--btn-delete-to)) !important;
   border: none !important;
   color: #fff !important;
   font-size: 12px;
 }
 
 .card-btn.delete:hover {
-  background: linear-gradient(135deg, #FF4757, #FF6B81) !important;
-  box-shadow: 0 3px 8px rgba(255, 107, 129, 0.4);
+  background: linear-gradient(135deg, var(--btn-delete-to), var(--btn-delete-from)) !important;
+  box-shadow: 0 3px 8px rgba(255, 179, 186, 0.4);
 }
 
 /* 分页 */

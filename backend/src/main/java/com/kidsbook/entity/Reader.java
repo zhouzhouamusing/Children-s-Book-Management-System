@@ -24,6 +24,8 @@ public class Reader {
 
     private String status;
 
+    private String suspendReason;
+
     private Integer borrowCount;
 
     private Integer overdueCount;

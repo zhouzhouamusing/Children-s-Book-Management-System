@@ -18,7 +18,7 @@ public class AdminApplication {
     private String reason;
     private String status;
     private String rejectReason;
-    private Long approvedBy;
+    private String approvedBy;
     private LocalDateTime approvedTime;
     private LocalDateTime createTime;
     private LocalDateTime updateTime;

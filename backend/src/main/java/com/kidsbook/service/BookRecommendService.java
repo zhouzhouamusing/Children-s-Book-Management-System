@@ -1,12 +1,15 @@
 package com.kidsbook.service;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.kidsbook.common.BusinessException;
 import com.kidsbook.entity.Book;
 import com.kidsbook.entity.BorrowRecord;
 import com.kidsbook.entity.Reader;
+import com.kidsbook.entity.ReadingProgress;
 import com.kidsbook.mapper.BookMapper;
 import com.kidsbook.mapper.BorrowRecordMapper;
 import com.kidsbook.mapper.ReaderMapper;
+import com.kidsbook.mapper.ReadingProgressMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -21,6 +24,7 @@ public class BookRecommendService {
     private final BookMapper bookMapper;
     private final BorrowRecordMapper borrowRecordMapper;
     private final ReaderMapper readerMapper;
+    private final ReadingProgressMapper readingProgressMapper;
 
     public List<Book> getRecommendByHistory(Long readerId, int limit) {
         LambdaQueryWrapper<BorrowRecord> wrapper = new LambdaQueryWrapper<>();
@@ -165,6 +169,78 @@ public class BookRecommendService {
         if (age <= 9) return "6-9";
         if (age <= 12) return "9-12";
         return "12";
+    }
+
+    public List<Book> getRecommendByReadingProgress(Long readerId, int limit) {
+        LambdaQueryWrapper<ReadingProgress> progressWrapper = new LambdaQueryWrapper<>();
+        progressWrapper.eq(ReadingProgress::getReaderId, readerId)
+                .in(ReadingProgress::getStatus, List.of("reading", "completed"));
+        List<ReadingProgress> progressList = readingProgressMapper.selectList(progressWrapper);
+
+        if (progressList.isEmpty()) {
+            return getTopRatedBooks(limit);
+        }
+
+        Set<Long> progressBookIds = progressList.stream()
+                .map(ReadingProgress::getBookId)
+                .collect(Collectors.toSet());
+
+        Map<String, Double> categoryScore = new HashMap<>();
+        for (ReadingProgress progress : progressList) {
+            Book book = bookMapper.selectById(progress.getBookId());
+            if (book != null && book.getCategory() != null) {
+                double weight = "completed".equals(progress.getStatus()) ? 2.0 : 1.0;
+                categoryScore.merge(book.getCategory(), weight, Double::sum);
+            }
+        }
+
+        List<String> topCategories = categoryScore.entrySet().stream()
+                .sorted(Map.Entry.<String, Double>comparingByValue().reversed())
+                .limit(3)
+                .map(Map.Entry::getKey)
+                .collect(Collectors.toList());
+
+        if (topCategories.isEmpty()) {
+            return getTopRatedBooks(limit);
+        }
+
+        LambdaQueryWrapper<BorrowRecord> borrowWrapper = new LambdaQueryWrapper<>();
+        borrowWrapper.eq(BorrowRecord::getReaderId, readerId);
+        Set<Long> borrowedBookIds = borrowRecordMapper.selectList(borrowWrapper).stream()
+                .map(BorrowRecord::getBookId)
+                .filter(Objects::nonNull)
+                .collect(Collectors.toSet());
+
+        Set<Long> excludeIds = new HashSet<>(progressBookIds);
+        excludeIds.addAll(borrowedBookIds);
+
+        LambdaQueryWrapper<Book> bookWrapper = new LambdaQueryWrapper<>();
+        bookWrapper.in(Book::getCategory, topCategories)
+                .eq(Book::getStatus, 1);
+        if (!excludeIds.isEmpty()) {
+            bookWrapper.notIn(Book::getId, excludeIds);
+        }
+        bookWrapper.orderByDesc(Book::getAvgRating)
+                .orderByDesc(Book::getCreateTime)
+                .last("LIMIT " + limit);
+
+        List<Book> recommended = bookMapper.selectList(bookWrapper);
+
+        if (recommended.size() < limit) {
+            Set<Long> allExclude = new HashSet<>(excludeIds);
+            allExclude.addAll(recommended.stream().map(Book::getId).collect(Collectors.toSet()));
+            LambdaQueryWrapper<Book> fillWrapper = new LambdaQueryWrapper<>();
+            fillWrapper.eq(Book::getStatus, 1);
+            if (!allExclude.isEmpty()) {
+                fillWrapper.notIn(Book::getId, allExclude);
+            }
+            fillWrapper.orderByDesc(Book::getAvgRating)
+                    .orderByDesc(Book::getCreateTime)
+                    .last("LIMIT " + (limit - recommended.size()));
+            recommended.addAll(bookMapper.selectList(fillWrapper));
+        }
+
+        return recommended;
     }
 
     public List<Book> getTopRatedBooks(int limit) {

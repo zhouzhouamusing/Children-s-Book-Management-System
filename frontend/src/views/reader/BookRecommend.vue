@@ -67,6 +67,35 @@
         <div v-else class="empty-tip">暂无适龄推荐</div>
       </div>
 
+      <!-- 基于阅读进度推荐 -->
+      <div class="recommend-section animate__animated animate__fadeInUp" style="animation-delay: 0.15s">
+        <div class="section-header">
+          <h3><span class="header-icon">📖</span> 阅读延伸</h3>
+          <span class="header-tip">根据你的阅读进度推荐</span>
+        </div>
+        <div class="book-scroll" v-if="byProgress.length">
+          <div
+            v-for="(book, index) in byProgress"
+            :key="'p-' + book.id"
+            class="book-card"
+            :style="{ animationDelay: `${index * 0.08}s` }"
+          >
+            <div class="book-cover progress-cover">
+              <span class="cover-emoji">📘</span>
+            </div>
+            <div class="book-info">
+              <h4 class="book-title">{{ book.title }}</h4>
+              <p class="book-author">{{ book.author }}</p>
+              <div class="book-tags">
+                <el-tag size="small" round effect="plain" class="category-tag">{{ book.category }}</el-tag>
+                <span class="age-badge" v-if="book.ageRange">{{ book.ageRange }}</span>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div v-else class="empty-tip">开始阅读后即可获得更精准的推荐~</div>
+      </div>
+
       <!-- TOP10 热门图书 -->
       <div class="recommend-section animate__animated animate__fadeInUp" style="animation-delay: 0.2s">
         <div class="section-header">
@@ -144,6 +173,7 @@ import { getAllRecommendations } from '@/api'
 const loading = ref(false)
 const byHistory = ref([])
 const byAge = ref([])
+const byProgress = ref([])
 const top10 = ref([])
 const topRated = ref([])
 
@@ -154,6 +184,7 @@ const fetchRecommendations = async () => {
     const data = res.data || {}
     byHistory.value = data.byHistory || []
     byAge.value = data.byAge || []
+    byProgress.value = data.byProgress || []
     top10.value = data.top10 || []
     topRated.value = data.topRated || []
   } catch (e) {
@@ -464,6 +495,10 @@ onMounted(() => {
 
 .rated-cover {
   background: linear-gradient(135deg, #FFEAA7, #FFD1D6);
+}
+
+.progress-cover {
+  background: linear-gradient(135deg, var(--purple-light), var(--blue-light));
 }
 
 .book-rating {

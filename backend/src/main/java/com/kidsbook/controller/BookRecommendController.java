@@ -22,8 +22,15 @@ public class BookRecommendController {
 
     private Long getCurrentReaderId() {
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
-        String token = (String) auth.getCredentials();
-        return jwtUtil.getReaderIdFromToken(token);
+        if (auth == null || auth.getCredentials() == null) {
+            return null;
+        }
+        try {
+            String token = auth.getCredentials().toString();
+            return jwtUtil.getReaderIdFromToken(token);
+        } catch (Exception e) {
+            return null;
+        }
     }
 
     @GetMapping("/by-history")
@@ -50,6 +57,18 @@ public class BookRecommendController {
         return Result.success(books);
     }
 
+    @GetMapping("/by-progress")
+    public Result<List<Book>> getRecommendByProgress(@RequestParam(defaultValue = "10") int limit) {
+        Long readerId = getCurrentReaderId();
+        List<Book> books;
+        if (readerId != null) {
+            books = recommendService.getRecommendByReadingProgress(readerId, limit);
+        } else {
+            books = recommendService.getTopRatedBooks(limit);
+        }
+        return Result.success(books);
+    }
+
     @GetMapping("/top10")
     public Result<List<Map<String, Object>>> getTopBooks() {
         List<Map<String, Object>> top10 = recommendService.getTopBorrowedBooksWithCount(10);
@@ -64,9 +83,11 @@ public class BookRecommendController {
         if (readerId != null) {
             data.put("byHistory", recommendService.getRecommendByHistory(readerId, 6));
             data.put("byAge", recommendService.getRecommendByAge(readerId, 6));
+            data.put("byProgress", recommendService.getRecommendByReadingProgress(readerId, 6));
         } else {
             data.put("byHistory", recommendService.getTopBorrowedBooks(6));
             data.put("byAge", recommendService.getTopBorrowedBooks(6));
+            data.put("byProgress", recommendService.getTopRatedBooks(6));
         }
         data.put("top10", recommendService.getTopBorrowedBooksWithCount(10));
         data.put("topRated", recommendService.getTopRatedBooks(6));

@@ -19,6 +19,13 @@
   --radius-lg: 20px;
   --radius-md: 14px;
   --radius-sm: 10px;
+  /* 按钮柔和色调 */
+  --btn-edit-from: #A78BFA;
+  --btn-edit-to: #C4B3D4;
+  --btn-delete-from: #FFB3BA;
+  --btn-delete-to: #FFCDD2;
+  --btn-upload-from: #B5EAD7;
+  --btn-upload-to: #A8E6CF;
 }
 
 * {
@@ -59,7 +66,7 @@ body {
 }
 
 .el-button--danger {
-  background: linear-gradient(135deg, #FF8A9E, #FF6B81) !important;
+  background: linear-gradient(135deg, var(--btn-delete-from), var(--btn-delete-to)) !important;
   border: none !important;
   color: #fff !important;
 }

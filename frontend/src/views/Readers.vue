@@ -72,7 +72,7 @@
           <el-icon><Search /></el-icon>
           搜索
         </el-button>
-        <el-button type="success" size="large" @click="handleAdd">
+        <el-button v-permission="'READER_CREATE'" type="success" size="large" @click="handleAdd">
           <el-icon><Plus /></el-icon>
           添加读者
         </el-button>
@@ -138,13 +138,13 @@
             <el-button class="card-btn reading-stats" size="small" @click="handleViewReadingStats(reader)">
               <el-icon><TrendCharts /></el-icon> 阅读进度
             </el-button>
-            <el-button class="card-btn edit" size="small" @click="handleEdit(reader)">
+            <el-button v-permission="'READER_UPDATE'" class="card-btn edit" size="small" @click="handleEdit(reader)">
               <el-icon><Edit /></el-icon> 编辑
             </el-button>
             <el-button class="card-btn status-btn" size="small" @click="handleToggleStatus(reader)">
               <el-icon><Switch /></el-icon> {{ reader.status === 'normal' ? '暂停' : '恢复' }}
             </el-button>
-            <el-button class="card-btn delete" size="small" @click="handleDelete(reader)">
+            <el-button v-permission="'READER_DELETE'" class="card-btn delete" size="small" @click="handleDelete(reader)">
               <el-icon><Delete /></el-icon>
             </el-button>
           </div>
@@ -927,15 +927,15 @@ onMounted(() => {
 }
 
 .card-btn.edit {
-  background: linear-gradient(135deg, #7C5CFC, #A78BFA) !important;
+  background: linear-gradient(135deg, var(--btn-edit-from), var(--btn-edit-to)) !important;
   border: none !important;
   color: #fff !important;
   font-size: 12px;
 }
 
 .card-btn.edit:hover {
-  background: linear-gradient(135deg, #6C4DE6, #7C5CFC) !important;
-  box-shadow: 0 3px 8px rgba(124, 92, 252, 0.4);
+  background: linear-gradient(135deg, var(--btn-edit-to), var(--btn-edit-from)) !important;
+  box-shadow: 0 3px 8px rgba(167, 139, 250, 0.3);
 }
 
 .card-btn.status-btn {
@@ -951,15 +951,15 @@ onMounted(() => {
 }
 
 .card-btn.delete {
-  background: linear-gradient(135deg, #FF6B81, #FF8A9E) !important;
+  background: linear-gradient(135deg, var(--btn-delete-from), var(--btn-delete-to)) !important;
   border: none !important;
   color: #fff !important;
   font-size: 12px;
 }
 
 .card-btn.delete:hover {
-  background: linear-gradient(135deg, #FF4757, #FF6B81) !important;
-  box-shadow: 0 3px 8px rgba(255, 107, 129, 0.4);
+  background: linear-gradient(135deg, var(--btn-delete-to), var(--btn-delete-from)) !important;
+  box-shadow: 0 3px 8px rgba(255, 179, 186, 0.4);
 }
 
 /* 弹窗样式 */

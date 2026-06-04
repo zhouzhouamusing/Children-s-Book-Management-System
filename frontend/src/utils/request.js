@@ -1,6 +1,7 @@
 import axios from 'axios'
 import { ElMessage } from 'element-plus'
 import router from '@/router'
+import { clearAuth } from '@/utils/auth'
 
 const request = axios.create({
   baseURL: '/api',
@@ -25,10 +26,7 @@ let isRedirecting = false
 function clearAuthAndRedirect(message) {
   if (isRedirecting) return
   isRedirecting = true
-  localStorage.removeItem('token')
-  localStorage.removeItem('nickname')
-  localStorage.removeItem('role')
-  localStorage.removeItem('readerId')
+  clearAuth()
   ElMessage.error(message || '登录已过期，请重新登录')
   router.push('/login').finally(() => {
     setTimeout(() => { isRedirecting = false }, 2000)

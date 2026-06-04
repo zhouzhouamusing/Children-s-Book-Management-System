@@ -136,6 +136,16 @@
         </div>
         <el-empty v-if="!reviewsLoading && bookReviewList.length === 0" description="暂无评价，快来写下第一条评价吧！" :image-size="80" />
       </div>
+      <div class="reviews-pagination" v-if="reviewTotal > reviewPageSize">
+        <el-pagination
+          v-model:current-page="reviewPage"
+          :total="reviewTotal"
+          :page-size="reviewPageSize"
+          layout="prev, pager, next"
+          small
+          @current-change="fetchBookReviews"
+        />
+      </div>
     </el-dialog>
 
     <!-- 写评价弹窗 -->
@@ -166,7 +176,7 @@
 <script setup>
 import { ref, reactive, onMounted } from 'vue'
 import { ElMessage } from 'element-plus'
-import { browseBooks, createReservation, getMyReservations, getAllCategories, getBookReviews, checkCanReview, createReview } from '@/api'
+import { browseBooks, createReservation, getMyReservations, getAllCategories, getBookReviews, checkCanReview, createReview, getReaderCategories } from '@/api'
 
 const loading = ref(false)
 const books = ref([])
@@ -187,7 +197,11 @@ const rateColors = ['#FFB3BA', '#FFEAA7', '#B5EAD7']
 const reviewsVisible = ref(false)
 const reviewsLoading = ref(false)
 const reviewBookTitle = ref('')
+const reviewBookId = ref(null)
 const bookReviewList = ref([])
+const reviewPage = ref(1)
+const reviewTotal = ref(0)
+const reviewPageSize = 10
 const writeReviewVisible = ref(false)
 const submitReviewLoading = ref(false)
 const reviewForm = reactive({ bookId: null, rating: 5, content: '' })
@@ -223,8 +237,24 @@ const fetchBooks = async () => {
 
 const fetchCategories = async () => {
   try {
-    const res = await getAllCategories()
-    categories.value = (res.data || []).map(c => c.name)
+    const categorySet = new Set()
+    try {
+      const res = await getAllCategories()
+      const list = res.data || []
+      list.forEach(c => {
+        const name = typeof c === 'string' ? c : c?.name
+        if (name) categorySet.add(name)
+      })
+    } catch (e) {}
+    try {
+      const res = await getReaderCategories()
+      const list = res.data || []
+      list.forEach(c => {
+        const name = typeof c === 'string' ? c : c?.name
+        if (name) categorySet.add(name)
+      })
+    } catch (e) {}
+    categories.value = [...categorySet]
   } catch (e) {
     console.error('获取分类失败:', e)
     categories.value = []
@@ -257,12 +287,20 @@ const handleReserve = async (book) => {
 
 const openReviews = async (book) => {
   reviewBookTitle.value = book.title
+  reviewBookId.value = book.id
   bookReviewList.value = []
+  reviewPage.value = 1
+  reviewTotal.value = 0
   reviewsVisible.value = true
+  fetchBookReviews()
+}
+
+const fetchBookReviews = async () => {
   reviewsLoading.value = true
   try {
-    const res = await getBookReviews(book.id, { page: 1, size: 20 })
+    const res = await getBookReviews(reviewBookId.value, { page: reviewPage.value, size: reviewPageSize })
     bookReviewList.value = res.data?.records || []
+    reviewTotal.value = res.data?.total || 0
   } catch (e) {} finally {
     reviewsLoading.value = false
   }
@@ -578,6 +616,14 @@ onMounted(() => {
 .reviews-list {
   max-height: 400px;
   overflow-y: auto;
+}
+
+.reviews-pagination {
+  display: flex;
+  justify-content: center;
+  margin-top: 16px;
+  padding-top: 12px;
+  border-top: 1px solid #F5F5F5;
 }
 
 .review-item {
