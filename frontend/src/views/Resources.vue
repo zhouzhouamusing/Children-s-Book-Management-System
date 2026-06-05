@@ -193,6 +193,8 @@
 import { ref, computed, onMounted } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { getFileList, deleteFile, getBooks } from '@/api'
+import { usePermission } from '@/composables/usePermission'
+const { checkWithFeedback } = usePermission()
 
 const loading = ref(false)
 const resources = ref([])
@@ -248,6 +250,7 @@ const openLinkDialog = (row) => {
 }
 
 const confirmLink = async () => {
+  if (!checkWithFeedback('FILE_CREATE')) return
   if (!linkResource.value || !linkBookId.value) return
   try {
     await linkResourceToBook(linkResource.value.id, linkBookId.value)
@@ -297,6 +300,7 @@ const downloadFile = () => {
 }
 
 const handleDelete = (row) => {
+  if (!checkWithFeedback('FILE_DELETE')) return
   ElMessageBox.confirm(
     `确定删除文件「${row.originalName}」吗？`,
     '删除确认',
@@ -311,6 +315,7 @@ const handleDelete = (row) => {
 }
 
 const handleUploadSuccess = (response) => {
+  if (!checkWithFeedback('FILE_CREATE')) return
   if (response.code === 200) {
     ElMessage.success('上传成功')
     fetchResources()
@@ -320,6 +325,7 @@ const handleUploadSuccess = (response) => {
 }
 
 const beforeUpload = (file) => {
+  if (!checkWithFeedback('FILE_CREATE')) return false
   const isLt50M = file.size / 1024 / 1024 < 50
   if (!isLt50M) {
     ElMessage.error('文件大小不能超过50MB')

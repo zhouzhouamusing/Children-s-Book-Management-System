@@ -178,6 +178,8 @@
 import { ref, reactive, onMounted } from 'vue'
 import { ElMessage } from 'element-plus'
 import { browseBooks, createReservation, getMyReservations, getAllCategories, getBookReviews, checkCanReview, createReview, getReaderCategories } from '@/api'
+import { usePermission } from '@/composables/usePermission'
+const { checkWithFeedback } = usePermission()
 
 const loading = ref(false)
 const books = ref([])
@@ -273,6 +275,7 @@ const fetchMyReservations = async () => {
 }
 
 const handleReserve = async (book) => {
+  if (!checkWithFeedback('READER_RESERVATION_CREATE')) return
   reservingId.value = book.id
   try {
     await createReservation({ bookId: book.id })

@@ -179,6 +179,8 @@
 import { ref, reactive, onMounted } from 'vue'
 import { ElMessage } from 'element-plus'
 import { submitAppeal, getMyAppeals } from '@/api'
+import { usePermission } from '@/composables/usePermission'
+const { checkWithFeedback } = usePermission()
 
 const loading = ref(false)
 const submitLoading = ref(false)
@@ -237,6 +239,7 @@ const fetchAppeals = async () => {
 }
 
 const handleSubmit = async () => {
+  if (!checkWithFeedback('READER_APPEAL_CREATE')) return
   if (!form.type) {
     ElMessage.warning('请选择申诉类型')
     return

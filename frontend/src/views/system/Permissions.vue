@@ -205,7 +205,10 @@
 <script setup>
 import { ref, onMounted, computed } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
+import { usePermission } from '@/composables/usePermission'
 import { getPermissionsWithRoles, getPermissionModules, createPermission, updatePermission, deletePermission } from '@/api'
+
+const { checkWithFeedback } = usePermission()
 
 const loading = ref(false)
 const allPermissions = ref([])
@@ -318,12 +321,14 @@ function clearFilters() {
 }
 
 function handleAdd() {
+  if (!checkWithFeedback('PERMISSION_MANAGE')) return
   editingPerm.value = null
   permForm.value = { code: '', name: '', module: '', type: 'button', description: '' }
   dialogVisible.value = true
 }
 
 function handleEdit(perm) {
+  if (!checkWithFeedback('PERMISSION_MANAGE')) return
   editingPerm.value = perm
   permForm.value = {
     code: perm.code,
@@ -336,6 +341,7 @@ function handleEdit(perm) {
 }
 
 async function submitForm() {
+  if (!checkWithFeedback('PERMISSION_MANAGE')) return
   const valid = await formRef.value.validate().catch(() => false)
   if (!valid) return
   submitLoading.value = true
@@ -357,6 +363,7 @@ async function submitForm() {
 }
 
 async function handleDelete(perm) {
+  if (!checkWithFeedback('PERMISSION_MANAGE')) return
   if (perm.builtIn) {
     ElMessage.warning('内置权限不可删除')
     return
@@ -385,6 +392,7 @@ function toggleBatchItem(id, checked) {
 }
 
 async function handleBatchDelete() {
+  if (!checkWithFeedback('PERMISSION_BATCH_DELETE')) return
   if (batchSelected.value.length === 0) return
   await ElMessageBox.confirm(`确定要删除选中的 ${batchSelected.value.length} 个权限吗？此操作不可恢复。`, '批量删除', { type: 'warning' })
   try {
@@ -403,6 +411,7 @@ async function handleBatchDelete() {
 }
 
 function exportPermissions() {
+  if (!checkWithFeedback('PERMISSION_EXPORT')) return
   const perms = allPermissions.value
   const lines = ['编码,名称,模块,类型,关联角色']
   perms.forEach(p => {

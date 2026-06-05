@@ -205,6 +205,8 @@ import { ref, reactive, computed, onMounted } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { Search } from '@element-plus/icons-vue'
 import { getAdminAppeals, reviewAppeal } from '@/api'
+import { usePermission } from '@/composables/usePermission'
+const { checkWithFeedback } = usePermission()
 
 const loading = ref(false)
 const records = ref([])
@@ -291,6 +293,7 @@ const fetchList = async () => {
 }
 
 const handleReview = (row, action) => {
+  if (!checkWithFeedback('APPEAL_REVIEW')) return
   reviewDialog.data = { ...row }
   reviewDialog.feedback = ''
   reviewDialog.action = action
@@ -298,6 +301,7 @@ const handleReview = (row, action) => {
 }
 
 const confirmReview = async (action) => {
+  if (!checkWithFeedback('APPEAL_REVIEW')) return
   reviewDialog.loading = true
   try {
     await reviewAppeal(reviewDialog.data.id, {

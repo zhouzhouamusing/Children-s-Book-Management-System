@@ -236,6 +236,8 @@
 import { ref, reactive, computed, onMounted } from 'vue'
 import { ElMessage } from 'element-plus'
 import { getMyProfile, updateMyProfile, getMyStatistics, getMyPoints, applyForAdmin, getMyApplicationStatus } from '@/api'
+import { usePermission } from '@/composables/usePermission'
+const { checkWithFeedback } = usePermission()
 
 const formRef = ref(null)
 const editing = ref(false)
@@ -378,6 +380,7 @@ const cancelEdit = () => {
 }
 
 const saveProfile = async () => {
+  if (!checkWithFeedback('READER_PROFILE_UPDATE')) return
   const valid = await formRef.value.validate().catch(() => false)
   if (!valid) return
 
@@ -422,6 +425,7 @@ const fetchAdminAppStatus = async () => {
 }
 
 const submitAdminApplication = async () => {
+  if (!checkWithFeedback('ADMIN_APPLICATION_APPLY')) return
   if (!adminApp.reason || adminApp.reason.trim().length < 5) {
     ElMessage.warning('请填写至少5个字的申请理由')
     return

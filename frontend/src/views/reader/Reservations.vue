@@ -94,6 +94,8 @@
 import { ref, onMounted } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { getMyReservations, cancelReservation } from '@/api'
+import { usePermission } from '@/composables/usePermission'
+const { checkWithFeedback } = usePermission()
 
 const loading = ref(false)
 const reservations = ref([])
@@ -165,6 +167,7 @@ const fetchReservations = async () => {
 }
 
 const handleCancel = (item) => {
+  if (!checkWithFeedback('READER_RESERVATION_CANCEL')) return
   ElMessageBox.confirm(`确定要取消预约《${item.bookTitle}》吗？`, '取消预约', {
     confirmButtonText: '确定取消',
     cancelButtonText: '再想想',

@@ -240,6 +240,8 @@ import { ref, reactive, onMounted, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { getCategoryList, addCategory, updateCategory, deleteCategory } from '@/api'
+import { usePermission } from '@/composables/usePermission'
+const { checkWithFeedback } = usePermission()
 
 const router = useRouter()
 const loading = ref(false)
@@ -325,12 +327,14 @@ const resetForm = () => {
 }
 
 const handleAdd = () => {
+  if (!checkWithFeedback('CATEGORY_CREATE')) return
   isEdit.value = false
   resetForm()
   dialogVisible.value = true
 }
 
 const handleEdit = (row) => {
+  if (!checkWithFeedback('CATEGORY_UPDATE')) return
   isEdit.value = true
   Object.assign(form, { ...row })
   dialogVisible.value = true
@@ -341,6 +345,7 @@ const handleViewBooks = (cat) => {
 }
 
 const handleSubmit = async () => {
+  if (!checkWithFeedback(isEdit.value ? 'CATEGORY_UPDATE' : 'CATEGORY_CREATE')) return
   const valid = await formRef.value.validate().catch(() => false)
   if (!valid) return
 
@@ -368,6 +373,7 @@ const handleSubmit = async () => {
 }
 
 const handleDelete = (row) => {
+  if (!checkWithFeedback('CATEGORY_DELETE')) return
   const bookCount = row.bookCount || 0
   if (bookCount > 0) {
     ElMessageBox.alert(

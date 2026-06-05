@@ -383,11 +383,14 @@
 <script setup>
 import { ref, reactive, computed, onMounted } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
+import { usePermission } from '@/composables/usePermission'
 import {
   getRoles, createRole, updateRole, deleteRole,
   getPermissions, getRolePermissions, getEffectivePermissions, assignRolePermissions,
   getAllUsersWithRoles, getRoleUsers, assignUserRoles, getUserRoles
 } from '@/api'
+
+const { checkWithFeedback } = usePermission()
 
 const loading = ref(false)
 const roleList = ref([])
@@ -771,6 +774,7 @@ async function loadInheritedPermissions(level) {
 }
 
 function handleAdd() {
+  if (!checkWithFeedback('ROLE_MANAGE')) return
   editingRole.value = null
   Object.assign(roleForm, { code: '', name: '', level: 20, description: '', status: 1, permissionIds: [] })
   activeTab.value = 'basic'
@@ -795,6 +799,7 @@ async function handleEdit(row) {
 }
 
 async function submitForm() {
+  if (!checkWithFeedback('ROLE_MANAGE')) return
   const valid = await formRef.value.validate().catch(() => false)
   if (!valid) {
     activeTab.value = 'basic'
@@ -827,6 +832,7 @@ async function submitForm() {
 }
 
 async function handleDelete(row) {
+  if (!checkWithFeedback('ROLE_MANAGE')) return
   await ElMessageBox.confirm(`确定要删除角色「${row.name}」吗？`, '警告', { type: 'warning' })
   try {
     await deleteRole(row.id)
@@ -869,6 +875,7 @@ function toggleDrawerPerm(permId, checked) {
 }
 
 async function savePermissions() {
+  if (!checkWithFeedback('ROLE_MANAGE')) return
   permSaveLoading.value = true
   try {
     await assignRolePermissions(currentRole.value.id, { permissionIds: selectedPermIds.value })
@@ -910,6 +917,7 @@ async function handleUsers(row) {
 }
 
 async function removeUserFromRole(user) {
+  if (!checkWithFeedback('USER_ROLE_ASSIGN')) return
   await ElMessageBox.confirm(`确定要移除该用户的「${currentRole.value.name}」角色吗？`, '提示', { type: 'warning' })
   try {
     const rolesRes = await getUserRoles(user.userType, user.userId)

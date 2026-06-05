@@ -260,6 +260,8 @@ import {
   deleteReadingNote,
   browseBooks
 } from '@/api'
+import { usePermission } from '@/composables/usePermission'
+const { checkWithFeedback } = usePermission()
 
 const loading = ref(false)
 const submitting = ref(false)
@@ -367,6 +369,7 @@ const searchBooks = async (query) => {
 }
 
 const showAddDialog = () => {
+  if (!checkWithFeedback('READING_PROGRESS_CREATE')) return
   if (activeTab.value === 'progress') {
     isUpdate.value = false
     progressForm.value = { bookId: null, totalPages: 100, currentPage: 0, readingMinutes: 0 }
@@ -380,6 +383,7 @@ const showAddDialog = () => {
 }
 
 const submitProgress = async () => {
+  if (!checkWithFeedback('READING_PROGRESS_CREATE')) return
   if (!isUpdate.value && !progressForm.value.bookId) {
     ElMessage.warning('请选择图书')
     return
@@ -430,6 +434,13 @@ const submitNote = async () => {
 }
 
 const handleCommand = async (cmd, item) => {
+  if (cmd === 'addNote') {
+    if (!checkWithFeedback('READING_PROGRESS_CREATE')) return
+  } else if (cmd === 'update' || cmd === 'complete' || cmd === 'pause' || cmd === 'resume') {
+    if (!checkWithFeedback('READING_PROGRESS_UPDATE')) return
+  } else if (cmd === 'delete') {
+    if (!checkWithFeedback('READING_PROGRESS_DELETE')) return
+  }
   if (cmd === 'update') {
     isUpdate.value = true
     progressForm.value = {
@@ -477,6 +488,7 @@ const handleCommand = async (cmd, item) => {
 }
 
 const handleEditNote = (note) => {
+  if (!checkWithFeedback('READING_PROGRESS_UPDATE')) return
   editingNote.value = note
   noteFromProgress.value = null
   noteForm.value = {
@@ -489,6 +501,7 @@ const handleEditNote = (note) => {
 }
 
 const handleDeleteNote = (note) => {
+  if (!checkWithFeedback('READING_PROGRESS_DELETE')) return
   ElMessageBox.confirm('确定删除此笔记吗？', '确认', {
     confirmButtonText: '确定',
     cancelButtonText: '取消',

@@ -155,6 +155,8 @@
 import { ref, computed, onMounted } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { getAdminReviews, approveReview, rejectReview, replyReview, adminDeleteReview } from '@/api'
+import { usePermission } from '@/composables/usePermission'
+const { checkWithFeedback } = usePermission()
 
 const loading = ref(false)
 const reviews = ref([])
@@ -192,6 +194,7 @@ const handleFilter = () => {
 }
 
 const handleApprove = async (review) => {
+  if (!checkWithFeedback('REVIEW_UPDATE')) return
   try {
     await approveReview(review.id)
     ElMessage.success('已通过审核')
@@ -200,6 +203,7 @@ const handleApprove = async (review) => {
 }
 
 const handleReject = (review) => {
+  if (!checkWithFeedback('REVIEW_UPDATE')) return
   ElMessageBox.confirm('确定拒绝该评价吗？', '拒绝确认', { type: 'warning' })
     .then(async () => {
       try {
@@ -217,6 +221,7 @@ const handleReply = (review) => {
 }
 
 const submitReply = async () => {
+  if (!checkWithFeedback('REVIEW_UPDATE')) return
   if (!replyContent.value.trim()) {
     ElMessage.warning('请输入回复内容')
     return
@@ -233,6 +238,7 @@ const submitReply = async () => {
 }
 
 const handleDelete = (review) => {
+  if (!checkWithFeedback('REVIEW_DELETE')) return
   ElMessageBox.confirm('确定删除该评价吗？此操作不可恢复。', '删除确认', {
     type: 'warning', confirmButtonText: '确认删除'
   }).then(async () => {
@@ -245,6 +251,7 @@ const handleDelete = (review) => {
 }
 
 const handleBatchDelete = () => {
+  if (!checkWithFeedback('REVIEW_BATCH_DELETE')) return
   const rejectedReviews = reviews.value.filter(r => r.status === 'rejected')
   if (rejectedReviews.length === 0) {
     ElMessage.warning('没有可批量删除的评价（仅支持删除已拒绝的评价）')

@@ -106,6 +106,8 @@
 import { ref, reactive, onMounted } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { getMyReviews, updateReview, deleteMyReview } from '@/api'
+import { usePermission } from '@/composables/usePermission'
+const { checkWithFeedback } = usePermission()
 
 const loading = ref(false)
 const reviews = ref([])
@@ -147,6 +149,7 @@ const handleEdit = (review) => {
 }
 
 const submitEdit = async () => {
+  if (!checkWithFeedback('READER_REVIEW_UPDATE')) return
   if (!editForm.rating) {
     ElMessage.warning('请选择评分')
     return
@@ -167,6 +170,7 @@ const submitEdit = async () => {
 }
 
 const handleDelete = (review) => {
+  if (!checkWithFeedback('READER_REVIEW_DELETE')) return
   ElMessageBox.confirm('确定删除这条评价吗？', '删除确认', {
     type: 'warning', confirmButtonText: '确认删除'
   }).then(async () => {

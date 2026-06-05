@@ -83,6 +83,8 @@
 import { ref, reactive, onMounted } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { getAdminApplications, approveApplication, rejectApplication } from '@/api'
+import { usePermission } from '@/composables/usePermission'
+const { checkWithFeedback } = usePermission()
 
 const loading = ref(false)
 const records = ref([])
@@ -133,6 +135,7 @@ const fetchList = async () => {
 }
 
 const handleApprove = (row) => {
+  if (!checkWithFeedback('ADMIN_APPLICATION_REVIEW')) return
   ElMessageBox.confirm(
     `确定通过「${row.readerName}」的管理员申请吗？通过后该用户将获得管理员权限。`,
     '审批确认',
@@ -149,12 +152,14 @@ const handleApprove = (row) => {
 }
 
 const handleReject = (row) => {
+  if (!checkWithFeedback('ADMIN_APPLICATION_REVIEW')) return
   rejectDialog.id = row.id
   rejectDialog.reason = ''
   rejectDialog.visible = true
 }
 
 const confirmReject = async () => {
+  if (!checkWithFeedback('ADMIN_APPLICATION_REVIEW')) return
   rejectDialog.loading = true
   try {
     await rejectApplication(rejectDialog.id, { rejectReason: rejectDialog.reason })

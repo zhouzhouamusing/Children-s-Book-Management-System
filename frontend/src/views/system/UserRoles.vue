@@ -194,7 +194,10 @@
 <script setup>
 import { ref, computed, onMounted, watch } from 'vue'
 import { ElMessage } from 'element-plus'
+import { usePermission } from '@/composables/usePermission'
 import { getAllUsersWithRoles, getAllRoles, assignUserRoles, getUserRoles, getPermissions, getRolePermissions } from '@/api'
+
+const { checkWithFeedback } = usePermission()
 
 const loading = ref(false)
 const userList = ref([])
@@ -332,6 +335,7 @@ async function loadAllPermissions() {
 }
 
 async function handleEditRoles(user) {
+  if (!checkWithFeedback('USER_ROLE_ASSIGN')) return
   editingUser.value = user
   dialogVisible.value = true
   assignLoading.value = true
@@ -346,6 +350,7 @@ async function handleEditRoles(user) {
 }
 
 async function saveUserRoles() {
+  if (!checkWithFeedback('USER_ROLE_ASSIGN')) return
   saveLoading.value = true
   try {
     await assignUserRoles(editingUser.value.userType, editingUser.value.userId, { roleIds: selectedRoleIds.value })

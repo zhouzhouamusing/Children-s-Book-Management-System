@@ -417,7 +417,10 @@
 <script setup>
 import { ref, reactive, onMounted, computed } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
+import { usePermission } from '@/composables/usePermission'
 import { getReaders, addReader, updateReader, deleteReader, getReaderBorrowRecords, updateReaderStatus, getReaderReadingStatistics, getReaderReadingProgress } from '@/api'
+
+const { checkWithFeedback } = usePermission()
 
 const loading = ref(false)
 const submitLoading = ref(false)
@@ -525,18 +528,21 @@ const resetForm = () => {
 }
 
 const handleAdd = () => {
+  if (!checkWithFeedback('READER_CREATE')) return
   isEdit.value = false
   resetForm()
   dialogVisible.value = true
 }
 
 const handleEdit = (reader) => {
+  if (!checkWithFeedback('READER_UPDATE')) return
   isEdit.value = true
   Object.assign(form, { ...reader })
   dialogVisible.value = true
 }
 
 const handleSubmit = async () => {
+  if (!checkWithFeedback(isEdit.value ? 'READER_UPDATE' : 'READER_CREATE')) return
   const valid = await formRef.value.validate().catch(() => false)
   if (!valid) return
 
@@ -559,6 +565,7 @@ const handleSubmit = async () => {
 }
 
 const handleToggleStatus = (reader) => {
+  if (!checkWithFeedback('READER_UPDATE')) return
   const newStatus = reader.status === 'normal' ? 'suspended' : 'normal'
   const actionText = newStatus === 'suspended' ? '暂停借阅' : '恢复借阅'
 
@@ -582,6 +589,7 @@ const handleToggleStatus = (reader) => {
 }
 
 const handleDelete = (reader) => {
+  if (!checkWithFeedback('READER_DELETE')) return
   ElMessageBox.confirm(
     `确定要删除读者"${reader.name}"的信息吗？此操作不可恢复。`,
     '删除确认',
@@ -656,6 +664,7 @@ const formatReadingTime = (minutes) => {
 }
 
 const handleExport = async () => {
+  if (!checkWithFeedback('READER_EXPORT')) return
   try {
     const res = await getReaders({ page: 1, size: 10000, keyword: searchKeyword.value, status: searchStatus.value, gender: searchGender.value })
     const readers = res.data?.records || res.data || []

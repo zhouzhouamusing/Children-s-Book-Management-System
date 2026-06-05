@@ -263,8 +263,10 @@
 import { ref, reactive, computed, onMounted } from 'vue'
 import { useRoute } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
+import { usePermission } from '@/composables/usePermission'
 import { getBooks, addBook, updateBook, deleteBook, getCategories, getAllCategories, getBookFiles } from '@/api'
 
+const { checkWithFeedback } = usePermission()
 const route = useRoute()
 const tableLoading = ref(false)
 const submitLoading = ref(false)
@@ -379,6 +381,7 @@ const resetForm = () => {
 }
 
 const handleAdd = () => {
+  if (!checkWithFeedback('BOOK_CREATE')) return
   isEdit.value = false
   resetForm()
   pdfFileList.value = []
@@ -386,6 +389,7 @@ const handleAdd = () => {
 }
 
 const handleEdit = (row) => {
+  if (!checkWithFeedback('BOOK_UPDATE')) return
   isEdit.value = true
   Object.assign(bookForm, { ...row })
   pdfFileList.value = []
@@ -451,6 +455,7 @@ const beforePdfUpload = (file) => {
 }
 
 const handleSubmit = async () => {
+  if (!checkWithFeedback(isEdit.value ? 'BOOK_UPDATE' : 'BOOK_CREATE')) return
   const valid = await bookFormRef.value.validate().catch(() => false)
   if (!valid) return
 
@@ -482,6 +487,7 @@ const handleSubmit = async () => {
 }
 
 const handleDelete = (row) => {
+  if (!checkWithFeedback('BOOK_DELETE')) return
   ElMessageBox.confirm(
     `确定要删除《${row.title}》吗？此操作不可恢复。`,
     '删除确认',
@@ -507,6 +513,7 @@ const handleDelete = (row) => {
 }
 
 const handleExport = async () => {
+  if (!checkWithFeedback('BOOK_EXPORT')) return
   try {
     const res = await getBooks({ page: 1, size: 10000, keyword: searchKeyword.value, category: searchCategory.value })
     const books = res.data?.records || res.data || []

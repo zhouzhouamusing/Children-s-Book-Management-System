@@ -112,6 +112,8 @@
 import { ref, reactive, computed, onMounted } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { getBorrows, createBorrow, returnBorrow, renewBorrow, getBorrowStatistics } from '@/api'
+import { usePermission } from '@/composables/usePermission'
+const { checkWithFeedback } = usePermission()
 
 const loading = ref(false)
 const submitting = ref(false)
@@ -170,6 +172,7 @@ const fetchStats = async () => {
 }
 
 const handleBorrow = async () => {
+  if (!checkWithFeedback('BORROW_CREATE')) return
   const valid = await borrowFormRef.value.validate().catch(() => false)
   if (!valid) return
   submitting.value = true
@@ -187,6 +190,7 @@ const handleBorrow = async () => {
 }
 
 const handleReturn = (row) => {
+  if (!checkWithFeedback('BORROW_UPDATE')) return
   ElMessageBox.confirm(`确认归还《${row.bookTitle}》？`, '确认归还', {
     confirmButtonText: '确认', cancelButtonText: '取消', type: 'info'
   }).then(async () => {
@@ -206,6 +210,7 @@ const handleRenew = (row) => {
 }
 
 const confirmRenew = async () => {
+  if (!checkWithFeedback('BORROW_UPDATE')) return
   submitting.value = true
   try {
     await renewBorrow(renewTarget.value.id, renewDays.value)
@@ -219,6 +224,7 @@ const confirmRenew = async () => {
 onMounted(() => { fetchList(); fetchStats() })
 
 const handleExport = async () => {
+  if (!checkWithFeedback('BORROW_EXPORT')) return
   try {
     const res = await getBorrows({ page: 1, size: 10000, keyword: keyword.value, status: statusFilter.value })
     const borrows = res.data?.records || res.data || []
