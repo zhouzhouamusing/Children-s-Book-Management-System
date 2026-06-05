@@ -73,4 +73,23 @@ public class BookController {
     public Result<List<String>> categories() {
         return Result.success(bookService.getAllCategories());
     }
+
+    @DeleteMapping("/batch")
+    @RequirePermission(Permission.BOOK_BATCH_DELETE)
+    public Result<Void> batchDelete(@RequestBody List<Long> ids) {
+        if (ids == null || ids.isEmpty()) {
+            return Result.success();
+        }
+        bookService.removeByIds(ids);
+        return Result.success();
+    }
+
+    @GetMapping("/export")
+    @RequirePermission(Permission.BOOK_EXPORT)
+    public Result<List<Book>> exportBooks(
+            @RequestParam(required = false) String keyword,
+            @RequestParam(required = false) String category) {
+        Page<Book> all = bookService.listBooks(1, 10000, keyword, category);
+        return Result.success(all.getRecords());
+    }
 }

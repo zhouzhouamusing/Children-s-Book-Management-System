@@ -1,5 +1,5 @@
 import axios from 'axios'
-import { ElMessage } from 'element-plus'
+import { ElMessage, ElNotification } from 'element-plus'
 import router from '@/router'
 import { clearAuth } from '@/utils/auth'
 
@@ -33,6 +33,24 @@ function clearAuthAndRedirect(message) {
   })
 }
 
+function getModuleContext(url) {
+  if (!url) return ''
+  if (url.includes('/books')) return '图书管理'
+  if (url.includes('/readers')) return '读者管理'
+  if (url.includes('/borrows')) return '借阅管理'
+  if (url.includes('/categories')) return '分类管理'
+  if (url.includes('/reviews') || url.includes('/book-review')) return '评价管理'
+  if (url.includes('/files')) return '文件管理'
+  if (url.includes('/sys/roles')) return '角色管理'
+  if (url.includes('/sys/permissions')) return '权限管理'
+  if (url.includes('/sys/user-role')) return '用户角色管理'
+  if (url.includes('/admin-application')) return '管理员申请'
+  if (url.includes('/appeals')) return '申诉管理'
+  if (url.includes('/reader-center')) return '读者中心'
+  if (url.includes('/reading-progress')) return '阅读进度'
+  return ''
+}
+
 request.interceptors.response.use(
   response => {
     const res = response.data
@@ -42,6 +60,20 @@ request.interceptors.response.use(
     if (res.code === 401) {
       clearAuthAndRedirect(res.message)
       return Promise.reject(new Error(res.message || '登录已过期'))
+    }
+    if (res.code === 403) {
+      const context = getModuleContext(response.config?.url)
+      const message = res.message || '无权执行此操作'
+      ElNotification({
+        title: '权限不足',
+        message: context ? `[${context}] ${message}` : message,
+        type: 'error',
+        duration: 5000
+      })
+      window.dispatchEvent(new CustomEvent('api-permission-denied', {
+        detail: { url: response.config?.url, message, context }
+      }))
+      return Promise.reject(new Error(message))
     }
     ElMessage.error(res.message || '请求失败')
     return Promise.reject(new Error(res.message || '请求失败'))
@@ -56,7 +88,18 @@ request.interceptors.response.use(
     }
 
     if (status === 403) {
-      ElMessage.error('没有权限访问该资源')
+      const serverMessage = error.response?.data?.message
+      const context = getModuleContext(config?.url)
+      const message = serverMessage || '没有权限访问该资源'
+      ElNotification({
+        title: '权限不足',
+        message: context ? `[${context}] ${message}` : message,
+        type: 'error',
+        duration: 5000
+      })
+      window.dispatchEvent(new CustomEvent('api-permission-denied', {
+        detail: { url: config?.url, message, context }
+      }))
       return Promise.reject(error)
     }
 

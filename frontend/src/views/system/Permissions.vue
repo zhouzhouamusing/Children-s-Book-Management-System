@@ -61,10 +61,10 @@
           <el-icon><Plus /></el-icon>
           新增权限
         </el-button>
-        <el-button v-permission="'PERMISSION_MANAGE'" size="large" :type="batchMode ? 'warning' : 'info'" plain @click="toggleBatchMode">
+        <el-button v-permission="'PERMISSION_BATCH_DELETE'" size="large" :type="batchMode ? 'warning' : 'info'" plain @click="toggleBatchMode">
           {{ batchMode ? '退出批量' : '批量操作' }}
         </el-button>
-        <el-button v-permission="'PERMISSION_MANAGE'" size="large" type="info" plain @click="exportPermissions">
+        <el-button v-permission="'PERMISSION_EXPORT'" size="large" type="info" plain @click="exportPermissions">
           <el-icon><Download /></el-icon>
           导出清单
         </el-button>
@@ -74,7 +74,7 @@
     <!-- 批量操作栏 -->
     <div v-if="batchMode" class="batch-bar animate__animated animate__fadeInDown">
       <span class="batch-info">已选择 <strong>{{ batchSelected.length }}</strong> 个权限</span>
-      <el-button v-permission="'PERMISSION_MANAGE'" type="danger" size="small" :disabled="batchSelected.length === 0" @click="handleBatchDelete">
+      <el-button v-permission="'PERMISSION_BATCH_DELETE'" type="danger" size="small" :disabled="batchSelected.length === 0" @click="handleBatchDelete">
         批量删除
       </el-button>
       <el-button size="small" @click="batchSelected = []">清空选择</el-button>

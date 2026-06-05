@@ -8,16 +8,18 @@ public final class RolePermissions {
     private static final Set<Permission> ADMIN_PERMISSIONS = EnumSet.of(
         // 图书管理
         Permission.BOOK_CREATE, Permission.BOOK_READ, Permission.BOOK_UPDATE, Permission.BOOK_DELETE,
+        Permission.BOOK_BATCH_DELETE, Permission.BOOK_EXPORT,
         // 读者管理
         Permission.READER_CREATE, Permission.READER_READ, Permission.READER_UPDATE, Permission.READER_DELETE,
+        Permission.READER_BATCH_DELETE, Permission.READER_EXPORT,
         // 分类管理
         Permission.CATEGORY_CREATE, Permission.CATEGORY_READ, Permission.CATEGORY_UPDATE, Permission.CATEGORY_DELETE,
         // 借阅管理
-        Permission.BORROW_CREATE, Permission.BORROW_READ, Permission.BORROW_UPDATE,
+        Permission.BORROW_CREATE, Permission.BORROW_READ, Permission.BORROW_UPDATE, Permission.BORROW_EXPORT,
         // 预约审批
         Permission.RESERVATION_READ, Permission.RESERVATION_UPDATE,
         // 评论审核
-        Permission.REVIEW_READ, Permission.REVIEW_UPDATE, Permission.REVIEW_DELETE,
+        Permission.REVIEW_READ, Permission.REVIEW_UPDATE, Permission.REVIEW_DELETE, Permission.REVIEW_BATCH_DELETE,
         // 文件管理
         Permission.FILE_CREATE, Permission.FILE_READ, Permission.FILE_DELETE,
         // 仪表盘
@@ -28,6 +30,9 @@ public final class RolePermissions {
         Permission.ADMIN_APPLICATION_REVIEW,
         // 申诉管理
         Permission.APPEAL_READ, Permission.APPEAL_REVIEW,
+        // 系统管理
+        Permission.ROLE_MANAGE, Permission.PERMISSION_MANAGE,
+        Permission.PERMISSION_BATCH_DELETE, Permission.PERMISSION_EXPORT, Permission.USER_ROLE_ASSIGN,
         // 读者中心（管理员可查看但不可执行读者专属操作）
         Permission.READER_PROFILE_READ, Permission.READER_BORROW_READ,
         Permission.READER_RESERVATION_READ, Permission.READER_BOOK_BROWSE,

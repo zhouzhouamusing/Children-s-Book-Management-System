@@ -330,3 +330,16 @@ body {
 ::-webkit-scrollbar-thumb:hover {
   background: var(--pink);
 }
+
+/* 权限禁用态样式 */
+.is-permission-disabled {
+  opacity: 0.5 !important;
+  cursor: not-allowed !important;
+  pointer-events: none !important;
+  filter: grayscale(30%);
+}
+
+.is-permission-disabled:hover {
+  transform: none !important;
+  box-shadow: none !important;
+}

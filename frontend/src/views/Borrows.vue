@@ -23,6 +23,9 @@
       <el-button v-permission="'BORROW_CREATE'" type="primary" @click="showBorrowDialog = true">
         <el-icon><Plus /></el-icon> 新增借阅
       </el-button>
+      <el-button v-permission="'BORROW_EXPORT'" type="info" plain @click="handleExport">
+        <el-icon><Download /></el-icon> 导出数据
+      </el-button>
     </div>
 
     <div class="table-section animate__animated animate__fadeInUp" style="animation-delay: 0.1s">
@@ -214,6 +217,30 @@ const confirmRenew = async () => {
 }
 
 onMounted(() => { fetchList(); fetchStats() })
+
+const handleExport = async () => {
+  try {
+    const res = await getBorrows({ page: 1, size: 10000, keyword: keyword.value, status: statusFilter.value })
+    const borrows = res.data?.records || res.data || []
+    if (borrows.length === 0) {
+      ElMessage.warning('暂无数据可导出')
+      return
+    }
+    const headers = ['图书名称', '读者姓名', '借阅日期', '应还日期', '归还日期', '状态']
+    const rows = borrows.map(b => [b.bookTitle, b.readerName, b.borrowDate, b.dueDate, b.returnDate || '', b.status])
+    const csv = [headers.join(','), ...rows.map(r => r.join(','))].join('\n')
+    const blob = new Blob(['﻿' + csv], { type: 'text/csv;charset=utf-8;' })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = `借阅记录_${new Date().toLocaleDateString()}.csv`
+    a.click()
+    URL.revokeObjectURL(url)
+    ElMessage.success('导出成功')
+  } catch (e) {
+    // handled by interceptor
+  }
+}
 </script>
 
 <style scoped>

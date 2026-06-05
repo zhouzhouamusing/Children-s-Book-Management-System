@@ -489,6 +489,27 @@ export function deletePermission(id) {
   return request.delete(`/sys/permissions/${id}`)
 }
 
+export function batchDeletePermissions(ids) {
+  return request.delete('/sys/permissions/batch', { data: ids })
+}
+
+export function exportPermissionsData() {
+  return request.get('/sys/permissions/export')
+}
+
+// 批量操作 API
+export function batchDeleteBooks(ids) {
+  return request.delete('/books/batch', { data: ids })
+}
+
+export function batchDeleteReaders(ids) {
+  return request.delete('/readers/batch', { data: ids })
+}
+
+export function batchDeleteReviews(ids) {
+  return request.delete('/reviews/batch', { data: ids })
+}
+
 // 读者申诉
 export function submitAppeal(data) {
   return request.post('/reader-center/appeals', data)

@@ -36,9 +36,9 @@ function getUserRoles() {
 }
 
 // 路由权限检查失败时通知前端展示提示
-function emitPermDenied(to, reason) {
+function emitPermDenied(to, reason, requiredPermission) {
   window.dispatchEvent(new CustomEvent('permission-denied', {
-    detail: { path: to.path, reason }
+    detail: { path: to.path, reason, requiredPermission }
   }))
 }
 
@@ -254,17 +254,16 @@ router.beforeEach(async (to, from) => {
         if (res.data.suspended !== undefined) {
           localStorage.setItem('suspended', res.data.suspended ? 'true' : 'false')
         }
-        if (res.data.roles) {
-          localStorage.setItem('roles', JSON.stringify(res.data.roles))
+        if (res.data.roles || res.data.permissions) {
+          const { usePermissionStore } = await import('@/stores/permission')
+          const permStore = usePermissionStore()
+          permStore.setAuth({
+            roles: res.data.roles || permStore.roles,
+            permissions: res.data.permissions || permStore.permissions
+          })
           rolesCacheStr = ''
-        }
-        if (res.data.permissions) {
-          localStorage.setItem('permissions', JSON.stringify(res.data.permissions))
           permCacheStr = ''
         }
-        const { usePermissionStore } = await import('@/stores/permission')
-        const permStore = usePermissionStore()
-        permStore.loadFromStorage()
       }
     } catch (e) {
       if (e?.response?.status === 401 || e?.response?.status === 403 || e?.response?.data?.code === 403) {
@@ -286,7 +285,7 @@ router.beforeEach(async (to, from) => {
       return r === role || userRoles.includes(r)
     })
     if (!hasRoleAccess) {
-      emitPermDenied(to, '角色权限不足')
+      emitPermDenied(to, '角色权限不足', null)
       return role === 'READER' ? '/reader/my-borrows' : '/dashboard'
     }
   }
@@ -306,7 +305,7 @@ router.beforeEach(async (to, from) => {
     }
 
     if (!hasAccess) {
-      emitPermDenied(to, `缺少权限: ${requiredPerm || requiredPerms.join('/')}`)
+      emitPermDenied(to, `缺少权限: ${requiredPerm || requiredPerms.join('/')}`, requiredPerm || requiredPerms)
       // 查找用户有权限的第一个同级路由作为fallback
       const parent = to.matched[to.matched.length - 2]
       if (parent && parent.children) {
@@ -333,7 +332,7 @@ router.beforeEach(async (to, from) => {
     const allowedPaths = ['/reader/profile', '/reader/appeals']
     const currentPath = to.path
     if (!allowedPaths.some(p => currentPath.startsWith(p))) {
-      emitPermDenied(to, '账号已被暂停，仅可访问个人中心和申诉')
+      emitPermDenied(to, '账号已被暂停，仅可访问个人中心和申诉', null)
       return '/reader/profile'
     }
   }

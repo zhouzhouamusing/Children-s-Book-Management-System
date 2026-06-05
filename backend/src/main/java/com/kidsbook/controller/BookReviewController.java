@@ -12,6 +12,8 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
+
 @RestController
 @RequestMapping("/api/reviews")
 @RequiredArgsConstructor
@@ -53,6 +55,18 @@ public class BookReviewController {
     @RequirePermission(Permission.REVIEW_DELETE)
     public Result<?> delete(@PathVariable Long id) {
         bookReviewService.adminDeleteReview(id);
+        return Result.success(null);
+    }
+
+    @DeleteMapping("/batch")
+    @RequirePermission(Permission.REVIEW_BATCH_DELETE)
+    public Result<?> batchDelete(@RequestBody List<Long> ids) {
+        if (ids == null || ids.isEmpty()) {
+            return Result.success(null);
+        }
+        for (Long id : ids) {
+            bookReviewService.adminDeleteReview(id);
+        }
         return Result.success(null);
     }
 }

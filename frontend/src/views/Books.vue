@@ -36,6 +36,10 @@
           <el-icon><Plus /></el-icon>
           新增图书
         </el-button>
+        <el-button v-permission="'BOOK_EXPORT'" type="info" size="large" plain @click="handleExport">
+          <el-icon><Download /></el-icon>
+          导出数据
+        </el-button>
       </div>
     </el-card>
 
@@ -500,6 +504,30 @@ const handleDelete = (row) => {
       tableLoading.value = false
     }
   }).catch(() => {})
+}
+
+const handleExport = async () => {
+  try {
+    const res = await getBooks({ page: 1, size: 10000, keyword: searchKeyword.value, category: searchCategory.value })
+    const books = res.data?.records || res.data || []
+    if (books.length === 0) {
+      ElMessage.warning('暂无数据可导出')
+      return
+    }
+    const headers = ['书名', '作者', '分类', '适读年龄', '价格', '库存', '状态']
+    const rows = books.map(b => [b.title, b.author, b.category, b.ageRange, b.price, b.stock, b.status === 1 ? '上架' : '下架'])
+    const csv = [headers.join(','), ...rows.map(r => r.join(','))].join('\n')
+    const blob = new Blob(['﻿' + csv], { type: 'text/csv;charset=utf-8;' })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = `图书列表_${new Date().toLocaleDateString()}.csv`
+    a.click()
+    URL.revokeObjectURL(url)
+    ElMessage.success('导出成功')
+  } catch (e) {
+    // handled by interceptor
+  }
 }
 
 onMounted(() => {

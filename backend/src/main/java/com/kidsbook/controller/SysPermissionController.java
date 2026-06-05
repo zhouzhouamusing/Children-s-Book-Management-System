@@ -197,4 +197,36 @@ public class SysPermissionController {
         sysPermissionMapper.deleteById(id);
         return Result.success(null);
     }
+
+    @DeleteMapping("/batch")
+    @RequirePermission(Permission.PERMISSION_BATCH_DELETE)
+    public Result<?> batchDelete(@RequestBody List<Long> ids) {
+        if (ids == null || ids.isEmpty()) {
+            return Result.success(null);
+        }
+        List<String> builtInSkipped = new ArrayList<>();
+        for (Long id : ids) {
+            SysPermission perm = sysPermissionMapper.selectById(id);
+            if (perm == null) continue;
+            if (BUILT_IN_CODES.contains(perm.getCode())) {
+                builtInSkipped.add(perm.getCode());
+                continue;
+            }
+            sysRolePermissionMapper.delete(
+                new LambdaQueryWrapper<SysRolePermission>().eq(SysRolePermission::getPermissionId, id));
+            sysPermissionMapper.deleteById(id);
+        }
+        if (!builtInSkipped.isEmpty()) {
+            return Result.success(Map.of("skipped", builtInSkipped, "message", "内置权限已跳过"));
+        }
+        return Result.success(null);
+    }
+
+    @GetMapping("/export")
+    @RequirePermission(Permission.PERMISSION_EXPORT)
+    public Result<?> exportPermissions() {
+        List<SysPermission> all = sysPermissionMapper.selectList(
+            new LambdaQueryWrapper<SysPermission>().orderByAsc(SysPermission::getModule).orderByAsc(SysPermission::getId));
+        return Result.success(all);
+    }
 }

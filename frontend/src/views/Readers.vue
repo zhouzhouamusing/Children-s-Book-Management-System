@@ -76,6 +76,10 @@
           <el-icon><Plus /></el-icon>
           添加读者
         </el-button>
+        <el-button v-permission="'READER_EXPORT'" type="info" size="large" plain @click="handleExport">
+          <el-icon><Download /></el-icon>
+          导出数据
+        </el-button>
       </div>
     </el-card>
 
@@ -649,6 +653,30 @@ const formatReadingTime = (minutes) => {
   const h = Math.floor(minutes / 60)
   const m = minutes % 60
   return m > 0 ? `${h}h${m}m` : `${h}小时`
+}
+
+const handleExport = async () => {
+  try {
+    const res = await getReaders({ page: 1, size: 10000, keyword: searchKeyword.value, status: searchStatus.value, gender: searchGender.value })
+    const readers = res.data?.records || res.data || []
+    if (readers.length === 0) {
+      ElMessage.warning('暂无数据可导出')
+      return
+    }
+    const headers = ['姓名', '年龄', '性别', '家长电话', '借阅次数', '状态']
+    const rows = readers.map(r => [r.name, r.age, r.gender === 'male' ? '男' : '女', r.parentPhone, r.borrowCount || 0, r.status === 'normal' ? '正常' : '暂停'])
+    const csv = [headers.join(','), ...rows.map(r => r.join(','))].join('\n')
+    const blob = new Blob(['﻿' + csv], { type: 'text/csv;charset=utf-8;' })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = `读者列表_${new Date().toLocaleDateString()}.csv`
+    a.click()
+    URL.revokeObjectURL(url)
+    ElMessage.success('导出成功')
+  } catch (e) {
+    // handled by interceptor
+  }
 }
 
 onMounted(() => {

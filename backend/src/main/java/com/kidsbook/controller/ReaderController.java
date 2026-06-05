@@ -19,6 +19,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 @RestController
@@ -153,5 +154,27 @@ public class ReaderController {
         auditLogService.log("RESOLVE_APPEAL", "reader", id,
             "approve".equals(action) ? "批准暂停申诉，恢复借阅权限" : "拒绝暂停申诉");
         return Result.success();
+    }
+
+    @DeleteMapping("/batch")
+    @RequirePermission(Permission.READER_BATCH_DELETE)
+    public Result<Void> batchDelete(@RequestBody List<Long> ids) {
+        if (ids == null || ids.isEmpty()) {
+            return Result.success();
+        }
+        for (Long id : ids) {
+            readerService.deleteReader(id);
+        }
+        return Result.success();
+    }
+
+    @GetMapping("/export")
+    @RequirePermission(Permission.READER_EXPORT)
+    public Result<PageResult<Reader>> exportReaders(
+            @RequestParam(required = false) String keyword,
+            @RequestParam(required = false) String status,
+            @RequestParam(required = false) String gender) {
+        Page<Reader> result = readerService.listReaders(1, 10000, keyword, status, gender);
+        return Result.success(PageResult.of(result));
     }
 }

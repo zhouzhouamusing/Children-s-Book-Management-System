@@ -30,6 +30,10 @@
           <el-icon><Search /></el-icon>
           筛选
         </el-button>
+        <el-button v-permission="'REVIEW_BATCH_DELETE'" type="danger" plain @click="handleBatchDelete">
+          <el-icon><Delete /></el-icon>
+          批量删除
+        </el-button>
       </div>
     </el-card>
 
@@ -235,6 +239,26 @@ const handleDelete = (review) => {
     try {
       await adminDeleteReview(review.id)
       ElMessage.success('已删除')
+      fetchReviews()
+    } catch (e) {}
+  }).catch(() => {})
+}
+
+const handleBatchDelete = () => {
+  const rejectedReviews = reviews.value.filter(r => r.status === 'rejected')
+  if (rejectedReviews.length === 0) {
+    ElMessage.warning('没有可批量删除的评价（仅支持删除已拒绝的评价）')
+    return
+  }
+  ElMessageBox.confirm(
+    `确定批量删除 ${rejectedReviews.length} 条已拒绝的评价吗？此操作不可恢复。`,
+    '批量删除确认',
+    { type: 'warning', confirmButtonText: '确认删除' }
+  ).then(async () => {
+    try {
+      const ids = rejectedReviews.map(r => r.id)
+      await Promise.all(ids.map(id => adminDeleteReview(id)))
+      ElMessage.success(`已删除 ${ids.length} 条评价`)
       fetchReviews()
     } catch (e) {}
   }).catch(() => {})

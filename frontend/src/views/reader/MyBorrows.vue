@@ -64,7 +64,7 @@
     <div v-if="!loading && records.length === 0" class="empty-state animate__animated animate__fadeIn">
       <div class="empty-icon">📭</div>
       <p>暂无借阅记录</p>
-      <el-button type="primary" round @click="$router.push('/reader/books')">去浏览图书</el-button>
+      <el-button v-permission="'READER_BOOK_BROWSE'" type="primary" round @click="$router.push('/reader/books')">去浏览图书</el-button>
     </div>
   </div>
 </template>

@@ -14,6 +14,7 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
 import java.util.Map;
 
 @RestController
@@ -83,5 +84,14 @@ public class BorrowController {
     public Result<Void> markReservationReady(@PathVariable Long id) {
         reservationService.markReadyForPickup(id);
         return Result.success(null);
+    }
+
+    @GetMapping("/export")
+    @RequirePermission(Permission.BORROW_EXPORT)
+    public Result<PageResult<BorrowRecord>> exportBorrows(
+            @RequestParam(required = false) String keyword,
+            @RequestParam(required = false) String status) {
+        IPage<BorrowRecord> result = borrowService.list(1, 10000, keyword, status);
+        return Result.success(PageResult.of(result));
     }
 }
