@@ -198,7 +198,7 @@
       </el-form>
       <template #footer>
         <el-button @click="progressDialogVisible = false" round>取消</el-button>
-        <el-button type="primary" @click="submitProgress" round :loading="submitting">确定</el-button>
+        <el-button v-permission="'READING_PROGRESS_UPDATE'" type="primary" @click="submitProgress" round :loading="submitting">确定</el-button>
       </template>
     </el-dialog>
 
@@ -239,7 +239,7 @@
       </el-form>
       <template #footer>
         <el-button @click="noteDialogVisible = false" round>取消</el-button>
-        <el-button type="primary" @click="submitNote" round :loading="submitting">确定</el-button>
+        <el-button v-permission="'READING_PROGRESS_CREATE'" type="primary" @click="submitNote" round :loading="submitting">确定</el-button>
       </template>
     </el-dialog>
   </div>

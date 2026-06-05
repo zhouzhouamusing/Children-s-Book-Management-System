@@ -168,7 +168,7 @@
       </div>
       <template #footer>
         <el-button @click="writeReviewVisible = false">取消</el-button>
-        <el-button type="primary" :loading="submitReviewLoading" @click="submitReview">提交评价</el-button>
+        <el-button v-permission="'READER_REVIEW_CREATE'" type="primary" :loading="submitReviewLoading" @click="submitReview">提交评价</el-button>
       </template>
     </el-dialog>
   </div>

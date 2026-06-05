@@ -162,6 +162,7 @@
       <template #footer>
         <el-button round @click="dialogVisible = false">取消</el-button>
         <el-button
+          v-permission="'READER_APPEAL_CREATE'"
           type="primary"
           round
           :loading="submitLoading"

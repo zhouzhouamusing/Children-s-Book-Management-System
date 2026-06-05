@@ -73,7 +73,7 @@
       />
       <template #footer>
         <el-button @click="rejectDialog.visible = false">取消</el-button>
-        <el-button type="danger" :loading="rejectDialog.loading" @click="confirmReject">确认拒绝</el-button>
+        <el-button v-permission="'ADMIN_APPLICATION_REVIEW'" type="danger" :loading="rejectDialog.loading" @click="confirmReject">确认拒绝</el-button>
       </template>
     </el-dialog>
   </div>

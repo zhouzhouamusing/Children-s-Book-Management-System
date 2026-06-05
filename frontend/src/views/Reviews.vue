@@ -145,7 +145,7 @@
       />
       <template #footer>
         <el-button @click="replyVisible = false">取消</el-button>
-        <el-button type="primary" :loading="replyLoading" @click="submitReply">发送回复</el-button>
+        <el-button v-permission="'REVIEW_UPDATE'" type="primary" :loading="replyLoading" @click="submitReply">发送回复</el-button>
       </template>
     </el-dialog>
   </div>

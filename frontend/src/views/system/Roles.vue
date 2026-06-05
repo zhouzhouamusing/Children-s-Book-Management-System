@@ -293,7 +293,7 @@
       </el-tabs>
       <template #footer>
         <el-button @click="dialogVisible = false">取消</el-button>
-        <el-button type="primary" @click="submitForm" :loading="submitLoading">
+        <el-button v-permission="'ROLE_MANAGE'" type="primary" @click="submitForm" :loading="submitLoading">
           {{ submitLoading ? '保存中...' : '确认保存' }}
         </el-button>
       </template>

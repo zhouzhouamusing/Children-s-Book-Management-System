@@ -90,7 +90,7 @@
       </el-form>
       <template #footer>
         <el-button @click="showBorrowDialog = false">取消</el-button>
-        <el-button type="primary" :loading="submitting" @click="handleBorrow">确认借出</el-button>
+        <el-button v-permission="'BORROW_CREATE'" type="primary" :loading="submitting" @click="handleBorrow">确认借出</el-button>
       </template>
     </el-dialog>
 
@@ -102,7 +102,7 @@
       </el-form-item>
       <template #footer>
         <el-button @click="showRenewDialog = false">取消</el-button>
-        <el-button type="primary" :loading="submitting" @click="confirmRenew">确认续借</el-button>
+        <el-button v-permission="'BORROW_UPDATE'" type="primary" :loading="submitting" @click="confirmRenew">确认续借</el-button>
       </template>
     </el-dialog>
   </div>

@@ -96,7 +96,7 @@
       </div>
       <template #footer>
         <el-button @click="editVisible = false">取消</el-button>
-        <el-button type="primary" :loading="editLoading" @click="submitEdit">保存修改</el-button>
+        <el-button v-permission="'READER_REVIEW_UPDATE'" type="primary" :loading="editLoading" @click="submitEdit">保存修改</el-button>
       </template>
     </el-dialog>
   </div>

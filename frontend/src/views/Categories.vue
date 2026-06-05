@@ -227,7 +227,7 @@
       </el-form>
       <template #footer>
         <el-button @click="dialogVisible = false">取消</el-button>
-        <el-button type="primary" :loading="submitLoading" @click="handleSubmit">
+        <el-button v-permission="['CATEGORY_CREATE', 'CATEGORY_UPDATE']" type="primary" :loading="submitLoading" @click="handleSubmit">
           {{ submitLoading ? '保存中...' : '确认保存' }}
         </el-button>
       </template>

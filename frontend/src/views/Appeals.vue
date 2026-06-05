@@ -139,8 +139,8 @@
       </div>
       <template #footer>
         <el-button @click="reviewDialog.visible = false">取消</el-button>
-        <el-button type="primary" :loading="reviewDialog.loading" @click="confirmReview('approved')">通过</el-button>
-        <el-button type="danger" :loading="reviewDialog.loading" @click="confirmReview('rejected')">拒绝</el-button>
+        <el-button v-permission="'APPEAL_REVIEW'" type="primary" :loading="reviewDialog.loading" @click="confirmReview('approved')">通过</el-button>
+        <el-button v-permission="'APPEAL_REVIEW'" type="danger" :loading="reviewDialog.loading" @click="confirmReview('rejected')">拒绝</el-button>
       </template>
     </el-dialog>
 

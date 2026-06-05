@@ -183,7 +183,7 @@
       </div>
       <template #footer>
         <el-button @click="linkDialogVisible = false">取消</el-button>
-        <el-button type="primary" :disabled="!linkBookId" @click="confirmLink">确认关联</el-button>
+        <el-button v-permission="'FILE_CREATE'" type="primary" :disabled="!linkBookId" @click="confirmLink">确认关联</el-button>
       </template>
     </el-dialog>
   </div>

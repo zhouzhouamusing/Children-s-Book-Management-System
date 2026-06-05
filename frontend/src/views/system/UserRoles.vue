@@ -183,7 +183,7 @@
       </div>
       <template #footer>
         <el-button @click="dialogVisible = false">取消</el-button>
-        <el-button type="primary" @click="saveUserRoles" :loading="saveLoading">
+        <el-button v-permission="'USER_ROLE_ASSIGN'" type="primary" @click="saveUserRoles" :loading="saveLoading">
           {{ saveLoading ? '保存中...' : '确认保存' }}
         </el-button>
       </template>
