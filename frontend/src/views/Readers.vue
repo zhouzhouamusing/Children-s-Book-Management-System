@@ -72,7 +72,7 @@
           <el-icon><Search /></el-icon>
           搜索
         </el-button>
-        <el-button type="success" size="large" @click="handleAdd">
+        <el-button v-permission="'reader:add'" type="success" size="large" @click="handleAdd">
           <el-icon><Plus /></el-icon>
           添加读者
         </el-button>
@@ -138,13 +138,13 @@
             <el-button class="card-btn reading-stats" size="small" @click="handleViewReadingStats(reader)">
               <el-icon><TrendCharts /></el-icon> 阅读进度
             </el-button>
-            <el-button class="card-btn edit" size="small" @click="handleEdit(reader)">
+            <el-button v-permission="'reader:edit'" class="card-btn edit" size="small" @click="handleEdit(reader)">
               <el-icon><Edit /></el-icon> 编辑
             </el-button>
-            <el-button class="card-btn status-btn" size="small" @click="handleToggleStatus(reader)">
+            <el-button v-permission="'reader:status'" class="card-btn status-btn" size="small" @click="handleToggleStatus(reader)">
               <el-icon><Switch /></el-icon> {{ reader.status === 'normal' ? '暂停' : '恢复' }}
             </el-button>
-            <el-button class="card-btn delete" size="small" @click="handleDelete(reader)">
+            <el-button v-permission="'reader:delete'" class="card-btn delete" size="small" @click="handleDelete(reader)">
               <el-icon><Delete /></el-icon>
             </el-button>
           </div>

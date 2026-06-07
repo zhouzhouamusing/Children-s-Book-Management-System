@@ -61,7 +61,7 @@
           <el-icon><Search /></el-icon>
           搜索
         </el-button>
-        <el-button type="success" size="large" @click="handleAdd">
+        <el-button v-permission="'category:add'" type="success" size="large" @click="handleAdd">
           <el-icon><Plus /></el-icon>
           新增分类
         </el-button>
@@ -113,10 +113,10 @@
             <el-button class="card-btn view" size="small" @click="handleViewBooks(cat)">
               <el-icon><View /></el-icon> 查看图书
             </el-button>
-            <el-button class="card-btn edit" size="small" @click="handleEdit(cat)">
+            <el-button v-permission="'category:edit'" class="card-btn edit" size="small" @click="handleEdit(cat)">
               <el-icon><Edit /></el-icon> 编辑
             </el-button>
-            <el-button class="card-btn delete" size="small" @click="handleDelete(cat)">
+            <el-button v-permission="'category:delete'" class="card-btn delete" size="small" @click="handleDelete(cat)">
               <el-icon><Delete /></el-icon> 删除
             </el-button>
           </div>

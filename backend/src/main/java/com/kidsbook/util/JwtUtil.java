@@ -27,6 +27,10 @@ public class JwtUtil {
     }
 
     public String generateToken(String username, String role, Long readerId) {
+        return generateToken(username, role, readerId, null, null);
+    }
+
+    public String generateToken(String username, String role, Long readerId, String userType, Long userId) {
         var builder = Jwts.builder()
                 .subject(username)
                 .claim("role", role)
@@ -35,6 +39,12 @@ public class JwtUtil {
                 .signWith(getKey());
         if (readerId != null) {
             builder.claim("readerId", readerId);
+        }
+        if (userType != null) {
+            builder.claim("userType", userType);
+        }
+        if (userId != null) {
+            builder.claim("userId", userId);
         }
         return builder.compact();
     }
@@ -52,6 +62,19 @@ public class JwtUtil {
         Object readerId = getClaims(token).get("readerId");
         if (readerId instanceof Number) {
             return ((Number) readerId).longValue();
+        }
+        return null;
+    }
+
+    public String getUserTypeFromToken(String token) {
+        Object userType = getClaims(token).get("userType");
+        return userType != null ? userType.toString() : null;
+    }
+
+    public Long getUserIdFromToken(String token) {
+        Object userId = getClaims(token).get("userId");
+        if (userId instanceof Number) {
+            return ((Number) userId).longValue();
         }
         return null;
     }

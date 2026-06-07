@@ -1,4 +1,5 @@
 import { createRouter, createWebHashHistory } from 'vue-router'
+import { ElMessage } from 'element-plus'
 
 const routes = [
   {
@@ -34,55 +35,67 @@ const routes = [
         path: 'dashboard',
         name: 'Dashboard',
         component: () => import('@/views/Dashboard.vue'),
-        meta: { title: '数据概览', role: 'ADMIN' }
+        meta: { title: '数据概览', role: 'ADMIN', permission: 'dashboard:view' }
       },
       {
         path: 'books',
         name: 'Books',
         component: () => import('@/views/Books.vue'),
-        meta: { title: '图书管理', role: 'ADMIN' }
+        meta: { title: '图书管理', role: 'ADMIN', permission: 'book:view' }
       },
       {
         path: 'categories',
         name: 'Categories',
         component: () => import('@/views/Categories.vue'),
-        meta: { title: '分类管理', role: 'ADMIN' }
+        meta: { title: '分类管理', role: 'ADMIN', permission: 'category:view' }
       },
       {
         path: 'readers',
         name: 'Readers',
         component: () => import('@/views/Readers.vue'),
-        meta: { title: '读者管理', role: 'ADMIN' }
+        meta: { title: '读者管理', role: 'ADMIN', permission: 'reader:view' }
       },
       {
         path: 'borrows',
         name: 'Borrows',
         component: () => import('@/views/Borrows.vue'),
-        meta: { title: '借阅管理', role: 'ADMIN' }
+        meta: { title: '借阅管理', role: 'ADMIN', permission: 'borrow:view' }
       },
       {
         path: 'admin-applications',
         name: 'AdminApplications',
         component: () => import('@/views/AdminApplications.vue'),
-        meta: { title: '管理员审批', role: 'ADMIN' }
+        meta: { title: '管理员审批', role: 'ADMIN', permission: 'admin-app:view' }
       },
       {
         path: 'reader-view',
         name: 'AdminReaderView',
         component: () => import('@/views/AdminReaderView.vue'),
-        meta: { title: '读者系统', role: 'ADMIN' }
+        meta: { title: '读者系统', role: 'ADMIN', permission: 'dashboard:view' }
       },
       {
         path: 'resources',
         name: 'Resources',
         component: () => import('@/views/Resources.vue'),
-        meta: { title: '资源管理', role: 'ADMIN' }
+        meta: { title: '资源管理', role: 'ADMIN', permission: 'resource:view' }
       },
       {
         path: 'reviews',
         name: 'Reviews',
         component: () => import('@/views/Reviews.vue'),
-        meta: { title: '评价管理', role: 'ADMIN' }
+        meta: { title: '评价管理', role: 'ADMIN', permission: 'review:view' }
+      },
+      {
+        path: 'roles',
+        name: 'Roles',
+        component: () => import('@/views/Roles.vue'),
+        meta: { title: '角色管理', role: 'ADMIN', permission: 'role:view' }
+      },
+      {
+        path: 'user-roles',
+        name: 'UserRoles',
+        component: () => import('@/views/UserRoles.vue'),
+        meta: { title: '用户授权', role: 'ADMIN', permission: 'user-role:view' }
       }
     ]
   },
@@ -147,6 +160,17 @@ const router = createRouter({
   routes
 })
 
+function hasPermission(permCode) {
+  try {
+    const roles = JSON.parse(localStorage.getItem('roles') || '[]')
+    if (roles.includes('SUPER_ADMIN')) return true
+    const permissions = JSON.parse(localStorage.getItem('permissions') || '[]')
+    return permissions.includes(permCode)
+  } catch {
+    return false
+  }
+}
+
 router.beforeEach((to, from) => {
   const token = localStorage.getItem('token')
   const role = localStorage.getItem('role')
@@ -171,6 +195,13 @@ router.beforeEach((to, from) => {
       return to.path === '/dashboard' ? true : '/dashboard'
     }
     return '/login'
+  }
+
+  if (to.meta.permission && role === 'ADMIN') {
+    if (!hasPermission(to.meta.permission)) {
+      ElMessage.error('没有权限访问该页面')
+      return from.path && from.path !== '/' ? from.path : '/dashboard'
+    }
   }
 
   return true

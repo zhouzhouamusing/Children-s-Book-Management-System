@@ -16,7 +16,7 @@
             :before-upload="beforeUpload"
             multiple
           >
-            <el-button type="primary" class="upload-btn">
+            <el-button v-permission="'resource:upload'" type="primary" class="upload-btn">
               <el-icon><Upload /></el-icon>
               上传资源
             </el-button>
@@ -99,7 +99,7 @@
             <el-button size="small" type="primary" plain @click="handlePreview(row)">
               预览
             </el-button>
-            <el-button size="small" type="danger" plain @click="handleDelete(row)">
+            <el-button v-permission="'resource:delete'" size="small" type="danger" plain @click="handleDelete(row)">
               删除
             </el-button>
           </template>

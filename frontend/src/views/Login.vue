@@ -177,7 +177,7 @@ const handleLogin = async () => {
   try {
     const loginFn = loginRole.value === 'admin' ? login : readerLogin
     const res = await loginFn(form)
-    const { token, nickname, role, readerId } = res.data
+    const { token, nickname, role, readerId, roles, permissions } = res.data
     if (!token) {
       ElMessage.error('登录异常：未获取到凭证')
       return
@@ -187,6 +187,10 @@ const handleLogin = async () => {
     localStorage.setItem('role', role || (loginRole.value === 'admin' ? 'ADMIN' : 'READER'))
     if (readerId) {
       localStorage.setItem('readerId', readerId)
+    }
+    if (roles && permissions) {
+      localStorage.setItem('roles', JSON.stringify(roles))
+      localStorage.setItem('permissions', JSON.stringify(permissions))
     }
     ElMessage.success('登录成功，欢迎回来！')
     if (role === 'READER' || loginRole.value === 'reader') {

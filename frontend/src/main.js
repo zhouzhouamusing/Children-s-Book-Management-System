@@ -7,6 +7,7 @@ import 'animate.css'
 import App from './App.vue'
 import router from './router'
 import './styles/global.css'
+import { vPermission } from './directives/permission'
 
 const app = createApp(App)
 
@@ -17,6 +18,7 @@ for (const [key, component] of Object.entries(ElementPlusIconsVue)) {
 app.use(createPinia())
 app.use(router)
 app.use(ElementPlus, { size: 'default' })
+app.directive('permission', vPermission)
 
 app.config.errorHandler = (err, instance, info) => {
   console.error('Global error:', err, info)

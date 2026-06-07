@@ -1,6 +1,7 @@
 package com.kidsbook.controller;
 
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import com.kidsbook.annotation.RequirePermission;
 import com.kidsbook.common.Result;
 import com.kidsbook.entity.BookResource;
 import com.kidsbook.service.FileUploadService;
@@ -19,6 +20,7 @@ public class FileController {
     private final FileUploadService fileUploadService;
 
     @PostMapping("/upload")
+    @RequirePermission("resource:upload")
     public Result<?> upload(@RequestParam("file") MultipartFile file,
                             @RequestParam(value = "bookId", required = false) Long bookId,
                             @RequestParam(value = "fileType", defaultValue = "other") String fileType) {
@@ -27,6 +29,7 @@ public class FileController {
     }
 
     @PostMapping("/upload-batch")
+    @RequirePermission("resource:upload")
     public Result<?> uploadBatch(@RequestParam("files") MultipartFile[] files,
                                  @RequestParam(value = "bookId", required = false) Long bookId,
                                  @RequestParam(value = "fileType", defaultValue = "other") String fileType) {
@@ -35,6 +38,7 @@ public class FileController {
     }
 
     @GetMapping("/list")
+    @RequirePermission("resource:view")
     public Result<?> list(@RequestParam(defaultValue = "1") int page,
                           @RequestParam(defaultValue = "10") int size,
                           @RequestParam(required = false) String fileType,
@@ -47,11 +51,13 @@ public class FileController {
     }
 
     @GetMapping("/book/{bookId}")
+    @RequirePermission("resource:view")
     public Result<?> getByBookId(@PathVariable Long bookId) {
         return Result.success(fileUploadService.getByBookId(bookId));
     }
 
     @DeleteMapping("/{id}")
+    @RequirePermission("resource:delete")
     public Result<?> delete(@PathVariable Long id) {
         fileUploadService.deleteResource(id);
         return Result.success(null);

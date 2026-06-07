@@ -32,7 +32,7 @@
           <el-icon><Search /></el-icon>
           搜索
         </el-button>
-        <el-button type="success" size="large" @click="handleAdd">
+        <el-button v-permission="'book:add'" type="success" size="large" @click="handleAdd">
           <el-icon><Plus /></el-icon>
           新增图书
         </el-button>
@@ -90,10 +90,10 @@
         </el-table-column>
         <el-table-column label="操作" width="200" fixed="right">
           <template #default="{ row }">
-            <el-button class="action-btn-edit" @click="handleEdit(row)">
+            <el-button v-permission="'book:edit'" class="action-btn-edit" @click="handleEdit(row)">
               <el-icon><Edit /></el-icon> 编辑
             </el-button>
-            <el-button class="action-btn-delete" @click="handleDelete(row)">
+            <el-button v-permission="'book:delete'" class="action-btn-delete" @click="handleDelete(row)">
               <el-icon><Delete /></el-icon> 删除
             </el-button>
           </template>

@@ -58,14 +58,24 @@ public class SecurityConfig {
             .csrf(csrf -> csrf.disable())
             .cors(cors -> cors.configurationSource(corsConfigurationSource()))
             .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
-            .exceptionHandling(ex -> ex.authenticationEntryPoint((request, response, authException) -> {
-                response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
-                response.setContentType(MediaType.APPLICATION_JSON_VALUE);
-                response.setCharacterEncoding("UTF-8");
-                PrintWriter writer = response.getWriter();
-                writer.write("{\"code\":401,\"message\":\"未登录或登录已过期，请重新登录\",\"data\":null}");
-                writer.flush();
-            }))
+            .exceptionHandling(ex -> ex
+                .authenticationEntryPoint((request, response, authException) -> {
+                    response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+                    response.setContentType(MediaType.APPLICATION_JSON_VALUE);
+                    response.setCharacterEncoding("UTF-8");
+                    PrintWriter writer = response.getWriter();
+                    writer.write("{\"code\":401,\"message\":\"未登录或登录已过期，请重新登录\",\"data\":null}");
+                    writer.flush();
+                })
+                .accessDeniedHandler((request, response, accessDeniedException) -> {
+                    response.setStatus(HttpServletResponse.SC_FORBIDDEN);
+                    response.setContentType(MediaType.APPLICATION_JSON_VALUE);
+                    response.setCharacterEncoding("UTF-8");
+                    PrintWriter writer = response.getWriter();
+                    writer.write("{\"code\":403,\"message\":\"没有权限访问该资源\",\"data\":null}");
+                    writer.flush();
+                })
+            )
             .authorizeHttpRequests(auth -> auth
                 .requestMatchers(PUBLIC_URLS).permitAll()
                 .requestMatchers("/api/admin/send-code").permitAll()
@@ -73,6 +83,7 @@ public class SecurityConfig {
                 .requestMatchers("/api/admin-application/apply", "/api/admin-application/my-status").hasRole("READER")
                 .requestMatchers("/api/admin-application/list", "/api/admin-application/*/approve", "/api/admin-application/*/reject").hasRole("ADMIN")
                 .requestMatchers("/api/reader-center/**").hasAnyRole("READER", "ADMIN")
+                .requestMatchers("/api/sys/**").hasRole("ADMIN")
                 .requestMatchers("/api/files/**").hasRole("ADMIN")
                 .requestMatchers("/api/reviews/**").hasRole("ADMIN")
                 .requestMatchers("/api/books/**", "/api/categories/**", "/api/readers/**", "/api/borrows/**").hasRole("ADMIN")

@@ -2,6 +2,7 @@ package com.kidsbook.controller;
 
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import com.kidsbook.annotation.RequirePermission;
 import com.kidsbook.common.Result;
 import com.kidsbook.dto.ReaderRequest;
 import com.kidsbook.entity.BorrowRecord;
@@ -25,6 +26,7 @@ public class ReaderController {
     private final ReadingProgressService readingProgressService;
 
     @GetMapping
+    @RequirePermission("reader:view")
     public Result<Page<Reader>> list(
             @RequestParam(defaultValue = "1") int page,
             @RequestParam(defaultValue = "12") int size,
@@ -37,6 +39,7 @@ public class ReaderController {
     }
 
     @GetMapping("/{id}")
+    @RequirePermission("reader:view")
     public Result<Reader> getById(@PathVariable Long id) {
         Reader reader = readerService.getById(id);
         if (reader == null) {
@@ -46,24 +49,28 @@ public class ReaderController {
     }
 
     @PostMapping
+    @RequirePermission("reader:add")
     public Result<Void> add(@Valid @RequestBody ReaderRequest request) {
         readerService.addReader(request);
         return Result.success();
     }
 
     @PutMapping("/{id}")
+    @RequirePermission("reader:edit")
     public Result<Void> update(@PathVariable Long id, @Valid @RequestBody ReaderRequest request) {
         readerService.updateReader(id, request);
         return Result.success();
     }
 
     @DeleteMapping("/{id}")
+    @RequirePermission("reader:delete")
     public Result<Void> delete(@PathVariable Long id) {
         readerService.deleteReader(id);
         return Result.success();
     }
 
     @PutMapping("/{id}/status")
+    @RequirePermission("reader:status")
     public Result<Void> updateStatus(@PathVariable Long id, @RequestBody Map<String, String> body) {
         String status = body.get("status");
         if (!"normal".equals(status) && !"suspended".equals(status)) {
@@ -74,6 +81,7 @@ public class ReaderController {
     }
 
     @GetMapping("/{id}/borrow-records")
+    @RequirePermission("reader:view")
     public Result<Page<BorrowRecord>> getBorrowRecords(
             @PathVariable Long id,
             @RequestParam(defaultValue = "1") int page,
@@ -85,11 +93,13 @@ public class ReaderController {
     }
 
     @GetMapping("/statistics")
+    @RequirePermission("reader:view")
     public Result<Map<String, Object>> statistics() {
         return Result.success(readerService.getStatistics());
     }
 
     @GetMapping("/{id}/reading-progress")
+    @RequirePermission("reader:view")
     public Result<Map<String, Object>> getReadingProgress(
             @PathVariable Long id,
             @RequestParam(defaultValue = "1") int page,
@@ -107,6 +117,7 @@ public class ReaderController {
     }
 
     @GetMapping("/{id}/reading-statistics")
+    @RequirePermission("reader:view")
     public Result<Map<String, Object>> getReadingStatistics(@PathVariable Long id) {
         Reader reader = readerService.getById(id);
         if (reader == null) {

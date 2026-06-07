@@ -1,6 +1,7 @@
 package com.kidsbook.controller;
 
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import com.kidsbook.annotation.RequirePermission;
 import com.kidsbook.common.Result;
 import com.kidsbook.dto.AdminReplyRequest;
 import com.kidsbook.entity.BookReview;
@@ -19,6 +20,7 @@ public class BookReviewController {
     private final BookReviewService bookReviewService;
 
     @GetMapping
+    @RequirePermission("review:view")
     public Result<?> list(@RequestParam(defaultValue = "1") int page,
                           @RequestParam(defaultValue = "10") int size,
                           @RequestParam(required = false) String status,
@@ -31,24 +33,28 @@ public class BookReviewController {
     }
 
     @PutMapping("/{id}/approve")
+    @RequirePermission("review:approve")
     public Result<?> approve(@PathVariable Long id) {
         bookReviewService.approveReview(id);
         return Result.success(null);
     }
 
     @PutMapping("/{id}/reject")
+    @RequirePermission("review:reject")
     public Result<?> reject(@PathVariable Long id) {
         bookReviewService.rejectReview(id);
         return Result.success(null);
     }
 
     @PutMapping("/{id}/reply")
+    @RequirePermission("review:reply")
     public Result<?> reply(@PathVariable Long id, @RequestBody @Valid AdminReplyRequest request) {
         bookReviewService.adminReply(id, request.getReply());
         return Result.success(null);
     }
 
     @DeleteMapping("/{id}")
+    @RequirePermission("review:delete")
     public Result<?> delete(@PathVariable Long id) {
         bookReviewService.adminDeleteReview(id);
         return Result.success(null);

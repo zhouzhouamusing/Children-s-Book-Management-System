@@ -13,6 +13,8 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
+import java.util.List;
+
 @Slf4j
 @Service
 @RequiredArgsConstructor
@@ -21,6 +23,7 @@ public class AdminService {
     private final PasswordEncoder passwordEncoder;
     private final JwtUtil jwtUtil;
     private final EmailService emailService;
+    private final PermissionCacheService permissionCacheService;
 
     public LoginResponse login(LoginRequest request) {
         Admin admin = adminMapper.selectOne(
@@ -35,13 +38,18 @@ public class AdminService {
             throw new RuntimeException("用户名或密码错误");
         }
 
-        String token = jwtUtil.generateToken(admin.getUsername(), "ADMIN", null);
+        String token = jwtUtil.generateToken(admin.getUsername(), "ADMIN", null, "admin", admin.getId());
+
+        List<String> roleCodes = permissionCacheService.getRoleCodes("admin", admin.getId());
+        List<String> permissions = permissionCacheService.getPermissions("admin", admin.getId());
 
         LoginResponse response = new LoginResponse();
         response.setToken(token);
         response.setNickname(admin.getNickname());
         response.setAvatar(admin.getAvatar());
         response.setRole("ADMIN");
+        response.setRoles(roleCodes);
+        response.setPermissions(permissions);
         return response;
     }
 

@@ -1,6 +1,7 @@
 package com.kidsbook.controller;
 
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import com.kidsbook.annotation.RequirePermission;
 import com.kidsbook.common.Result;
 import com.kidsbook.dto.CategoryRequest;
 import com.kidsbook.entity.Category;
@@ -18,6 +19,7 @@ public class CategoryController {
     private final CategoryService categoryService;
 
     @GetMapping
+    @RequirePermission("category:view")
     public Result<Page<Category>> list(
             @RequestParam(defaultValue = "1") int page,
             @RequestParam(defaultValue = "20") int size,
@@ -32,17 +34,20 @@ public class CategoryController {
     }
 
     @GetMapping("/{id}")
+    @RequirePermission("category:view")
     public Result<Category> detail(@PathVariable Long id) {
         return Result.success(categoryService.getById(id));
     }
 
     @PostMapping
+    @RequirePermission("category:add")
     public Result<Void> add(@Valid @RequestBody CategoryRequest request) {
         categoryService.addCategory(request);
         return Result.success();
     }
 
     @PutMapping("/{id}")
+    @RequirePermission("category:edit")
     public Result<Void> update(@PathVariable Long id, @Valid @RequestBody CategoryRequest request) {
         request.setId(id);
         categoryService.updateCategory(request);
@@ -50,12 +55,14 @@ public class CategoryController {
     }
 
     @DeleteMapping("/{id}")
+    @RequirePermission("category:delete")
     public Result<Void> delete(@PathVariable Long id) {
         categoryService.deleteCategory(id);
         return Result.success();
     }
 
     @GetMapping("/{id}/book-count")
+    @RequirePermission("category:view")
     public Result<Integer> bookCount(@PathVariable Long id) {
         return Result.success(categoryService.getBookCount(id));
     }

@@ -3,6 +3,7 @@ package com.kidsbook.controller;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import com.kidsbook.annotation.RequirePermission;
 import com.kidsbook.common.Result;
 import com.kidsbook.entity.Admin;
 import com.kidsbook.entity.AdminApplication;
@@ -108,6 +109,7 @@ public class AdminApplicationController {
     }
 
     @GetMapping("/list")
+    @RequirePermission("admin-app:view")
     public Result<Map<String, Object>> getApplicationList(
             @RequestParam(defaultValue = "1") int page,
             @RequestParam(defaultValue = "10") int size,
@@ -131,6 +133,7 @@ public class AdminApplicationController {
     }
 
     @PutMapping("/{id}/approve")
+    @RequirePermission("admin-app:approve")
     public Result<Void> approve(@PathVariable Long id) {
         AdminApplication application = applicationMapper.selectById(id);
         if (application == null) {
@@ -169,6 +172,7 @@ public class AdminApplicationController {
     }
 
     @PutMapping("/{id}/reject")
+    @RequirePermission("admin-app:reject")
     public Result<Void> reject(@PathVariable Long id, @RequestBody Map<String, String> request) {
         AdminApplication application = applicationMapper.selectById(id);
         if (application == null) {

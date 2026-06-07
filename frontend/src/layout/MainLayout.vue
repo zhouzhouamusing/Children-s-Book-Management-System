@@ -16,41 +16,13 @@
         text-color="#4A4A4A"
         active-text-color="#957DAD"
       >
-        <el-menu-item index="/dashboard">
-          <el-icon><DataAnalysis /></el-icon>
-          <template #title>数据概览</template>
-        </el-menu-item>
-        <el-menu-item index="/books">
-          <el-icon><Reading /></el-icon>
-          <template #title>图书管理</template>
-        </el-menu-item>
-        <el-menu-item index="/categories">
-          <el-icon><FolderOpened /></el-icon>
-          <template #title>分类管理</template>
-        </el-menu-item>
-        <el-menu-item index="/readers">
-          <el-icon><UserFilled /></el-icon>
-          <template #title>读者管理</template>
-        </el-menu-item>
-        <el-menu-item index="/borrows">
-          <el-icon><Notebook /></el-icon>
-          <template #title>借阅管理</template>
-        </el-menu-item>
-        <el-menu-item index="/admin-applications">
-          <el-icon><Stamp /></el-icon>
-          <template #title>管理员审批</template>
-        </el-menu-item>
-        <el-menu-item index="/reader-view">
-          <el-icon><View /></el-icon>
-          <template #title>读者系统</template>
-        </el-menu-item>
-        <el-menu-item index="/resources">
-          <el-icon><FolderOpened /></el-icon>
-          <template #title>资源管理</template>
-        </el-menu-item>
-        <el-menu-item index="/reviews">
-          <el-icon><ChatDotRound /></el-icon>
-          <template #title>评价管理</template>
+        <el-menu-item
+          v-for="menu in visibleMenus"
+          :key="menu.index"
+          :index="menu.index"
+        >
+          <el-icon><component :is="menu.icon" /></el-icon>
+          <template #title>{{ menu.title }}</template>
         </el-menu-item>
       </el-menu>
     </el-aside>
@@ -93,14 +65,23 @@
 </template>
 
 <script setup>
-import { ref } from 'vue'
+import { ref, computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { ElMessageBox, ElMessage } from 'element-plus'
+import { usePermissionStore } from '@/stores/permission'
+import { adminMenus } from '@/config/menus'
 
 const route = useRoute()
 const router = useRouter()
 const isCollapse = ref(false)
 const nickname = ref(localStorage.getItem('nickname') || '管理员')
+
+const permStore = usePermissionStore()
+permStore.loadFromStorage()
+
+const visibleMenus = computed(() => {
+  return adminMenus.filter(m => permStore.hasPermission(m.permission))
+})
 
 const handleLogout = () => {
   ElMessageBox.confirm('确定要退出登录吗？', '提示', {
@@ -112,6 +93,7 @@ const handleLogout = () => {
     localStorage.removeItem('nickname')
     localStorage.removeItem('role')
     localStorage.removeItem('readerId')
+    permStore.clear()
     ElMessage.success('已安全退出')
     router.push('/login')
   }).catch(() => {})

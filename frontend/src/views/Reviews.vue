@@ -67,6 +67,7 @@
             <span class="review-time">{{ review.createTime }}</span>
             <div class="review-actions">
               <el-button
+                v-permission="'review:approve'"
                 v-if="review.status === 'pending'"
                 type="success"
                 size="small"
@@ -76,6 +77,7 @@
                 通过
               </el-button>
               <el-button
+                v-permission="'review:reject'"
                 v-if="review.status === 'pending'"
                 type="danger"
                 size="small"
@@ -85,6 +87,7 @@
                 拒绝
               </el-button>
               <el-button
+                v-permission="'review:reply'"
                 type="primary"
                 size="small"
                 plain
@@ -93,6 +96,7 @@
                 回复
               </el-button>
               <el-button
+                v-permission="'review:delete'"
                 type="danger"
                 size="small"
                 text

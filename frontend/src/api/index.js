@@ -329,3 +329,54 @@ export function getTopRatedBooks(params) {
   return request.get('/reader-center/recommend/top-rated', { params })
 }
 
+// RBAC - 角色管理
+export function getRoles(params) {
+  return request.get('/sys/roles', { params })
+}
+
+export function getAllRoles() {
+  return request.get('/sys/roles/all')
+}
+
+export function getRole(id) {
+  return request.get(`/sys/roles/${id}`)
+}
+
+export function addRole(data) {
+  return request.post('/sys/roles', data)
+}
+
+export function updateRole(id, data) {
+  return request.put(`/sys/roles/${id}`, data)
+}
+
+export function deleteRole(id) {
+  return request.delete(`/sys/roles/${id}`)
+}
+
+export function assignRolePermissions(id, permissionIds) {
+  return request.put(`/sys/roles/${id}/permissions`, { permissionIds })
+}
+
+// RBAC - 权限管理
+export function getPermissionTree() {
+  return request.get('/sys/permissions/tree')
+}
+
+export function getPermissionList() {
+  return request.get('/sys/permissions')
+}
+
+// RBAC - 用户角色
+export function getAdminUsersWithRoles(params) {
+  return request.get('/sys/user-roles/admins', { params })
+}
+
+export function assignUserRoles(data) {
+  return request.put('/sys/user-roles/assign', data)
+}
+
+export function getMyPermissions() {
+  return request.get('/sys/user-roles/my-permissions')
+}
+
