@@ -92,6 +92,12 @@ const routes = [
         meta: { title: '角色管理', role: 'ADMIN', permission: 'role:view' }
       },
       {
+        path: 'permissions',
+        name: 'Permissions',
+        component: () => import('@/views/Permissions.vue'),
+        meta: { title: '权限管理', role: 'ADMIN', permission: 'permission:view' }
+      },
+      {
         path: 'user-roles',
         name: 'UserRoles',
         component: () => import('@/views/UserRoles.vue'),

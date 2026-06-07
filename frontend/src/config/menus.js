@@ -9,5 +9,6 @@ export const adminMenus = [
   { index: '/resources', title: '资源管理', icon: 'FolderOpened', permission: 'resource:view' },
   { index: '/reviews', title: '评价管理', icon: 'ChatDotRound', permission: 'review:view' },
   { index: '/roles', title: '角色管理', icon: 'Key', permission: 'role:view' },
+  { index: '/permissions', title: '权限管理', icon: 'Lock', permission: 'permission:view' },
   { index: '/user-roles', title: '用户授权', icon: 'Avatar', permission: 'user-role:view' }
 ]

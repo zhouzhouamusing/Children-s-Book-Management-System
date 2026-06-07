@@ -152,7 +152,7 @@
       </transition-group>
 
       <el-empty v-if="!loading && readerList.length === 0" description="暂无读者数据，点击上方按钮添加第一位小读者吧~">
-        <el-button type="primary" @click="handleAdd">添加读者</el-button>
+        <el-button v-permission="'reader:add'" type="primary" @click="handleAdd">添加读者</el-button>
       </el-empty>
     </div>
 
