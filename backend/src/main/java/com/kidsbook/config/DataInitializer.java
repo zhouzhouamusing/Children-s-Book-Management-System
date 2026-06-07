@@ -190,32 +190,42 @@ public class DataInitializer implements CommandLineRunner {
 
     private void initRbacTables() {
         try {
+            // 创建表（如果不存在）
             jdbcTemplate.execute("CREATE TABLE IF NOT EXISTS `sys_permission` (" +
                 "`id` BIGINT AUTO_INCREMENT PRIMARY KEY, " +
-                "`code` VARCHAR(100) NOT NULL, " +
-                "`name` VARCHAR(100) NOT NULL, " +
-                "`type` VARCHAR(20) NOT NULL DEFAULT 'button', " +
-                "`parent_id` BIGINT DEFAULT 0, " +
-                "`path` VARCHAR(200) DEFAULT NULL, " +
-                "`icon` VARCHAR(50) DEFAULT NULL, " +
-                "`sort_order` INT DEFAULT 0, " +
-                "`status` TINYINT DEFAULT 1, " +
-                "`create_time` DATETIME DEFAULT CURRENT_TIMESTAMP, " +
-                "`update_time` DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP, " +
-                "UNIQUE KEY `uk_code` (`code`), " +
-                "KEY `idx_parent_id` (`parent_id`)" +
-                ") ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
-
-            jdbcTemplate.execute("CREATE TABLE IF NOT EXISTS `sys_role` (" +
-                "`id` BIGINT AUTO_INCREMENT PRIMARY KEY, " +
-                "`code` VARCHAR(50) NOT NULL, " +
-                "`name` VARCHAR(50) NOT NULL, " +
-                "`description` VARCHAR(200) DEFAULT NULL, " +
-                "`status` TINYINT DEFAULT 1, " +
+                "`code` VARCHAR(100) NOT NULL COMMENT '权限编码', " +
+                "`name` VARCHAR(100) NOT NULL COMMENT '权限名称', " +
+                "`type` VARCHAR(20) NOT NULL DEFAULT 'button' COMMENT '类型:menu/button', " +
+                "`parent_id` BIGINT DEFAULT 0 COMMENT '父权限ID', " +
+                "`path` VARCHAR(200) DEFAULT NULL COMMENT '前端路由路径', " +
+                "`icon` VARCHAR(50) DEFAULT NULL COMMENT '菜单图标', " +
+                "`sort_order` INT DEFAULT 0 COMMENT '排序', " +
+                "`status` TINYINT DEFAULT 1 COMMENT '1启用0禁用', " +
                 "`create_time` DATETIME DEFAULT CURRENT_TIMESTAMP, " +
                 "`update_time` DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP, " +
                 "UNIQUE KEY `uk_code` (`code`)" +
-                ") ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
+                ") ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='系统权限表'");
+
+            // 确保旧表有所有必须的列（兼容已存在但结构不完整的表）
+            safeAddColumn("sys_permission", "parent_id", "BIGINT DEFAULT 0 COMMENT '父权限ID'");
+            safeAddColumn("sys_permission", "path", "VARCHAR(200) DEFAULT NULL COMMENT '前端路由路径'");
+            safeAddColumn("sys_permission", "icon", "VARCHAR(50) DEFAULT NULL COMMENT '菜单图标'");
+            safeAddColumn("sys_permission", "sort_order", "INT DEFAULT 0 COMMENT '排序'");
+            safeAddColumn("sys_permission", "type", "VARCHAR(20) NOT NULL DEFAULT 'button' COMMENT '类型:menu/button'");
+            safeAddColumn("sys_permission", "status", "TINYINT DEFAULT 1 COMMENT '1启用0禁用'");
+            safeAddColumn("sys_permission", "create_time", "DATETIME DEFAULT CURRENT_TIMESTAMP");
+            safeAddColumn("sys_permission", "update_time", "DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP");
+
+            jdbcTemplate.execute("CREATE TABLE IF NOT EXISTS `sys_role` (" +
+                "`id` BIGINT AUTO_INCREMENT PRIMARY KEY, " +
+                "`code` VARCHAR(50) NOT NULL COMMENT '角色编码', " +
+                "`name` VARCHAR(50) NOT NULL COMMENT '角色名称', " +
+                "`description` VARCHAR(200) DEFAULT NULL COMMENT '描述', " +
+                "`status` TINYINT DEFAULT 1 COMMENT '1启用0禁用', " +
+                "`create_time` DATETIME DEFAULT CURRENT_TIMESTAMP, " +
+                "`update_time` DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP, " +
+                "UNIQUE KEY `uk_code` (`code`)" +
+                ") ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='系统角色表'");
 
             jdbcTemplate.execute("CREATE TABLE IF NOT EXISTS `sys_role_permission` (" +
                 "`id` BIGINT AUTO_INCREMENT PRIMARY KEY, " +
@@ -223,32 +233,41 @@ public class DataInitializer implements CommandLineRunner {
                 "`permission_id` BIGINT NOT NULL, " +
                 "UNIQUE KEY `uk_role_perm` (`role_id`, `permission_id`), " +
                 "KEY `idx_permission_id` (`permission_id`)" +
-                ") ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
+                ") ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='角色-权限关联表'");
 
             jdbcTemplate.execute("CREATE TABLE IF NOT EXISTS `sys_user_role` (" +
                 "`id` BIGINT AUTO_INCREMENT PRIMARY KEY, " +
-                "`user_type` VARCHAR(20) NOT NULL, " +
+                "`user_type` VARCHAR(20) NOT NULL COMMENT '用户类型:admin/reader', " +
                 "`user_id` BIGINT NOT NULL, " +
                 "`role_id` BIGINT NOT NULL, " +
                 "UNIQUE KEY `uk_user_role` (`user_type`, `user_id`, `role_id`), " +
                 "KEY `idx_role_id` (`role_id`)" +
-                ") ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
+                ") ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='用户-角色关联表'");
 
             log.info("=== RBAC权限表已就绪 ===");
         } catch (Exception e) {
-            log.warn("创建RBAC表时出现警告: {}", e.getMessage());
+            log.error("创建RBAC表失败: {}", e.getMessage(), e);
+        }
+    }
+
+    private void safeAddColumn(String table, String column, String definition) {
+        try {
+            jdbcTemplate.execute("ALTER TABLE `" + table + "` ADD COLUMN `" + column + "` " + definition);
+        } catch (Exception ignored) {
+            // 列已存在，忽略
         }
     }
 
     private void initRbacData() {
-        Long existingCount = permissionMapper.selectCount(new LambdaQueryWrapper<>());
-        if (existingCount > 0) {
-            log.info("=== RBAC数据已存在，跳过初始化 ===");
-            return;
-        }
+        try {
+            Long existingCount = permissionMapper.selectCount(new LambdaQueryWrapper<>());
+            if (existingCount > 0) {
+                log.info("=== RBAC数据已存在({}条权限)，跳过初始化 ===", existingCount);
+                return;
+            }
 
-        // 插入权限数据 - 菜单级
-        insertPermission("dashboard:view", "数据概览", "menu", 0L, "/dashboard", "DataAnalysis", 1);
+            // 插入权限数据 - 菜单级
+            insertPermission("dashboard:view", "数据概览", "menu", 0L, "/dashboard", "DataAnalysis", 1);
         insertPermission("book:manage", "图书管理", "menu", 0L, "/books", "Reading", 2);
         insertPermission("category:manage", "分类管理", "menu", 0L, "/categories", "FolderOpened", 3);
         insertPermission("reader:manage", "读者管理", "menu", 0L, "/readers", "UserFilled", 4);
@@ -371,6 +390,9 @@ public class DataInitializer implements CommandLineRunner {
         }
 
         log.info("=== RBAC权限数据初始化完成 ===");
+        } catch (Exception e) {
+            log.error("RBAC数据初始化失败: {}", e.getMessage(), e);
+        }
     }
 
     private void insertPermission(String code, String name, String type, Long parentId, String path, String icon, int sortOrder) {
