@@ -102,6 +102,12 @@ const routes = [
         name: 'UserRoles',
         component: () => import('@/views/UserRoles.vue'),
         meta: { title: '用户授权', role: 'ADMIN', permission: 'user-role:view' }
+      },
+      {
+        path: 'appeals',
+        name: 'Appeals',
+        component: () => import('@/views/Appeals.vue'),
+        meta: { title: '申诉管理', role: 'ADMIN', permission: 'appeal:view' }
       }
     ]
   },
@@ -146,6 +152,12 @@ const routes = [
         name: 'MyReviews',
         component: () => import('@/views/reader/MyReviews.vue'),
         meta: { title: '我的评价', role: 'READER' }
+      },
+      {
+        path: 'appeals',
+        name: 'MyAppeals',
+        component: () => import('@/views/reader/MyAppeals.vue'),
+        meta: { title: '我的申诉', role: 'READER' }
       },
       {
         path: 'profile',

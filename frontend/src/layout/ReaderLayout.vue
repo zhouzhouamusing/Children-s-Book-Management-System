@@ -43,6 +43,10 @@
           <el-icon><ChatLineRound /></el-icon>
           <template #title>我的评价</template>
         </el-menu-item>
+        <el-menu-item index="/reader/appeals">
+          <el-icon><Warning /></el-icon>
+          <template #title>我的申诉</template>
+        </el-menu-item>
         <el-menu-item index="/reader/profile">
           <el-icon><User /></el-icon>
           <template #title>个人中心</template>

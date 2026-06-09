@@ -380,3 +380,52 @@ export function getMyPermissions() {
   return request.get('/sys/user-roles/my-permissions')
 }
 
+// 申诉 API (读者端)
+export function submitAppeal(data) {
+  return request.post('/reader-center/appeals', data)
+}
+
+export function getMyAppeals(params) {
+  return request.get('/reader-center/appeals/my', { params })
+}
+
+export function getAppealDetail(id) {
+  return request.get(`/reader-center/appeals/${id}`)
+}
+
+// 申诉 API (管理端)
+export function getAdminAppeals(params) {
+  return request.get('/appeals', { params })
+}
+
+export function handleAppeal(id, data) {
+  return request.put(`/appeals/${id}/handle`, data)
+}
+
+// 权限管理 CRUD
+export function addPermission(data) {
+  return request.post('/sys/permissions', data)
+}
+
+export function updatePermission(id, data) {
+  return request.put(`/sys/permissions/${id}`, data)
+}
+
+export function deletePermission(id) {
+  return request.delete(`/sys/permissions/${id}`)
+}
+
+// 权限完整性检查
+export function checkPermissionIntegrity() {
+  return request.get('/sys/permissions/integrity-check')
+}
+
+export function repairPermissionIntegrity() {
+  return request.post('/sys/permissions/integrity-repair')
+}
+
+// 动态菜单
+export function getMenusByPermission() {
+  return request.get('/sys/permissions/menus')
+}
+

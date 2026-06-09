@@ -5,6 +5,7 @@ export const adminMenus = [
   { index: '/readers', title: '读者管理', icon: 'UserFilled', permission: 'reader:view' },
   { index: '/borrows', title: '借阅管理', icon: 'Notebook', permission: 'borrow:view' },
   { index: '/admin-applications', title: '管理员审批', icon: 'Stamp', permission: 'admin-app:view' },
+  { index: '/appeals', title: '申诉管理', icon: 'Warning', permission: 'appeal:view' },
   { index: '/reader-view', title: '读者系统', icon: 'View', permission: 'dashboard:view' },
   { index: '/resources', title: '资源管理', icon: 'FolderOpened', permission: 'resource:view' },
   { index: '/reviews', title: '评价管理', icon: 'ChatDotRound', permission: 'review:view' },

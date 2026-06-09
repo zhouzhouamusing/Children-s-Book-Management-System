@@ -31,6 +31,7 @@ public class DataInitializer implements CommandLineRunner {
         try {
             initTables();
             initRbacTables();
+            initForeignKeys();
             initAdmin();
             initReaderAccount();
             initRbacData();
@@ -121,6 +122,31 @@ public class DataInitializer implements CommandLineRunner {
             log.info("=== 图书资源与评价相关表已就绪 ===");
         } catch (Exception e) {
             log.warn("创建资源/评价表时出现警告: {}", e.getMessage());
+        }
+
+        try {
+            jdbcTemplate.execute("CREATE TABLE IF NOT EXISTS `reader_appeal` (" +
+                "`id` BIGINT AUTO_INCREMENT PRIMARY KEY, " +
+                "`reader_id` BIGINT NOT NULL, " +
+                "`reader_name` VARCHAR(50) DEFAULT NULL, " +
+                "`type` VARCHAR(30) NOT NULL COMMENT '申诉类型:borrow_dispute/account_suspended/review_rejected/other', " +
+                "`related_id` BIGINT DEFAULT NULL COMMENT '关联记录ID', " +
+                "`title` VARCHAR(200) NOT NULL, " +
+                "`content` TEXT NOT NULL, " +
+                "`evidence_urls` VARCHAR(1000) DEFAULT NULL COMMENT '证据文件路径', " +
+                "`status` VARCHAR(20) NOT NULL DEFAULT 'pending' COMMENT 'pending/processing/resolved/rejected', " +
+                "`admin_id` BIGINT DEFAULT NULL, " +
+                "`admin_reply` TEXT DEFAULT NULL, " +
+                "`resolve_time` DATETIME DEFAULT NULL, " +
+                "`create_time` DATETIME DEFAULT CURRENT_TIMESTAMP, " +
+                "`update_time` DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP, " +
+                "INDEX `idx_appeal_reader_id` (`reader_id`), " +
+                "INDEX `idx_appeal_status` (`status`), " +
+                "INDEX `idx_appeal_type` (`type`)" +
+                ") ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='读者申诉表'");
+            log.info("=== 读者申诉表已就绪 ===");
+        } catch (Exception e) {
+            log.warn("创建申诉表时出现警告: {}", e.getMessage());
         }
     }
 
@@ -258,6 +284,32 @@ public class DataInitializer implements CommandLineRunner {
         }
     }
 
+    private void initForeignKeys() {
+        safeAddForeignKey("sys_role_permission", "fk_srp_role", "role_id", "sys_role", "id", "CASCADE");
+        safeAddForeignKey("sys_role_permission", "fk_srp_perm", "permission_id", "sys_permission", "id", "CASCADE");
+        safeAddForeignKey("sys_user_role", "fk_sur_role", "role_id", "sys_role", "id", "CASCADE");
+        safeAddForeignKey("reader_account", "fk_ra_reader", "reader_id", "reader", "id", "CASCADE");
+        safeAddForeignKey("borrow_record", "fk_br_reader", "reader_id", "reader", "id", "RESTRICT");
+        safeAddForeignKey("book_review", "fk_brev_reader", "reader_id", "reader", "id", "CASCADE");
+        safeAddForeignKey("book_review", "fk_brev_book", "book_id", "book", "id", "CASCADE");
+        safeAddForeignKey("book_resource", "fk_bres_book", "book_id", "book", "id", "SET NULL");
+        safeAddForeignKey("reading_progress", "fk_rp_reader", "reader_id", "reader", "id", "CASCADE");
+        safeAddForeignKey("reading_progress", "fk_rp_book", "book_id", "book", "id", "CASCADE");
+        safeAddForeignKey("reading_note", "fk_rn_reader", "reader_id", "reader", "id", "CASCADE");
+        safeAddForeignKey("reading_note", "fk_rn_book", "book_id", "book", "id", "CASCADE");
+        safeAddForeignKey("admin_application", "fk_aa_reader", "reader_id", "reader", "id", "CASCADE");
+        safeAddForeignKey("reader_appeal", "fk_rap_reader", "reader_id", "reader", "id", "CASCADE");
+        log.info("=== 外键约束已就绪 ===");
+    }
+
+    private void safeAddForeignKey(String table, String fkName, String column, String refTable, String refColumn, String onDelete) {
+        try {
+            jdbcTemplate.execute("ALTER TABLE `" + table + "` ADD CONSTRAINT `" + fkName +
+                "` FOREIGN KEY (`" + column + "`) REFERENCES `" + refTable + "`(`" + refColumn + "`) ON DELETE " + onDelete);
+        } catch (Exception ignored) {
+        }
+    }
+
     private void initRbacData() {
         try {
             Long existingCount = permissionMapper.selectCount(new LambdaQueryWrapper<>());
@@ -277,6 +329,7 @@ public class DataInitializer implements CommandLineRunner {
         insertPermission("admin-app:manage", "管理员审批", "menu", 0L, "/admin-applications", "Stamp", 8);
         insertPermission("reader-view:access", "读者系统", "menu", 0L, "/reader-view", "View", 9);
         insertPermission("system:manage", "系统管理", "menu", 0L, null, "Setting", 10);
+        insertPermission("appeal:manage", "申诉管理", "menu", 0L, "/appeals", "Warning", 11);
 
         // 获取父权限ID
         Long bookParent = getPermissionId("book:manage");
@@ -287,6 +340,7 @@ public class DataInitializer implements CommandLineRunner {
         Long resourceParent = getPermissionId("resource:manage");
         Long adminAppParent = getPermissionId("admin-app:manage");
         Long systemParent = getPermissionId("system:manage");
+        Long appealParent = getPermissionId("appeal:manage");
 
         // 图书按钮权限
         insertPermission("book:view", "查看图书", "button", bookParent, null, null, 1);
@@ -330,15 +384,22 @@ public class DataInitializer implements CommandLineRunner {
         insertPermission("admin-app:approve", "批准申请", "button", adminAppParent, null, null, 2);
         insertPermission("admin-app:reject", "拒绝申请", "button", adminAppParent, null, null, 3);
 
+        // 申诉管理按钮权限
+        insertPermission("appeal:view", "查看申诉", "button", appealParent, null, null, 1);
+        insertPermission("appeal:handle", "处理申诉", "button", appealParent, null, null, 2);
+
         // 系统管理按钮权限
         insertPermission("role:view", "查看角色", "button", systemParent, null, null, 1);
         insertPermission("role:add", "新增角色", "button", systemParent, null, null, 2);
         insertPermission("role:edit", "编辑角色", "button", systemParent, null, null, 3);
         insertPermission("role:delete", "删除角色", "button", systemParent, null, null, 4);
         insertPermission("permission:view", "查看权限", "button", systemParent, null, null, 5);
-        insertPermission("permission:assign", "分配权限", "button", systemParent, null, null, 6);
-        insertPermission("user-role:view", "查看用户角色", "button", systemParent, null, null, 7);
-        insertPermission("user-role:assign", "分配用户角色", "button", systemParent, null, null, 8);
+        insertPermission("permission:add", "新增权限", "button", systemParent, null, null, 6);
+        insertPermission("permission:edit", "编辑权限", "button", systemParent, null, null, 7);
+        insertPermission("permission:delete", "删除权限", "button", systemParent, null, null, 8);
+        insertPermission("permission:assign", "分配权限", "button", systemParent, null, null, 9);
+        insertPermission("user-role:view", "查看用户角色", "button", systemParent, null, null, 10);
+        insertPermission("user-role:assign", "分配用户角色", "button", systemParent, null, null, 11);
 
         // 创建角色
         SysRole superAdmin = new SysRole();

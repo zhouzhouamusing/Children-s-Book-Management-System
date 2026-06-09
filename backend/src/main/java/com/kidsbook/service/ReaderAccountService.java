@@ -23,6 +23,7 @@ public class ReaderAccountService {
     private final ReaderMapper readerMapper;
     private final PasswordEncoder passwordEncoder;
     private final JwtUtil jwtUtil;
+    private final PermissionCacheService permissionCacheService;
 
     public LoginResponse login(LoginRequest request) {
         ReaderAccount account = readerAccountMapper.selectOne(
@@ -50,13 +51,18 @@ public class ReaderAccountService {
             throw new RuntimeException("您的借阅权限已被暂停，请联系管理员");
         }
 
-        String token = jwtUtil.generateToken(account.getUsername(), "READER", reader.getId());
+        String token = jwtUtil.generateToken(account.getUsername(), "READER", reader.getId(), "reader", reader.getId());
+
+        java.util.List<String> roleCodes = permissionCacheService.getRoleCodes("reader", reader.getId());
+        java.util.List<String> permissions = permissionCacheService.getPermissions("reader", reader.getId());
 
         LoginResponse response = new LoginResponse();
         response.setToken(token);
         response.setNickname(reader.getName());
         response.setRole("READER");
         response.setReaderId(reader.getId());
+        response.setRoles(roleCodes);
+        response.setPermissions(permissions);
         return response;
     }
 
