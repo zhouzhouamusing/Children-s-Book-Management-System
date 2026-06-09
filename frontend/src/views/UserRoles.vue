@@ -5,7 +5,7 @@
       <div class="search-bar">
         <el-input
           v-model="searchKeyword"
-          placeholder="搜索管理员用户名或昵称..."
+          :placeholder="activeTab === 'admin' ? '搜索管理员用户名或昵称...' : '搜索读者姓名...'"
           prefix-icon="Search"
           size="large"
           clearable
@@ -20,9 +20,15 @@
       </div>
     </el-card>
 
-    <!-- 用户列表 -->
+    <!-- 用户类型切换 -->
     <el-card class="table-card" v-loading="tableLoading" element-loading-text="正在加载用户数据...">
-      <el-table :data="userList" stripe style="width: 100%" row-class-name="table-row">
+      <el-tabs v-model="activeTab" @tab-change="handleTabChange">
+        <el-tab-pane label="管理员" name="admin" />
+        <el-tab-pane label="读者" name="reader" />
+      </el-tabs>
+
+      <!-- 管理员列表 -->
+      <el-table v-if="activeTab === 'admin'" :data="userList" stripe style="width: 100%" row-class-name="table-row">
         <el-table-column type="index" label="#" width="50" />
         <el-table-column prop="username" label="用户名" min-width="120">
           <template #default="{ row }">
@@ -52,7 +58,51 @@
         </el-table-column>
         <el-table-column label="操作" width="140" fixed="right">
           <template #default="{ row }">
-            <el-button v-permission="'user-role:assign'" class="action-btn-primary" @click="handleAssign(row)">
+            <el-button v-permission="'user-role:assign'" class="action-btn-primary" @click="handleAssign(row, 'admin')">
+              <el-icon><UserFilled /></el-icon> 分配角色
+            </el-button>
+          </template>
+        </el-table-column>
+      </el-table>
+
+      <!-- 读者列表 -->
+      <el-table v-if="activeTab === 'reader'" :data="userList" stripe style="width: 100%" row-class-name="table-row">
+        <el-table-column type="index" label="#" width="50" />
+        <el-table-column prop="name" label="姓名" min-width="120">
+          <template #default="{ row }">
+            <div class="user-cell">
+              <span class="user-icon">📖</span>
+              <span>{{ row.name }}</span>
+            </div>
+          </template>
+        </el-table-column>
+        <el-table-column prop="age" label="年龄" width="80" />
+        <el-table-column prop="status" label="状态" width="100">
+          <template #default="{ row }">
+            <el-tag :type="row.status === 'normal' ? 'success' : 'danger'" size="small">
+              {{ row.status === 'normal' ? '正常' : '已暂停' }}
+            </el-tag>
+          </template>
+        </el-table-column>
+        <el-table-column label="当前角色" min-width="200">
+          <template #default="{ row }">
+            <div class="role-tags">
+              <el-tag
+                v-for="role in row.roles"
+                :key="role.id"
+                :type="getRoleTagType(role.code)"
+                size="small"
+                class="role-tag"
+              >
+                {{ role.name }}
+              </el-tag>
+              <el-tag v-if="!row.roles || row.roles.length === 0" type="info" size="small">未分配</el-tag>
+            </div>
+          </template>
+        </el-table-column>
+        <el-table-column label="操作" width="140" fixed="right">
+          <template #default="{ row }">
+            <el-button v-permission="'user-role:assign'" class="action-btn-primary" @click="handleAssign(row, 'reader')">
               <el-icon><UserFilled /></el-icon> 分配角色
             </el-button>
           </template>
@@ -80,7 +130,8 @@
       destroy-on-close
     >
       <div class="assign-header">
-        <span>为用户 <strong>{{ currentUser?.nickname || currentUser?.username }}</strong> 分配角色</span>
+        <span>为{{ currentUserType === 'admin' ? '管理员' : '读者' }}
+          <strong>{{ currentUser?.nickname || currentUser?.username || currentUser?.name }}</strong> 分配角色</span>
       </div>
       <div class="role-checkbox-group" v-loading="rolesLoading">
         <el-checkbox-group v-model="selectedRoleIds">
@@ -105,7 +156,7 @@
 <script setup>
 import { ref, onMounted } from 'vue'
 import { ElMessage } from 'element-plus'
-import { getAdminUsersWithRoles, getAllRoles, assignUserRoles } from '@/api/index'
+import { getAdminUsersWithRoles, getReaderUsersWithRoles, getAllRoles, assignUserRoles } from '@/api/index'
 
 const searchKeyword = ref('')
 const tableLoading = ref(false)
@@ -113,11 +164,13 @@ const userList = ref([])
 const currentPage = ref(1)
 const pageSize = ref(10)
 const total = ref(0)
+const activeTab = ref('admin')
 
 const dialogVisible = ref(false)
 const rolesLoading = ref(false)
 const saveLoading = ref(false)
 const currentUser = ref(null)
+const currentUserType = ref('admin')
 const allRoles = ref([])
 const selectedRoleIds = ref([])
 
@@ -128,7 +181,13 @@ onMounted(() => {
 async function fetchUsers() {
   tableLoading.value = true
   try {
-    const res = await getAdminUsersWithRoles({ page: currentPage.value, size: pageSize.value, keyword: searchKeyword.value })
+    const params = { page: currentPage.value, size: pageSize.value, keyword: searchKeyword.value }
+    let res
+    if (activeTab.value === 'admin') {
+      res = await getAdminUsersWithRoles(params)
+    } else {
+      res = await getReaderUsersWithRoles(params)
+    }
     userList.value = res.data.records
     total.value = res.data.total
   } catch (e) {
@@ -138,13 +197,20 @@ async function fetchUsers() {
   }
 }
 
+function handleTabChange() {
+  searchKeyword.value = ''
+  currentPage.value = 1
+  fetchUsers()
+}
+
 function handleSearch() {
   currentPage.value = 1
   fetchUsers()
 }
 
-async function handleAssign(row) {
+async function handleAssign(row, userType) {
   currentUser.value = row
+  currentUserType.value = userType
   selectedRoleIds.value = (row.roles || []).map(r => r.id)
   dialogVisible.value = true
   rolesLoading.value = true
@@ -162,7 +228,7 @@ async function handleSaveRoles() {
   saveLoading.value = true
   try {
     await assignUserRoles({
-      userType: 'admin',
+      userType: currentUserType.value,
       userId: currentUser.value.id,
       roleIds: selectedRoleIds.value
     })
@@ -179,6 +245,7 @@ async function handleSaveRoles() {
 function getRoleTagType(code) {
   if (code === 'super:admin') return 'danger'
   if (code === 'admin') return 'warning'
+  if (code === 'reader') return 'success'
   return ''
 }
 </script>

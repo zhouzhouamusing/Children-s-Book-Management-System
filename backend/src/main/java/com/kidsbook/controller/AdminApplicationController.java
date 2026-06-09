@@ -9,10 +9,14 @@ import com.kidsbook.entity.Admin;
 import com.kidsbook.entity.AdminApplication;
 import com.kidsbook.entity.Reader;
 import com.kidsbook.entity.ReaderAccount;
+import com.kidsbook.entity.SysRole;
+import com.kidsbook.entity.SysUserRole;
 import com.kidsbook.mapper.AdminApplicationMapper;
 import com.kidsbook.mapper.AdminMapper;
 import com.kidsbook.mapper.ReaderAccountMapper;
 import com.kidsbook.mapper.ReaderMapper;
+import com.kidsbook.mapper.SysRoleMapper;
+import com.kidsbook.mapper.SysUserRoleMapper;
 import com.kidsbook.util.JwtUtil;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.Authentication;
@@ -32,6 +36,8 @@ public class AdminApplicationController {
     private final AdminMapper adminMapper;
     private final ReaderMapper readerMapper;
     private final ReaderAccountMapper readerAccountMapper;
+    private final SysRoleMapper roleMapper;
+    private final SysUserRoleMapper userRoleMapper;
     private final PasswordEncoder passwordEncoder;
     private final JwtUtil jwtUtil;
 
@@ -162,6 +168,17 @@ public class AdminApplicationController {
         admin.setCreateTime(LocalDateTime.now());
         admin.setUpdateTime(LocalDateTime.now());
         adminMapper.insert(admin);
+
+        // 为新审批的管理员分配 admin 角色
+        SysRole adminRole = roleMapper.selectOne(
+                new LambdaQueryWrapper<SysRole>().eq(SysRole::getCode, "admin"));
+        if (adminRole != null) {
+            SysUserRole ur = new SysUserRole();
+            ur.setUserType("admin");
+            ur.setUserId(admin.getId());
+            ur.setRoleId(adminRole.getId());
+            userRoleMapper.insert(ur);
+        }
 
         application.setStatus("approved");
         application.setApprovedTime(LocalDateTime.now());

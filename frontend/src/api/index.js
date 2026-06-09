@@ -372,6 +372,10 @@ export function getAdminUsersWithRoles(params) {
   return request.get('/sys/user-roles/admins', { params })
 }
 
+export function getReaderUsersWithRoles(params) {
+  return request.get('/sys/user-roles/readers', { params })
+}
+
 export function assignUserRoles(data) {
   return request.put('/sys/user-roles/assign', data)
 }

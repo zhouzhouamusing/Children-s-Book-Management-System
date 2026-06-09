@@ -44,6 +44,33 @@ public class SysUserRoleService {
 
     @Transactional
     public void assignRoles(String userType, Long userId, List<Long> roleIds) {
+        if (userType == null || (!("admin".equals(userType)) && !("reader".equals(userType)))) {
+            throw new RuntimeException("无效的用户类型，仅支持 admin 或 reader");
+        }
+        if (userId == null) {
+            throw new RuntimeException("用户ID不能为空");
+        }
+
+        // 验证用户存在性
+        if ("admin".equals(userType)) {
+            if (adminMapper.selectById(userId) == null) {
+                throw new RuntimeException("管理员用户不存在");
+            }
+        } else {
+            if (readerMapper.selectById(userId) == null) {
+                throw new RuntimeException("读者用户不存在");
+            }
+        }
+
+        // 验证角色存在性
+        if (roleIds != null && !roleIds.isEmpty()) {
+            for (Long roleId : roleIds) {
+                if (roleMapper.selectById(roleId) == null) {
+                    throw new RuntimeException("角色ID " + roleId + " 不存在");
+                }
+            }
+        }
+
         userRoleMapper.delete(
                 new LambdaQueryWrapper<SysUserRole>()
                         .eq(SysUserRole::getUserType, userType)
