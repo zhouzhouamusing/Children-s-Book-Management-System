@@ -1,6 +1,7 @@
 package com.kidsbook.controller;
 
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import com.kidsbook.annotation.RequirePermission;
 import com.kidsbook.common.Result;
 import com.kidsbook.dto.BookReviewRequest;
 import com.kidsbook.entity.BookReview;
@@ -29,6 +30,7 @@ public class ReaderReviewController {
     }
 
     @PostMapping
+    @RequirePermission("reader-center:review")
     public Result<?> create(@RequestBody @Valid BookReviewRequest request) {
         Long readerId = getCurrentReaderId();
         if (readerId == null) {
@@ -39,6 +41,7 @@ public class ReaderReviewController {
     }
 
     @GetMapping("/my")
+    @RequirePermission("reader-center:review")
     public Result<?> myReviews(@RequestParam(defaultValue = "1") int page,
                                @RequestParam(defaultValue = "10") int size) {
         Long readerId = getCurrentReaderId();
@@ -53,6 +56,7 @@ public class ReaderReviewController {
     }
 
     @PutMapping("/{id}")
+    @RequirePermission("reader-center:review")
     public Result<?> update(@PathVariable Long id, @RequestBody @Valid BookReviewRequest request) {
         Long readerId = getCurrentReaderId();
         if (readerId == null) {
@@ -63,6 +67,7 @@ public class ReaderReviewController {
     }
 
     @DeleteMapping("/{id}")
+    @RequirePermission("reader-center:review")
     public Result<?> delete(@PathVariable Long id) {
         Long readerId = getCurrentReaderId();
         if (readerId == null) {
@@ -73,6 +78,7 @@ public class ReaderReviewController {
     }
 
     @GetMapping("/book/{bookId}")
+    @RequirePermission("reader-center:review")
     public Result<?> bookReviews(@PathVariable Long bookId,
                                  @RequestParam(defaultValue = "1") int page,
                                  @RequestParam(defaultValue = "10") int size) {
@@ -84,6 +90,7 @@ public class ReaderReviewController {
     }
 
     @GetMapping("/check/{bookId}")
+    @RequirePermission("reader-center:review")
     public Result<?> checkCanReview(@PathVariable Long bookId) {
         Long readerId = getCurrentReaderId();
         if (readerId == null) {

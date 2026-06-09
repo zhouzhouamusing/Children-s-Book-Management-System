@@ -1,6 +1,7 @@
 package com.kidsbook.controller;
 
 import com.baomidou.mybatisplus.core.metadata.IPage;
+import com.kidsbook.annotation.RequirePermission;
 import com.kidsbook.common.Result;
 import com.kidsbook.entity.ReadingNote;
 import com.kidsbook.entity.ReadingProgress;
@@ -28,6 +29,7 @@ public class ReadingProgressController {
     }
 
     @GetMapping
+    @RequirePermission("reader-center:progress")
     public Result<Map<String, Object>> getProgressList(
             @RequestParam(defaultValue = "1") int page,
             @RequestParam(defaultValue = "10") int size,
@@ -44,6 +46,7 @@ public class ReadingProgressController {
     }
 
     @PostMapping
+    @RequirePermission("reader-center:progress")
     public Result<ReadingProgress> createOrUpdate(@RequestBody Map<String, Object> body) {
         Long readerId = getCurrentReaderId();
         if (readerId == null) {
@@ -59,6 +62,7 @@ public class ReadingProgressController {
     }
 
     @PutMapping("/{id}/status")
+    @RequirePermission("reader-center:progress")
     public Result<Void> updateStatus(@PathVariable Long id, @RequestBody Map<String, String> body) {
         Long readerId = getCurrentReaderId();
         if (readerId == null) {
@@ -69,6 +73,7 @@ public class ReadingProgressController {
     }
 
     @DeleteMapping("/{id}")
+    @RequirePermission("reader-center:progress")
     public Result<Void> deleteProgress(@PathVariable Long id) {
         Long readerId = getCurrentReaderId();
         if (readerId == null) {
@@ -79,6 +84,7 @@ public class ReadingProgressController {
     }
 
     @GetMapping("/statistics")
+    @RequirePermission("reader-center:progress")
     public Result<Map<String, Object>> getStatistics() {
         Long readerId = getCurrentReaderId();
         if (readerId == null) {
@@ -89,6 +95,7 @@ public class ReadingProgressController {
     }
 
     @GetMapping("/notes")
+    @RequirePermission("reader-center:progress")
     public Result<Map<String, Object>> getNotes(
             @RequestParam(defaultValue = "1") int page,
             @RequestParam(defaultValue = "10") int size,
@@ -105,6 +112,7 @@ public class ReadingProgressController {
     }
 
     @PostMapping("/notes")
+    @RequirePermission("reader-center:progress")
     public Result<ReadingNote> addNote(@RequestBody Map<String, Object> body) {
         Long readerId = getCurrentReaderId();
         if (readerId == null) {
@@ -120,6 +128,7 @@ public class ReadingProgressController {
     }
 
     @PutMapping("/notes/{id}")
+    @RequirePermission("reader-center:progress")
     public Result<Void> updateNote(@PathVariable Long id, @RequestBody Map<String, Object> body) {
         Long readerId = getCurrentReaderId();
         if (readerId == null) {
@@ -132,6 +141,7 @@ public class ReadingProgressController {
     }
 
     @DeleteMapping("/notes/{id}")
+    @RequirePermission("reader-center:progress")
     public Result<Void> deleteNote(@PathVariable Long id) {
         Long readerId = getCurrentReaderId();
         if (readerId == null) {

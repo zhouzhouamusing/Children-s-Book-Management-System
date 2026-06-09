@@ -3,6 +3,7 @@ package com.kidsbook.controller;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import com.kidsbook.annotation.RequirePermission;
 import com.kidsbook.common.Result;
 import com.kidsbook.dto.ReaderProfileUpdateRequest;
 import com.kidsbook.dto.ReservationRequest;
@@ -53,6 +54,7 @@ public class ReaderCenterController {
     }
 
     @GetMapping("/profile")
+    @RequirePermission("reader-center:profile")
     public Result<Reader> getProfile() {
         Long readerId = getCurrentReaderId();
         if (readerId == null) {
@@ -72,6 +74,7 @@ public class ReaderCenterController {
     }
 
     @PutMapping("/profile")
+    @RequirePermission("reader-center:profile")
     public Result<Void> updateProfile(@RequestBody @Valid ReaderProfileUpdateRequest request) {
         Long readerId = getCurrentReaderId();
         if (readerId == null) {
@@ -91,6 +94,7 @@ public class ReaderCenterController {
     }
 
     @GetMapping("/borrow-records")
+    @RequirePermission("reader-center:borrow")
     public Result<Map<String, Object>> getBorrowRecords(
             @RequestParam(defaultValue = "1") int page,
             @RequestParam(defaultValue = "10") int size,
@@ -132,6 +136,7 @@ public class ReaderCenterController {
     }
 
     @GetMapping("/reservations")
+    @RequirePermission("reader-center:reservation")
     public Result<Map<String, Object>> getReservations(
             @RequestParam(defaultValue = "1") int page,
             @RequestParam(defaultValue = "10") int size,
@@ -150,6 +155,7 @@ public class ReaderCenterController {
     }
 
     @PostMapping("/reservations")
+    @RequirePermission("reader-center:reservation")
     public Result<Void> createReservation(@RequestBody @Valid ReservationRequest request) {
         Long readerId = getCurrentReaderId();
         if (readerId == null) {
@@ -160,6 +166,7 @@ public class ReaderCenterController {
     }
 
     @PutMapping("/reservations/{id}/cancel")
+    @RequirePermission("reader-center:reservation")
     public Result<Void> cancelReservation(@PathVariable Long id) {
         Long readerId = getCurrentReaderId();
         if (readerId == null) {
@@ -170,6 +177,7 @@ public class ReaderCenterController {
     }
 
     @GetMapping("/books")
+    @RequirePermission("reader-center:browse")
     public Result<Map<String, Object>> browseBooks(
             @RequestParam(defaultValue = "1") int page,
             @RequestParam(defaultValue = "12") int size,
@@ -193,6 +201,7 @@ public class ReaderCenterController {
     }
 
     @GetMapping("/statistics")
+    @RequirePermission("reader-center:borrow")
     public Result<Map<String, Object>> getStatistics() {
         Long readerId = getCurrentReaderId();
         Map<String, Object> data = new HashMap<>();
@@ -266,6 +275,7 @@ public class ReaderCenterController {
     }
 
     @GetMapping("/points")
+    @RequirePermission("reader-center:borrow")
     public Result<Map<String, Object>> getPoints() {
         Long readerId = getCurrentReaderId();
         if (readerId == null) {

@@ -37,6 +37,19 @@ public class SysUserRoleController {
         return Result.success(data);
     }
 
+    @GetMapping("/readers")
+    @RequirePermission("user-role:view")
+    public Result<Map<String, Object>> listReaders(
+            @RequestParam(defaultValue = "1") int page,
+            @RequestParam(defaultValue = "10") int size,
+            @RequestParam(required = false) String keyword) {
+        Page<Map<String, Object>> result = userRoleService.listReadersWithRoles(page, size, keyword);
+        Map<String, Object> data = new HashMap<>();
+        data.put("records", result.getRecords());
+        data.put("total", result.getTotal());
+        return Result.success(data);
+    }
+
     @PutMapping("/assign")
     @RequirePermission("user-role:assign")
     public Result<Void> assignRoles(@RequestBody Map<String, Object> body) {

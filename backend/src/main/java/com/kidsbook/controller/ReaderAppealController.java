@@ -1,6 +1,7 @@
 package com.kidsbook.controller;
 
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import com.kidsbook.annotation.RequirePermission;
 import com.kidsbook.common.Result;
 import com.kidsbook.dto.AppealRequest;
 import com.kidsbook.entity.ReaderAppeal;
@@ -21,6 +22,7 @@ public class ReaderAppealController {
     private final JwtUtil jwtUtil;
 
     @PostMapping
+    @RequirePermission("reader-center:appeal")
     public Result<Void> submit(@Valid @RequestBody AppealRequest request) {
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
         String token = auth.getCredentials().toString();
@@ -34,6 +36,7 @@ public class ReaderAppealController {
     }
 
     @GetMapping("/my")
+    @RequirePermission("reader-center:appeal")
     public Result<Page<ReaderAppeal>> myAppeals(
             @RequestParam(defaultValue = "1") int page,
             @RequestParam(defaultValue = "10") int size) {
@@ -47,6 +50,7 @@ public class ReaderAppealController {
     }
 
     @GetMapping("/{id}")
+    @RequirePermission("reader-center:appeal")
     public Result<ReaderAppeal> detail(@PathVariable Long id) {
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
         String token = auth.getCredentials().toString();

@@ -59,6 +59,7 @@ public class ReaderAccountService {
 
         String token = jwtUtil.generateToken(account.getUsername(), "READER", reader.getId(), "reader", reader.getId());
 
+        permissionCacheService.refreshOnLogin("reader", reader.getId());
         java.util.List<String> roleCodes = permissionCacheService.getRoleCodes("reader", reader.getId());
         java.util.List<String> permissions = permissionCacheService.getPermissions("reader", reader.getId());
 
@@ -118,6 +119,8 @@ public class ReaderAccountService {
             ur.setUserId(reader.getId());
             ur.setRoleId(readerRole.getId());
             userRoleMapper.insert(ur);
+        } else {
+            log.warn("读者角色(code=reader)不存在，新注册读者 {} 将无法获取默认权限，请检查RBAC数据初始化", username);
         }
 
         log.info("读者注册成功: username={}, readerId={}", username, reader.getId());

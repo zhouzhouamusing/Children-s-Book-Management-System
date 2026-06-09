@@ -1,5 +1,6 @@
 package com.kidsbook.controller;
 
+import com.kidsbook.annotation.RequirePermission;
 import com.kidsbook.common.Result;
 import com.kidsbook.entity.Book;
 import com.kidsbook.service.BookRecommendService;
@@ -27,6 +28,7 @@ public class BookRecommendController {
     }
 
     @GetMapping("/by-history")
+    @RequirePermission("reader-center:recommend")
     public Result<List<Book>> getRecommendByHistory(@RequestParam(defaultValue = "10") int limit) {
         Long readerId = getCurrentReaderId();
         List<Book> books;
@@ -39,6 +41,7 @@ public class BookRecommendController {
     }
 
     @GetMapping("/by-age")
+    @RequirePermission("reader-center:recommend")
     public Result<List<Book>> getRecommendByAge(@RequestParam(defaultValue = "10") int limit) {
         Long readerId = getCurrentReaderId();
         List<Book> books;
@@ -51,12 +54,14 @@ public class BookRecommendController {
     }
 
     @GetMapping("/top10")
+    @RequirePermission("reader-center:recommend")
     public Result<List<Map<String, Object>>> getTopBooks() {
         List<Map<String, Object>> top10 = recommendService.getTopBorrowedBooksWithCount(10);
         return Result.success(top10);
     }
 
     @GetMapping("/all")
+    @RequirePermission("reader-center:recommend")
     public Result<Map<String, Object>> getAllRecommendations() {
         Long readerId = getCurrentReaderId();
         Map<String, Object> data = new HashMap<>();
@@ -75,6 +80,7 @@ public class BookRecommendController {
     }
 
     @GetMapping("/top-rated")
+    @RequirePermission("reader-center:recommend")
     public Result<List<Book>> getTopRated(@RequestParam(defaultValue = "10") int limit) {
         return Result.success(recommendService.getTopRatedBooks(limit));
     }

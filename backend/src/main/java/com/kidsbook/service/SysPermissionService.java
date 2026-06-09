@@ -105,6 +105,12 @@ public class SysPermissionService {
         existing.setSortOrder(request.getSortOrder() != null ? request.getSortOrder() : 0);
         existing.setStatus(request.getStatus() != null ? request.getStatus() : 1);
         permissionMapper.updateById(existing);
+
+        // 禁用时级联禁用所有子权限
+        if (request.getStatus() != null && request.getStatus() == 0) {
+            cascadeDisableChildren(id);
+        }
+
         permissionCacheService.invalidateAll();
     }
 
@@ -146,6 +152,18 @@ public class SysPermissionService {
                             .orderByAsc(SysPermission::getSortOrder));
         }
         return menus;
+    }
+
+    private void cascadeDisableChildren(Long parentId) {
+        List<SysPermission> children = permissionMapper.selectList(
+                new LambdaQueryWrapper<SysPermission>()
+                        .eq(SysPermission::getParentId, parentId)
+                        .eq(SysPermission::getStatus, 1));
+        for (SysPermission child : children) {
+            child.setStatus(0);
+            permissionMapper.updateById(child);
+            cascadeDisableChildren(child.getId());
+        }
     }
 
     private List<SysPermission> buildTree(List<SysPermission> all, Long parentId) {

@@ -40,6 +40,7 @@ public class AdminService {
 
         String token = jwtUtil.generateToken(admin.getUsername(), "ADMIN", null, "admin", admin.getId());
 
+        permissionCacheService.refreshOnLogin("admin", admin.getId());
         List<String> roleCodes = permissionCacheService.getRoleCodes("admin", admin.getId());
         List<String> permissions = permissionCacheService.getPermissions("admin", admin.getId());
 
