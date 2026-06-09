@@ -6,8 +6,12 @@ import com.kidsbook.dto.LoginResponse;
 import com.kidsbook.dto.ReaderRegisterRequest;
 import com.kidsbook.entity.Reader;
 import com.kidsbook.entity.ReaderAccount;
+import com.kidsbook.entity.SysRole;
+import com.kidsbook.entity.SysUserRole;
 import com.kidsbook.mapper.ReaderAccountMapper;
 import com.kidsbook.mapper.ReaderMapper;
+import com.kidsbook.mapper.SysRoleMapper;
+import com.kidsbook.mapper.SysUserRoleMapper;
 import com.kidsbook.util.JwtUtil;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -24,6 +28,8 @@ public class ReaderAccountService {
     private final PasswordEncoder passwordEncoder;
     private final JwtUtil jwtUtil;
     private final PermissionCacheService permissionCacheService;
+    private final SysRoleMapper roleMapper;
+    private final SysUserRoleMapper userRoleMapper;
 
     public LoginResponse login(LoginRequest request) {
         ReaderAccount account = readerAccountMapper.selectOne(
@@ -102,6 +108,18 @@ public class ReaderAccountService {
         account.setReaderId(reader.getId());
         account.setStatus("active");
         readerAccountMapper.insert(account);
+
+        // 自动分配读者角色
+        SysRole readerRole = roleMapper.selectOne(
+            new LambdaQueryWrapper<SysRole>().eq(SysRole::getCode, "READER"));
+        if (readerRole != null) {
+            SysUserRole ur = new SysUserRole();
+            ur.setUserType("reader");
+            ur.setUserId(reader.getId());
+            ur.setRoleId(readerRole.getId());
+            userRoleMapper.insert(ur);
+        }
+
         log.info("读者注册成功: username={}, readerId={}", username, reader.getId());
     }
 

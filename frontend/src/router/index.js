@@ -71,7 +71,7 @@ const routes = [
         path: 'reader-view',
         name: 'AdminReaderView',
         component: () => import('@/views/AdminReaderView.vue'),
-        meta: { title: '读者系统', role: 'ADMIN', permission: 'dashboard:view' }
+        meta: { title: '读者系统', role: 'ADMIN', permission: 'reader-view:access' }
       },
       {
         path: 'resources',

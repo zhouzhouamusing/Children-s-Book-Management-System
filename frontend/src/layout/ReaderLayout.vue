@@ -19,37 +19,13 @@
         text-color="#4A4A4A"
         active-text-color="#957DAD"
       >
-        <el-menu-item index="/reader/my-borrows">
-          <el-icon><Reading /></el-icon>
-          <template #title>我的借阅</template>
-        </el-menu-item>
-        <el-menu-item index="/reader/reservations">
-          <el-icon><Calendar /></el-icon>
-          <template #title>预约图书</template>
-        </el-menu-item>
-        <el-menu-item index="/reader/books">
-          <el-icon><Search /></el-icon>
-          <template #title>图书浏览</template>
-        </el-menu-item>
-        <el-menu-item index="/reader/recommend">
-          <el-icon><Star /></el-icon>
-          <template #title>图书推荐</template>
-        </el-menu-item>
-        <el-menu-item index="/reader/reading-progress">
-          <el-icon><TrendCharts /></el-icon>
-          <template #title>阅读进度</template>
-        </el-menu-item>
-        <el-menu-item index="/reader/my-reviews">
-          <el-icon><ChatLineRound /></el-icon>
-          <template #title>我的评价</template>
-        </el-menu-item>
-        <el-menu-item index="/reader/appeals">
-          <el-icon><Warning /></el-icon>
-          <template #title>我的申诉</template>
-        </el-menu-item>
-        <el-menu-item index="/reader/profile">
-          <el-icon><User /></el-icon>
-          <template #title>个人中心</template>
+        <el-menu-item
+          v-for="menu in visibleMenus"
+          :key="menu.index"
+          :index="menu.index"
+        >
+          <el-icon><component :is="menu.icon" /></el-icon>
+          <template #title>{{ menu.title }}</template>
         </el-menu-item>
       </el-menu>
     </el-aside>
@@ -90,14 +66,26 @@
 </template>
 
 <script setup>
-import { ref } from 'vue'
+import { ref, computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { ElMessageBox, ElMessage } from 'element-plus'
+import { usePermissionStore } from '@/stores/permission'
+import { readerMenus } from '@/config/menus'
 
 const route = useRoute()
 const router = useRouter()
 const isCollapse = ref(false)
 const nickname = ref(localStorage.getItem('nickname') || '读者')
+
+const permStore = usePermissionStore()
+permStore.loadFromStorage()
+
+const visibleMenus = computed(() => {
+  if (!permStore.permissions || permStore.permissions.length === 0) {
+    return readerMenus
+  }
+  return readerMenus.filter(m => permStore.hasPermission(m.permission))
+})
 
 const handleLogout = () => {
   ElMessageBox.confirm('确定要退出登录吗？', '提示', {
@@ -109,6 +97,7 @@ const handleLogout = () => {
     localStorage.removeItem('nickname')
     localStorage.removeItem('role')
     localStorage.removeItem('readerId')
+    permStore.clear()
     ElMessage.success('已安全退出')
     router.push('/login')
   }).catch(() => {})

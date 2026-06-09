@@ -318,18 +318,30 @@ public class DataInitializer implements CommandLineRunner {
                 return;
             }
 
-            // 插入权限数据 - 菜单级
+            // 插入权限数据 - 菜单级（管理端）
             insertPermission("dashboard:view", "数据概览", "menu", 0L, "/dashboard", "DataAnalysis", 1);
         insertPermission("book:manage", "图书管理", "menu", 0L, "/books", "Reading", 2);
-        insertPermission("category:manage", "分类管理", "menu", 0L, "/categories", "FolderOpened", 3);
+        insertPermission("category:manage", "分类管理", "menu", 0L, "/categories", "Grid", 3);
         insertPermission("reader:manage", "读者管理", "menu", 0L, "/readers", "UserFilled", 4);
         insertPermission("borrow:manage", "借阅管理", "menu", 0L, "/borrows", "Notebook", 5);
         insertPermission("review:manage", "评价管理", "menu", 0L, "/reviews", "ChatDotRound", 6);
-        insertPermission("resource:manage", "资源管理", "menu", 0L, "/resources", "FolderOpened", 7);
+        insertPermission("resource:manage", "资源管理", "menu", 0L, "/resources", "Files", 7);
         insertPermission("admin-app:manage", "管理员审批", "menu", 0L, "/admin-applications", "Stamp", 8);
-        insertPermission("reader-view:access", "读者系统", "menu", 0L, "/reader-view", "View", 9);
-        insertPermission("system:manage", "系统管理", "menu", 0L, null, "Setting", 10);
-        insertPermission("appeal:manage", "申诉管理", "menu", 0L, "/appeals", "Warning", 11);
+        insertPermission("appeal:manage", "申诉管理", "menu", 0L, "/appeals", "Warning", 9);
+        insertPermission("reader-view:access", "读者系统", "menu", 0L, "/reader-view", "Monitor", 10);
+        insertPermission("system:manage", "系统管理", "menu", 0L, "/roles", "Setting", 11);
+
+        // 插入权限数据 - 菜单级（读者端）
+        insertPermission("reader-center:manage", "读者中心", "menu", 0L, null, "House", 20);
+        Long readerCenterParent = getPermissionId("reader-center:manage");
+        insertPermission("reader-center:borrow", "我的借阅", "menu", readerCenterParent, "/reader/my-borrows", "Reading", 1);
+        insertPermission("reader-center:reservation", "预约图书", "menu", readerCenterParent, "/reader/reservations", "Calendar", 2);
+        insertPermission("reader-center:browse", "图书浏览", "menu", readerCenterParent, "/reader/books", "Search", 3);
+        insertPermission("reader-center:recommend", "图书推荐", "menu", readerCenterParent, "/reader/recommend", "Star", 4);
+        insertPermission("reader-center:progress", "阅读进度", "menu", readerCenterParent, "/reader/reading-progress", "TrendCharts", 5);
+        insertPermission("reader-center:review", "我的评价", "menu", readerCenterParent, "/reader/my-reviews", "ChatLineRound", 6);
+        insertPermission("reader-center:appeal", "我的申诉", "menu", readerCenterParent, "/reader/appeals", "Warning", 7);
+        insertPermission("reader-center:profile", "个人中心", "menu", readerCenterParent, "/reader/profile", "User", 8);
 
         // 获取父权限ID
         Long bookParent = getPermissionId("book:manage");
@@ -416,6 +428,13 @@ public class DataInitializer implements CommandLineRunner {
         adminRole.setStatus(1);
         roleMapper.insert(adminRole);
 
+        SysRole readerRole = new SysRole();
+        readerRole.setCode("READER");
+        readerRole.setName("读者");
+        readerRole.setDescription("拥有读者中心所有功能权限");
+        readerRole.setStatus(1);
+        roleMapper.insert(readerRole);
+
         // 为超级管理员分配全部权限
         List<SysPermission> allPerms = permissionMapper.selectList(new LambdaQueryWrapper<>());
         for (SysPermission perm : allPerms) {
@@ -425,16 +444,28 @@ public class DataInitializer implements CommandLineRunner {
             rolePermissionMapper.insert(rp);
         }
 
-        // 为管理员分配除系统管理外的全部权限
+        // 为管理员分配除系统管理和读者中心外的全部权限
         List<SysPermission> adminPerms = permissionMapper.selectList(
             new LambdaQueryWrapper<SysPermission>()
                 .ne(SysPermission::getCode, "system:manage")
                 .notLike(SysPermission::getCode, "role:")
                 .notLike(SysPermission::getCode, "permission:")
-                .notLike(SysPermission::getCode, "user-role:"));
+                .notLike(SysPermission::getCode, "user-role:")
+                .notLike(SysPermission::getCode, "reader-center:"));
         for (SysPermission perm : adminPerms) {
             SysRolePermission rp = new SysRolePermission();
             rp.setRoleId(adminRole.getId());
+            rp.setPermissionId(perm.getId());
+            rolePermissionMapper.insert(rp);
+        }
+
+        // 为读者角色分配读者中心相关权限
+        List<SysPermission> readerPerms = permissionMapper.selectList(
+            new LambdaQueryWrapper<SysPermission>()
+                .likeRight(SysPermission::getCode, "reader-center:"));
+        for (SysPermission perm : readerPerms) {
+            SysRolePermission rp = new SysRolePermission();
+            rp.setRoleId(readerRole.getId());
             rp.setPermissionId(perm.getId());
             rolePermissionMapper.insert(rp);
         }
@@ -447,6 +478,17 @@ public class DataInitializer implements CommandLineRunner {
             ur.setUserType("admin");
             ur.setUserId(admin.getId());
             ur.setRoleId(superAdmin.getId());
+            userRoleMapper.insert(ur);
+        }
+
+        // 为默认读者分配读者角色
+        Reader defaultReader = readerMapper.selectOne(
+            new LambdaQueryWrapper<Reader>().eq(Reader::getName, "小明"));
+        if (defaultReader != null) {
+            SysUserRole ur = new SysUserRole();
+            ur.setUserType("reader");
+            ur.setUserId(defaultReader.getId());
+            ur.setRoleId(readerRole.getId());
             userRoleMapper.insert(ur);
         }
 
