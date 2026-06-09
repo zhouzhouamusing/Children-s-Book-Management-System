@@ -90,7 +90,7 @@
           <el-input v-model="formData.name" placeholder="请输入角色名称" />
         </el-form-item>
         <el-form-item label="角色编码" prop="code">
-          <el-input v-model="formData.code" placeholder="请输入角色编码（如：ADMIN）" :disabled="isEdit" />
+          <el-input v-model="formData.code" placeholder="请输入角色编码（如：admin）" :disabled="isEdit" />
         </el-form-item>
         <el-form-item label="描述" prop="description">
           <el-input v-model="formData.description" type="textarea" :rows="3" placeholder="请输入角色描述" />

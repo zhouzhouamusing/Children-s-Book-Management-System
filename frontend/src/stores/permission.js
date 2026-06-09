@@ -26,12 +26,12 @@ export const usePermissionStore = defineStore('permission', () => {
   }
 
   function hasPermission(code) {
-    if (roles.value.includes('SUPER_ADMIN')) return true
+    if (roles.value.includes('super:admin')) return true
     return permissions.value.includes(code)
   }
 
   function hasAnyPermission(codes) {
-    if (roles.value.includes('SUPER_ADMIN')) return true
+    if (roles.value.includes('super:admin')) return true
     return codes.some(c => permissions.value.includes(c))
   }
 

@@ -111,7 +111,7 @@ public class ReaderAccountService {
 
         // 自动分配读者角色
         SysRole readerRole = roleMapper.selectOne(
-            new LambdaQueryWrapper<SysRole>().eq(SysRole::getCode, "READER"));
+            new LambdaQueryWrapper<SysRole>().eq(SysRole::getCode, "reader"));
         if (readerRole != null) {
             SysUserRole ur = new SysUserRole();
             ur.setUserType("reader");

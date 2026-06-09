@@ -177,8 +177,8 @@ async function handleSaveRoles() {
 }
 
 function getRoleTagType(code) {
-  if (code === 'SUPER_ADMIN') return 'danger'
-  if (code === 'ADMIN') return 'warning'
+  if (code === 'super:admin') return 'danger'
+  if (code === 'admin') return 'warning'
   return ''
 }
 </script>

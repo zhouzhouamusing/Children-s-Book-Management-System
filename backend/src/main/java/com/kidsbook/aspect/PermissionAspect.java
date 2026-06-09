@@ -40,7 +40,7 @@ public class PermissionAspect {
 
         // 检查是否是超级管理员
         List<String> roleCodes = permissionCacheService.getRoleCodes(userType, userId);
-        if (roleCodes.contains("SUPER_ADMIN")) {
+        if (roleCodes.contains("super:admin")) {
             return joinPoint.proceed();
         }
 

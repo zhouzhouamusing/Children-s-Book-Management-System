@@ -415,21 +415,21 @@ public class DataInitializer implements CommandLineRunner {
 
         // 创建角色
         SysRole superAdmin = new SysRole();
-        superAdmin.setCode("SUPER_ADMIN");
+        superAdmin.setCode("super:admin");
         superAdmin.setName("超级管理员");
         superAdmin.setDescription("拥有系统全部权限");
         superAdmin.setStatus(1);
         roleMapper.insert(superAdmin);
 
         SysRole adminRole = new SysRole();
-        adminRole.setCode("ADMIN");
+        adminRole.setCode("admin");
         adminRole.setName("管理员");
         adminRole.setDescription("拥有业务管理权限，无系统管理权限");
         adminRole.setStatus(1);
         roleMapper.insert(adminRole);
 
         SysRole readerRole = new SysRole();
-        readerRole.setCode("READER");
+        readerRole.setCode("reader");
         readerRole.setName("读者");
         readerRole.setDescription("拥有读者中心所有功能权限");
         readerRole.setStatus(1);

@@ -181,7 +181,7 @@ const router = createRouter({
 function hasPermission(permCode) {
   try {
     const roles = JSON.parse(localStorage.getItem('roles') || '[]')
-    if (roles.includes('SUPER_ADMIN')) return true
+    if (roles.includes('super:admin')) return true
     const permissions = JSON.parse(localStorage.getItem('permissions') || '[]')
     return permissions.includes(permCode)
   } catch {

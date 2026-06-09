@@ -71,7 +71,7 @@ public class SysPermissionController {
         Long userId = jwtUtil.getUserIdFromToken(token);
 
         List<String> roleCodes = permissionCacheService.getRoleCodes(userType, userId);
-        boolean isSuperAdmin = roleCodes.contains("SUPER_ADMIN");
+        boolean isSuperAdmin = roleCodes.contains("super:admin");
 
         List<String> permissions = permissionCacheService.getPermissions(userType, userId);
         return Result.success(permissionService.getMenusByUserPermissions(permissions, isSuperAdmin));
