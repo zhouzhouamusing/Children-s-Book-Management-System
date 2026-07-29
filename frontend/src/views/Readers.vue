@@ -72,13 +72,9 @@
           <el-icon><Search /></el-icon>
           搜索
         </el-button>
-        <el-button v-permission="'READER_CREATE'" type="success" size="large" @click="handleAdd">
+        <el-button v-permission="'reader:add'" type="success" size="large" @click="handleAdd">
           <el-icon><Plus /></el-icon>
           添加读者
-        </el-button>
-        <el-button v-permission="'READER_EXPORT'" type="info" size="large" plain @click="handleExport">
-          <el-icon><Download /></el-icon>
-          导出数据
         </el-button>
       </div>
     </el-card>
@@ -136,19 +132,19 @@
             </div>
           </div>
           <div class="card-footer">
-            <el-button v-permission="'READER_READ'" class="card-btn records" size="small" @click="handleViewRecords(reader)">
+            <el-button class="card-btn records" size="small" @click="handleViewRecords(reader)">
               <el-icon><Document /></el-icon> 借阅记录
             </el-button>
-            <el-button v-permission="'READER_READ'" class="card-btn reading-stats" size="small" @click="handleViewReadingStats(reader)">
+            <el-button class="card-btn reading-stats" size="small" @click="handleViewReadingStats(reader)">
               <el-icon><TrendCharts /></el-icon> 阅读进度
             </el-button>
-            <el-button v-permission="'READER_UPDATE'" class="card-btn edit" size="small" @click="handleEdit(reader)">
+            <el-button v-permission="'reader:edit'" class="card-btn edit" size="small" @click="handleEdit(reader)">
               <el-icon><Edit /></el-icon> 编辑
             </el-button>
-            <el-button v-permission="'READER_UPDATE'" class="card-btn status-btn" size="small" @click="handleToggleStatus(reader)">
+            <el-button v-permission="'reader:status'" class="card-btn status-btn" size="small" @click="handleToggleStatus(reader)">
               <el-icon><Switch /></el-icon> {{ reader.status === 'normal' ? '暂停' : '恢复' }}
             </el-button>
-            <el-button v-permission="'READER_DELETE'" class="card-btn delete" size="small" @click="handleDelete(reader)">
+            <el-button v-permission="'reader:delete'" class="card-btn delete" size="small" @click="handleDelete(reader)">
               <el-icon><Delete /></el-icon>
             </el-button>
           </div>
@@ -156,7 +152,7 @@
       </transition-group>
 
       <el-empty v-if="!loading && readerList.length === 0" description="暂无读者数据，点击上方按钮添加第一位小读者吧~">
-        <el-button v-permission="'READER_CREATE'" type="primary" @click="handleAdd">添加读者</el-button>
+        <el-button v-permission="'reader:add'" type="primary" @click="handleAdd">添加读者</el-button>
       </el-empty>
     </div>
 
@@ -246,7 +242,7 @@
       </el-form>
       <template #footer>
         <el-button @click="dialogVisible = false">取消</el-button>
-        <el-button v-permission="['READER_CREATE', 'READER_UPDATE']" type="primary" :loading="submitLoading" @click="handleSubmit">
+        <el-button type="primary" :loading="submitLoading" @click="handleSubmit">
           {{ submitLoading ? '保存中...' : '确认保存' }}
         </el-button>
       </template>
@@ -417,10 +413,7 @@
 <script setup>
 import { ref, reactive, onMounted, computed } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import { usePermission } from '@/composables/usePermission'
 import { getReaders, addReader, updateReader, deleteReader, getReaderBorrowRecords, updateReaderStatus, getReaderReadingStatistics, getReaderReadingProgress } from '@/api'
-
-const { checkWithFeedback } = usePermission()
 
 const loading = ref(false)
 const submitLoading = ref(false)
@@ -528,21 +521,18 @@ const resetForm = () => {
 }
 
 const handleAdd = () => {
-  if (!checkWithFeedback('READER_CREATE')) return
   isEdit.value = false
   resetForm()
   dialogVisible.value = true
 }
 
 const handleEdit = (reader) => {
-  if (!checkWithFeedback('READER_UPDATE')) return
   isEdit.value = true
   Object.assign(form, { ...reader })
   dialogVisible.value = true
 }
 
 const handleSubmit = async () => {
-  if (!checkWithFeedback(isEdit.value ? 'READER_UPDATE' : 'READER_CREATE')) return
   const valid = await formRef.value.validate().catch(() => false)
   if (!valid) return
 
@@ -565,7 +555,6 @@ const handleSubmit = async () => {
 }
 
 const handleToggleStatus = (reader) => {
-  if (!checkWithFeedback('READER_UPDATE')) return
   const newStatus = reader.status === 'normal' ? 'suspended' : 'normal'
   const actionText = newStatus === 'suspended' ? '暂停借阅' : '恢复借阅'
 
@@ -589,7 +578,6 @@ const handleToggleStatus = (reader) => {
 }
 
 const handleDelete = (reader) => {
-  if (!checkWithFeedback('READER_DELETE')) return
   ElMessageBox.confirm(
     `确定要删除读者"${reader.name}"的信息吗？此操作不可恢复。`,
     '删除确认',
@@ -661,31 +649,6 @@ const formatReadingTime = (minutes) => {
   const h = Math.floor(minutes / 60)
   const m = minutes % 60
   return m > 0 ? `${h}h${m}m` : `${h}小时`
-}
-
-const handleExport = async () => {
-  if (!checkWithFeedback('READER_EXPORT')) return
-  try {
-    const res = await getReaders({ page: 1, size: 10000, keyword: searchKeyword.value, status: searchStatus.value, gender: searchGender.value })
-    const readers = res.data?.records || res.data || []
-    if (readers.length === 0) {
-      ElMessage.warning('暂无数据可导出')
-      return
-    }
-    const headers = ['姓名', '年龄', '性别', '家长电话', '借阅次数', '状态']
-    const rows = readers.map(r => [r.name, r.age, r.gender === 'male' ? '男' : '女', r.parentPhone, r.borrowCount || 0, r.status === 'normal' ? '正常' : '暂停'])
-    const csv = [headers.join(','), ...rows.map(r => r.join(','))].join('\n')
-    const blob = new Blob(['﻿' + csv], { type: 'text/csv;charset=utf-8;' })
-    const url = URL.createObjectURL(blob)
-    const a = document.createElement('a')
-    a.href = url
-    a.download = `读者列表_${new Date().toLocaleDateString()}.csv`
-    a.click()
-    URL.revokeObjectURL(url)
-    ElMessage.success('导出成功')
-  } catch (e) {
-    // handled by interceptor
-  }
 }
 
 onMounted(() => {
@@ -964,15 +927,15 @@ onMounted(() => {
 }
 
 .card-btn.edit {
-  background: linear-gradient(135deg, var(--btn-edit-from), var(--btn-edit-to)) !important;
+  background: linear-gradient(135deg, #7C5CFC, #A78BFA) !important;
   border: none !important;
   color: #fff !important;
   font-size: 12px;
 }
 
 .card-btn.edit:hover {
-  background: linear-gradient(135deg, var(--btn-edit-to), var(--btn-edit-from)) !important;
-  box-shadow: 0 3px 8px rgba(167, 139, 250, 0.3);
+  background: linear-gradient(135deg, #6C4DE6, #7C5CFC) !important;
+  box-shadow: 0 3px 8px rgba(124, 92, 252, 0.4);
 }
 
 .card-btn.status-btn {
@@ -988,15 +951,15 @@ onMounted(() => {
 }
 
 .card-btn.delete {
-  background: linear-gradient(135deg, var(--btn-delete-from), var(--btn-delete-to)) !important;
+  background: linear-gradient(135deg, #FF6B81, #FF8A9E) !important;
   border: none !important;
   color: #fff !important;
   font-size: 12px;
 }
 
 .card-btn.delete:hover {
-  background: linear-gradient(135deg, var(--btn-delete-to), var(--btn-delete-from)) !important;
-  box-shadow: 0 3px 8px rgba(255, 179, 186, 0.4);
+  background: linear-gradient(135deg, #FF4757, #FF6B81) !important;
+  box-shadow: 0 3px 8px rgba(255, 107, 129, 0.4);
 }
 
 /* 弹窗样式 */

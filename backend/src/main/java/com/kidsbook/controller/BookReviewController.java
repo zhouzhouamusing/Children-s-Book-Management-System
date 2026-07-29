@@ -1,9 +1,7 @@
 package com.kidsbook.controller;
 
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
-import com.kidsbook.common.PageResult;
-import com.kidsbook.common.Permission;
-import com.kidsbook.common.RequirePermission;
+import com.kidsbook.annotation.RequirePermission;
 import com.kidsbook.common.Result;
 import com.kidsbook.dto.AdminReplyRequest;
 import com.kidsbook.entity.BookReview;
@@ -12,7 +10,8 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.List;
+import java.util.HashMap;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/api/reviews")
@@ -21,52 +20,43 @@ public class BookReviewController {
     private final BookReviewService bookReviewService;
 
     @GetMapping
-    @RequirePermission(Permission.REVIEW_READ)
-    public Result<PageResult<BookReview>> list(@RequestParam(defaultValue = "1") int page,
+    @RequirePermission("review:view")
+    public Result<?> list(@RequestParam(defaultValue = "1") int page,
                           @RequestParam(defaultValue = "10") int size,
                           @RequestParam(required = false) String status,
                           @RequestParam(required = false) Long bookId) {
         Page<BookReview> result = bookReviewService.adminListReviews(page, size, status, bookId);
-        return Result.success(PageResult.of(result));
+        Map<String, Object> data = new HashMap<>();
+        data.put("records", result.getRecords());
+        data.put("total", result.getTotal());
+        return Result.success(data);
     }
 
     @PutMapping("/{id}/approve")
-    @RequirePermission(Permission.REVIEW_UPDATE)
+    @RequirePermission("review:approve")
     public Result<?> approve(@PathVariable Long id) {
         bookReviewService.approveReview(id);
         return Result.success(null);
     }
 
     @PutMapping("/{id}/reject")
-    @RequirePermission(Permission.REVIEW_UPDATE)
+    @RequirePermission("review:reject")
     public Result<?> reject(@PathVariable Long id) {
         bookReviewService.rejectReview(id);
         return Result.success(null);
     }
 
     @PutMapping("/{id}/reply")
-    @RequirePermission(Permission.REVIEW_UPDATE)
+    @RequirePermission("review:reply")
     public Result<?> reply(@PathVariable Long id, @RequestBody @Valid AdminReplyRequest request) {
         bookReviewService.adminReply(id, request.getReply());
         return Result.success(null);
     }
 
     @DeleteMapping("/{id}")
-    @RequirePermission(Permission.REVIEW_DELETE)
+    @RequirePermission("review:delete")
     public Result<?> delete(@PathVariable Long id) {
         bookReviewService.adminDeleteReview(id);
-        return Result.success(null);
-    }
-
-    @DeleteMapping("/batch")
-    @RequirePermission(Permission.REVIEW_BATCH_DELETE)
-    public Result<?> batchDelete(@RequestBody List<Long> ids) {
-        if (ids == null || ids.isEmpty()) {
-            return Result.success(null);
-        }
-        for (Long id : ids) {
-            bookReviewService.adminDeleteReview(id);
-        }
         return Result.success(null);
     }
 }

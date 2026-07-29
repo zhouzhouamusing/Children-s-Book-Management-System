@@ -7,33 +7,16 @@
           <p>管理图书封面、PDF绘本等资源文件</p>
         </div>
         <div class="header-actions">
-          <el-select
-            v-model="uploadBookId"
-            placeholder="关联图书(可选)"
-            clearable
-            filterable
-            remote
-            :remote-method="searchBooks"
-            :loading="bookSearchLoading"
-            style="width: 200px; margin-right: 12px;"
-          >
-            <el-option
-              v-for="book in bookOptions"
-              :key="book.id"
-              :label="book.title"
-              :value="book.id"
-            />
-          </el-select>
           <el-upload
             :action="'/api/files/upload'"
             :headers="uploadHeaders"
-            :data="uploadData"
+            :data="{ fileType: uploadType }"
             :show-file-list="false"
             :on-success="handleUploadSuccess"
             :before-upload="beforeUpload"
             multiple
           >
-            <el-button v-permission="'FILE_CREATE'" type="primary" class="upload-btn">
+            <el-button v-permission="'resource:upload'" type="primary" class="upload-btn">
               <el-icon><Upload /></el-icon>
               上传资源
             </el-button>
@@ -62,7 +45,7 @@
           @clear="fetchResources"
           @keyup.enter="fetchResources"
         />
-        <el-button v-permission="'FILE_READ'" @click="fetchResources">
+        <el-button @click="fetchResources">
           <el-icon><Search /></el-icon>
           筛选
         </el-button>
@@ -104,21 +87,19 @@
             {{ formatSize(row.fileSize) }}
           </template>
         </el-table-column>
-        <el-table-column prop="bookId" label="关联图书" width="140">
+        <el-table-column prop="bookId" label="关联图书" width="100">
           <template #default="{ row }">
-            <span v-if="row.bookId" class="book-link">ID: {{ row.bookId }}</span>
-            <el-button v-else v-permission="'FILE_CREATE'" size="small" type="warning" plain @click="openLinkDialog(row)">
-              关联图书
-            </el-button>
+            <span v-if="row.bookId">ID: {{ row.bookId }}</span>
+            <span v-else class="text-muted">未关联</span>
           </template>
         </el-table-column>
         <el-table-column prop="createTime" label="上传时间" width="170" />
         <el-table-column label="操作" width="140" fixed="right">
           <template #default="{ row }">
-            <el-button v-permission="'FILE_READ'" size="small" type="primary" plain @click="handlePreview(row)">
+            <el-button size="small" type="primary" plain @click="handlePreview(row)">
               预览
             </el-button>
-            <el-button v-permission="'FILE_DELETE'" size="small" type="danger" plain @click="handleDelete(row)">
+            <el-button v-permission="'resource:delete'" size="small" type="danger" plain @click="handleDelete(row)">
               删除
             </el-button>
           </template>
@@ -155,36 +136,9 @@
         ></iframe>
         <div v-else class="preview-placeholder">
           <p>📎 {{ previewResource?.originalName }}</p>
-          <el-button v-permission="'FILE_READ'" type="primary" @click="downloadFile">下载文件</el-button>
+          <el-button type="primary" @click="downloadFile">下载文件</el-button>
         </div>
       </div>
-    </el-dialog>
-
-    <!-- 关联图书弹窗 -->
-    <el-dialog v-model="linkDialogVisible" title="关联图书" width="420px" class="link-dialog">
-      <div class="link-form">
-        <p class="link-hint">将资源「{{ linkResource?.originalName }}」关联到图书：</p>
-        <el-select
-          v-model="linkBookId"
-          placeholder="搜索并选择图书"
-          filterable
-          remote
-          :remote-method="searchBooks"
-          :loading="bookSearchLoading"
-          style="width: 100%;"
-        >
-          <el-option
-            v-for="book in bookOptions"
-            :key="book.id"
-            :label="book.title + ' - ' + book.author"
-            :value="book.id"
-          />
-        </el-select>
-      </div>
-      <template #footer>
-        <el-button @click="linkDialogVisible = false">取消</el-button>
-        <el-button v-permission="'FILE_CREATE'" type="primary" :disabled="!linkBookId" @click="confirmLink">确认关联</el-button>
-      </template>
     </el-dialog>
   </div>
 </template>
@@ -192,9 +146,7 @@
 <script setup>
 import { ref, computed, onMounted } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import { getFileList, deleteFile, getBooks } from '@/api'
-import { usePermission } from '@/composables/usePermission'
-const { checkWithFeedback } = usePermission()
+import { getFileList, deleteFile } from '@/api'
 
 const loading = ref(false)
 const resources = ref([])
@@ -204,68 +156,12 @@ const total = ref(0)
 const filterType = ref('')
 const filterBookId = ref('')
 const uploadType = ref('cover')
-const uploadBookId = ref(null)
 const previewVisible = ref(false)
 const previewResource = ref(null)
-
-const bookOptions = ref([])
-const bookSearchLoading = ref(false)
-
-const linkDialogVisible = ref(false)
-const linkResource = ref(null)
-const linkBookId = ref(null)
 
 const uploadHeaders = computed(() => ({
   Authorization: 'Bearer ' + localStorage.getItem('token')
 }))
-
-const uploadData = computed(() => {
-  const data = { fileType: uploadType.value }
-  if (uploadBookId.value) {
-    data.bookId = uploadBookId.value
-  }
-  return data
-})
-
-const searchBooks = async (query) => {
-  if (!query) {
-    bookOptions.value = []
-    return
-  }
-  bookSearchLoading.value = true
-  try {
-    const res = await getBooks({ page: 1, size: 20, keyword: query })
-    bookOptions.value = res.data.records || []
-  } catch (e) {
-    bookOptions.value = []
-  } finally {
-    bookSearchLoading.value = false
-  }
-}
-
-const openLinkDialog = (row) => {
-  linkResource.value = row
-  linkBookId.value = null
-  linkDialogVisible.value = true
-}
-
-const confirmLink = async () => {
-  if (!checkWithFeedback('FILE_CREATE')) return
-  if (!linkResource.value || !linkBookId.value) return
-  try {
-    await linkResourceToBook(linkResource.value.id, linkBookId.value)
-    ElMessage.success('关联成功')
-    linkDialogVisible.value = false
-    fetchResources()
-  } catch (e) {
-    ElMessage.error('关联失败')
-  }
-}
-
-const linkResourceToBook = async (resourceId, bookId) => {
-  const { default: request } = await import('@/utils/request')
-  return request.put(`/files/${resourceId}/link`, { bookId })
-}
 
 const fetchResources = async () => {
   loading.value = true
@@ -300,7 +196,6 @@ const downloadFile = () => {
 }
 
 const handleDelete = (row) => {
-  if (!checkWithFeedback('FILE_DELETE')) return
   ElMessageBox.confirm(
     `确定删除文件「${row.originalName}」吗？`,
     '删除确认',
@@ -315,7 +210,6 @@ const handleDelete = (row) => {
 }
 
 const handleUploadSuccess = (response) => {
-  if (!checkWithFeedback('FILE_CREATE')) return
   if (response.code === 200) {
     ElMessage.success('上传成功')
     fetchResources()
@@ -325,7 +219,6 @@ const handleUploadSuccess = (response) => {
 }
 
 const beforeUpload = (file) => {
-  if (!checkWithFeedback('FILE_CREATE')) return false
   const isLt50M = file.size / 1024 / 1024 < 50
   if (!isLt50M) {
     ElMessage.error('文件大小不能超过50MB')
@@ -369,7 +262,7 @@ onMounted(() => {
 }
 
 .upload-btn {
-  background: linear-gradient(135deg, var(--btn-upload-from), var(--btn-upload-to)) !important;
+  background: linear-gradient(135deg, #7C5CFC, #A78BFA) !important;
   border: none !important;
   color: #fff !important;
   padding: 12px 24px !important;
@@ -433,32 +326,6 @@ onMounted(() => {
 .text-muted {
   color: #999;
   font-size: 12px;
-}
-
-.book-link {
-  color: var(--purple, #7C5CFC);
-  font-weight: 500;
-  font-size: 13px;
-}
-
-.link-dialog :deep(.el-dialog__header) {
-  background: linear-gradient(135deg, var(--yellow-warm, #FFF3CD), var(--green-light, #D4F5E9));
-  padding: 16px 20px;
-}
-
-.link-form {
-  padding: 8px 0;
-}
-
-.link-hint {
-  margin: 0 0 16px;
-  font-size: 14px;
-  color: var(--text-secondary, #666);
-}
-
-.header-actions {
-  display: flex;
-  align-items: center;
 }
 
 .pagination-wrapper {

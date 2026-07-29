@@ -1,14 +1,8 @@
 package com.kidsbook.config;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
-import com.kidsbook.common.Permission;
-import com.kidsbook.common.RolePermissions;
-import com.kidsbook.entity.Admin;
-import com.kidsbook.entity.Reader;
-import com.kidsbook.entity.ReaderAccount;
-import com.kidsbook.mapper.AdminMapper;
-import com.kidsbook.mapper.ReaderAccountMapper;
-import com.kidsbook.mapper.ReaderMapper;
+import com.kidsbook.entity.*;
+import com.kidsbook.mapper.*;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.CommandLineRunner;
@@ -16,7 +10,7 @@ import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
 
-import java.util.*;
+import java.util.List;
 
 @Slf4j
 @Component
@@ -27,12 +21,17 @@ public class DataInitializer implements CommandLineRunner {
     private final ReaderMapper readerMapper;
     private final PasswordEncoder passwordEncoder;
     private final JdbcTemplate jdbcTemplate;
+    private final SysPermissionMapper permissionMapper;
+    private final SysRoleMapper roleMapper;
+    private final SysRolePermissionMapper rolePermissionMapper;
+    private final SysUserRoleMapper userRoleMapper;
 
     @Override
     public void run(String... args) {
         try {
             initTables();
             initRbacTables();
+            initForeignKeys();
             initAdmin();
             initReaderAccount();
             initRbacData();
@@ -42,130 +41,6 @@ public class DataInitializer implements CommandLineRunner {
     }
 
     private void initTables() {
-        try {
-            jdbcTemplate.execute("CREATE TABLE IF NOT EXISTS `admin` (" +
-                "`id` BIGINT NOT NULL AUTO_INCREMENT, " +
-                "`username` VARCHAR(50) NOT NULL, " +
-                "`password` VARCHAR(200) NOT NULL, " +
-                "`nickname` VARCHAR(50) DEFAULT NULL, " +
-                "`email` VARCHAR(100) DEFAULT NULL, " +
-                "`avatar` VARCHAR(500) DEFAULT NULL, " +
-                "`create_time` DATETIME DEFAULT CURRENT_TIMESTAMP, " +
-                "`update_time` DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP, " +
-                "PRIMARY KEY (`id`), " +
-                "UNIQUE KEY `uk_admin_username` (`username`)" +
-                ") ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
-
-            jdbcTemplate.execute("CREATE TABLE IF NOT EXISTS `reader` (" +
-                "`id` BIGINT NOT NULL AUTO_INCREMENT, " +
-                "`name` VARCHAR(50) NOT NULL, " +
-                "`age` INT DEFAULT NULL, " +
-                "`gender` VARCHAR(10) DEFAULT NULL, " +
-                "`parent_name` VARCHAR(50) DEFAULT NULL, " +
-                "`parent_phone` VARCHAR(20) DEFAULT NULL, " +
-                "`status` VARCHAR(20) DEFAULT 'normal', " +
-                "`suspend_reason` VARCHAR(20) DEFAULT NULL, " +
-                "`borrow_count` INT DEFAULT 0, " +
-                "`overdue_count` INT DEFAULT 0, " +
-                "`points` INT DEFAULT 0, " +
-                "`total_reading_days` INT DEFAULT 0, " +
-                "`level` VARCHAR(30) DEFAULT NULL, " +
-                "`remark` TEXT, " +
-                "`create_time` DATETIME DEFAULT CURRENT_TIMESTAMP, " +
-                "`update_time` DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP, " +
-                "PRIMARY KEY (`id`)" +
-                ") ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
-
-            jdbcTemplate.execute("CREATE TABLE IF NOT EXISTS `reader_account` (" +
-                "`id` BIGINT NOT NULL AUTO_INCREMENT, " +
-                "`username` VARCHAR(50) NOT NULL, " +
-                "`password` VARCHAR(200) NOT NULL, " +
-                "`reader_id` BIGINT NOT NULL, " +
-                "`email` VARCHAR(100) DEFAULT NULL, " +
-                "`status` VARCHAR(20) DEFAULT 'active', " +
-                "`create_time` DATETIME DEFAULT CURRENT_TIMESTAMP, " +
-                "`update_time` DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP, " +
-                "PRIMARY KEY (`id`), " +
-                "UNIQUE KEY `uk_ra_username` (`username`), " +
-                "KEY `idx_ra_reader_id` (`reader_id`)" +
-                ") ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
-
-            jdbcTemplate.execute("CREATE TABLE IF NOT EXISTS `book` (" +
-                "`id` BIGINT NOT NULL AUTO_INCREMENT, " +
-                "`title` VARCHAR(200) NOT NULL, " +
-                "`author` VARCHAR(100) DEFAULT NULL, " +
-                "`publisher` VARCHAR(100) DEFAULT NULL, " +
-                "`isbn` VARCHAR(30) DEFAULT NULL, " +
-                "`category` VARCHAR(50) DEFAULT NULL, " +
-                "`age_range` VARCHAR(20) DEFAULT NULL, " +
-                "`price` DECIMAL(10,2) DEFAULT NULL, " +
-                "`stock` INT DEFAULT 0, " +
-                "`cover_url` VARCHAR(500) DEFAULT NULL, " +
-                "`description` TEXT, " +
-                "`status` INT DEFAULT 1, " +
-                "`avg_rating` DECIMAL(2,1) DEFAULT 0.0, " +
-                "`review_count` INT DEFAULT 0, " +
-                "`create_time` DATETIME DEFAULT CURRENT_TIMESTAMP, " +
-                "`update_time` DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP, " +
-                "PRIMARY KEY (`id`), " +
-                "KEY `idx_book_category` (`category`)" +
-                ") ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
-
-            jdbcTemplate.execute("CREATE TABLE IF NOT EXISTS `borrow_record` (" +
-                "`id` BIGINT NOT NULL AUTO_INCREMENT, " +
-                "`reader_id` BIGINT NOT NULL, " +
-                "`book_id` BIGINT NOT NULL, " +
-                "`book_title` VARCHAR(200) DEFAULT NULL, " +
-                "`borrow_date` DATE NOT NULL, " +
-                "`due_date` DATE NOT NULL, " +
-                "`return_date` DATE DEFAULT NULL, " +
-                "`status` VARCHAR(20) NOT NULL DEFAULT 'borrowing', " +
-                "`create_time` DATETIME DEFAULT CURRENT_TIMESTAMP, " +
-                "`update_time` DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP, " +
-                "PRIMARY KEY (`id`), " +
-                "KEY `idx_br_reader_id` (`reader_id`), " +
-                "KEY `idx_br_book_id` (`book_id`), " +
-                "KEY `idx_br_status` (`status`)" +
-                ") ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
-
-            jdbcTemplate.execute("CREATE TABLE IF NOT EXISTS `book_reservation` (" +
-                "`id` BIGINT NOT NULL AUTO_INCREMENT, " +
-                "`reader_id` BIGINT NOT NULL, " +
-                "`book_id` BIGINT NOT NULL, " +
-                "`book_title` VARCHAR(200) DEFAULT NULL, " +
-                "`reserve_date` DATETIME NOT NULL, " +
-                "`expire_date` DATETIME NOT NULL, " +
-                "`status` VARCHAR(20) DEFAULT 'pending', " +
-                "`remark` VARCHAR(200) DEFAULT NULL, " +
-                "`create_time` DATETIME DEFAULT CURRENT_TIMESTAMP, " +
-                "`update_time` DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP, " +
-                "PRIMARY KEY (`id`), " +
-                "KEY `idx_bres_reader_id` (`reader_id`), " +
-                "KEY `idx_bres_book_id` (`book_id`), " +
-                "KEY `idx_bres_status` (`status`)" +
-                ") ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
-
-            jdbcTemplate.execute("CREATE TABLE IF NOT EXISTS `category` (" +
-                "`id` BIGINT NOT NULL AUTO_INCREMENT, " +
-                "`name` VARCHAR(50) NOT NULL, " +
-                "`icon` VARCHAR(50) DEFAULT NULL, " +
-                "`color` VARCHAR(20) DEFAULT NULL, " +
-                "`age_range_min` INT DEFAULT NULL, " +
-                "`age_range_max` INT DEFAULT NULL, " +
-                "`sort_order` INT DEFAULT 0, " +
-                "`description` VARCHAR(200) DEFAULT NULL, " +
-                "`status` INT DEFAULT 1, " +
-                "`create_time` DATETIME DEFAULT CURRENT_TIMESTAMP, " +
-                "`update_time` DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP, " +
-                "PRIMARY KEY (`id`), " +
-                "UNIQUE KEY `uk_category_name` (`name`)" +
-                ") ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
-
-            log.info("=== 基础数据表已就绪 ===");
-        } catch (Exception e) {
-            log.warn("创建基础表时出现警告: {}", e.getMessage());
-        }
-
         try {
             jdbcTemplate.execute("CREATE TABLE IF NOT EXISTS `reading_progress` (" +
                 "`id` BIGINT AUTO_INCREMENT PRIMARY KEY, " +
@@ -250,121 +125,51 @@ public class DataInitializer implements CommandLineRunner {
         }
 
         try {
-            jdbcTemplate.execute("CREATE TABLE IF NOT EXISTS `reader_points_log` (" +
-                "`id` BIGINT NOT NULL AUTO_INCREMENT, " +
-                "`reader_id` BIGINT NOT NULL, " +
-                "`points` INT NOT NULL, " +
-                "`type` VARCHAR(30) NOT NULL, " +
-                "`description` VARCHAR(200) DEFAULT NULL, " +
-                "`borrow_record_id` BIGINT DEFAULT NULL, " +
-                "`create_time` DATETIME DEFAULT CURRENT_TIMESTAMP, " +
-                "PRIMARY KEY (`id`), " +
-                "KEY `idx_rpl_reader_id` (`reader_id`)" +
-                ") ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
-
-            jdbcTemplate.execute("CREATE TABLE IF NOT EXISTS `reader_monthly_stats` (" +
-                "`id` BIGINT NOT NULL AUTO_INCREMENT, " +
-                "`reader_id` BIGINT NOT NULL, " +
-                "`year_month` VARCHAR(7) NOT NULL, " +
-                "`borrow_count` INT DEFAULT 0, " +
-                "`return_count` INT DEFAULT 0, " +
-                "`reading_days` INT DEFAULT 0, " +
-                "`points_earned` INT DEFAULT 0, " +
-                "`create_time` DATETIME DEFAULT CURRENT_TIMESTAMP, " +
-                "`update_time` DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP, " +
-                "PRIMARY KEY (`id`), " +
-                "UNIQUE KEY `uk_reader_month` (`reader_id`, `year_month`)" +
-                ") ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
-
-            jdbcTemplate.execute("CREATE TABLE IF NOT EXISTS `audit_log` (" +
-                "`id` BIGINT NOT NULL AUTO_INCREMENT, " +
-                "`operator_username` VARCHAR(50) DEFAULT NULL, " +
-                "`operator_role` VARCHAR(20) DEFAULT NULL, " +
-                "`action` VARCHAR(50) NOT NULL, " +
-                "`target_type` VARCHAR(50) DEFAULT NULL, " +
-                "`target_id` BIGINT DEFAULT NULL, " +
-                "`detail` VARCHAR(500) DEFAULT NULL, " +
-                "`ip_address` VARCHAR(50) DEFAULT NULL, " +
-                "`create_time` DATETIME DEFAULT CURRENT_TIMESTAMP, " +
-                "PRIMARY KEY (`id`), " +
-                "KEY `idx_al_action` (`action`), " +
-                "KEY `idx_al_create_time` (`create_time`)" +
-                ") ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
-
-            jdbcTemplate.execute("CREATE TABLE IF NOT EXISTS `admin_application` (" +
-                "`id` BIGINT NOT NULL AUTO_INCREMENT, " +
+            jdbcTemplate.execute("CREATE TABLE IF NOT EXISTS `reader_appeal` (" +
+                "`id` BIGINT AUTO_INCREMENT PRIMARY KEY, " +
                 "`reader_id` BIGINT NOT NULL, " +
                 "`reader_name` VARCHAR(50) DEFAULT NULL, " +
-                "`username` VARCHAR(50) DEFAULT NULL, " +
-                "`reason` TEXT, " +
-                "`status` VARCHAR(20) NOT NULL DEFAULT 'pending', " +
-                "`reject_reason` VARCHAR(200) DEFAULT NULL, " +
-                "`approved_by` VARCHAR(50) DEFAULT NULL, " +
-                "`approved_time` DATETIME DEFAULT NULL, " +
+                "`type` VARCHAR(30) NOT NULL COMMENT '申诉类型:borrow_dispute/account_suspended/review_rejected/other', " +
+                "`related_id` BIGINT DEFAULT NULL COMMENT '关联记录ID', " +
+                "`title` VARCHAR(200) NOT NULL, " +
+                "`content` TEXT NOT NULL, " +
+                "`evidence_urls` VARCHAR(1000) DEFAULT NULL COMMENT '证据文件路径', " +
+                "`status` VARCHAR(20) NOT NULL DEFAULT 'pending' COMMENT 'pending/processing/resolved/rejected', " +
+                "`admin_id` BIGINT DEFAULT NULL, " +
+                "`admin_reply` TEXT DEFAULT NULL, " +
+                "`resolve_time` DATETIME DEFAULT NULL, " +
                 "`create_time` DATETIME DEFAULT CURRENT_TIMESTAMP, " +
                 "`update_time` DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP, " +
-                "PRIMARY KEY (`id`), " +
-                "KEY `idx_aa_reader_id` (`reader_id`)" +
-                ") ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
-
-            try {
-                jdbcTemplate.execute("ALTER TABLE `reader` ADD COLUMN `suspend_reason` VARCHAR(20) DEFAULT NULL");
-            } catch (Exception ignored) {}
-            try {
-                jdbcTemplate.execute("ALTER TABLE `reader_account` ADD COLUMN `email` VARCHAR(100) DEFAULT NULL");
-            } catch (Exception ignored) {}
-
-            log.info("=== 积分、审计、申请相关表已就绪 ===");
-        } catch (Exception e) {
-            log.warn("创建附加表时出现警告: {}", e.getMessage());
-        }
-
-        try {
-            jdbcTemplate.execute("CREATE TABLE IF NOT EXISTS `appeal` (" +
-                "`id` BIGINT NOT NULL AUTO_INCREMENT, " +
-                "`reader_id` BIGINT NOT NULL, " +
-                "`reader_name` VARCHAR(50) DEFAULT NULL, " +
-                "`type` VARCHAR(30) NOT NULL DEFAULT 'suspension', " +
-                "`reason` TEXT NOT NULL, " +
-                "`evidence` VARCHAR(500) DEFAULT NULL, " +
-                "`status` VARCHAR(20) NOT NULL DEFAULT 'pending', " +
-                "`admin_feedback` TEXT DEFAULT NULL, " +
-                "`reviewed_by` VARCHAR(50) DEFAULT NULL, " +
-                "`reviewed_time` DATETIME DEFAULT NULL, " +
-                "`create_time` DATETIME DEFAULT CURRENT_TIMESTAMP, " +
-                "`update_time` DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP, " +
-                "PRIMARY KEY (`id`), " +
-                "KEY `idx_appeal_reader_id` (`reader_id`), " +
-                "KEY `idx_appeal_status` (`status`)" +
-                ") ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
-            log.info("=== 申诉表已就绪 ===");
+                "INDEX `idx_appeal_reader_id` (`reader_id`), " +
+                "INDEX `idx_appeal_status` (`status`), " +
+                "INDEX `idx_appeal_type` (`type`)" +
+                ") ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='读者申诉表'");
+            log.info("=== 读者申诉表已就绪 ===");
         } catch (Exception e) {
             log.warn("创建申诉表时出现警告: {}", e.getMessage());
         }
     }
 
     private void initAdmin() {
+        String encodedPassword = passwordEncoder.encode("admin123");
         Admin admin = adminMapper.selectOne(
             new LambdaQueryWrapper<Admin>().eq(Admin::getUsername, "admin")
         );
         if (admin == null) {
             admin = new Admin();
             admin.setUsername("admin");
-            admin.setPassword(passwordEncoder.encode("admin123"));
+            admin.setPassword(encodedPassword);
             admin.setNickname("超级管理员");
             admin.setEmail("admin@kidsbook.com");
             adminMapper.insert(admin);
             log.info("=== 初始管理员账号已创建 === 用户名: admin, 密码: admin123");
         } else {
-            boolean updated = false;
+            admin.setPassword(encodedPassword);
             if (admin.getEmail() == null) {
                 admin.setEmail("admin@kidsbook.com");
-                updated = true;
             }
-            if (updated) {
-                adminMapper.updateById(admin);
-            }
-            log.info("=== 默认管理员已存在，跳过密码初始化 ===");
+            adminMapper.updateById(admin);
+            log.info("=== 管理员密码已重置 === 用户名: admin, 密码: admin123");
         }
     }
 
@@ -401,369 +206,314 @@ public class DataInitializer implements CommandLineRunner {
             readerAccountMapper.insert(account);
             log.info("=== 默认读者账号已创建 === 用户名: xiaoming, 密码: 123456");
         } else {
-            log.info("=== 默认读者账号已存在，跳过密码初始化 ===");
+            account.setPassword(passwordEncoder.encode("123456"));
+            account.setReaderId(reader.getId());
+            account.setStatus("active");
+            readerAccountMapper.updateById(account);
+            log.info("=== 读者账号密码已重置 === 用户名: xiaoming, 密码: 123456");
         }
     }
 
     private void initRbacTables() {
         try {
+            // 创建表（如果不存在）
             jdbcTemplate.execute("CREATE TABLE IF NOT EXISTS `sys_permission` (" +
-                "`id` BIGINT NOT NULL AUTO_INCREMENT, " +
-                "`code` VARCHAR(60) NOT NULL, " +
-                "`name` VARCHAR(80) NOT NULL, " +
-                "`module` VARCHAR(40) DEFAULT NULL, " +
-                "`description` VARCHAR(200) DEFAULT NULL, " +
-                "`type` VARCHAR(20) DEFAULT 'button', " +
-                "`create_time` DATETIME DEFAULT CURRENT_TIMESTAMP, " +
-                "PRIMARY KEY (`id`), " +
-                "UNIQUE KEY `uk_perm_code` (`code`)" +
-                ") ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
-
-            try {
-                jdbcTemplate.execute("ALTER TABLE `sys_permission` ADD COLUMN `type` VARCHAR(20) DEFAULT 'button'");
-            } catch (Exception ignored) {}
-
-            jdbcTemplate.execute("CREATE TABLE IF NOT EXISTS `sys_role` (" +
-                "`id` BIGINT NOT NULL AUTO_INCREMENT, " +
-                "`code` VARCHAR(40) NOT NULL, " +
-                "`name` VARCHAR(60) NOT NULL, " +
-                "`level` INT NOT NULL DEFAULT 0, " +
-                "`description` VARCHAR(200) DEFAULT NULL, " +
-                "`status` INT DEFAULT 1, " +
+                "`id` BIGINT AUTO_INCREMENT PRIMARY KEY, " +
+                "`code` VARCHAR(100) NOT NULL COMMENT '权限编码', " +
+                "`name` VARCHAR(100) NOT NULL COMMENT '权限名称', " +
+                "`type` VARCHAR(20) NOT NULL DEFAULT 'button' COMMENT '类型:menu/button', " +
+                "`parent_id` BIGINT DEFAULT 0 COMMENT '父权限ID', " +
+                "`path` VARCHAR(200) DEFAULT NULL COMMENT '前端路由路径', " +
+                "`icon` VARCHAR(50) DEFAULT NULL COMMENT '菜单图标', " +
+                "`sort_order` INT DEFAULT 0 COMMENT '排序', " +
+                "`status` TINYINT DEFAULT 1 COMMENT '1启用0禁用', " +
                 "`create_time` DATETIME DEFAULT CURRENT_TIMESTAMP, " +
                 "`update_time` DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP, " +
-                "PRIMARY KEY (`id`), " +
-                "UNIQUE KEY `uk_role_code` (`code`)" +
-                ") ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
+                "UNIQUE KEY `uk_code` (`code`)" +
+                ") ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='系统权限表'");
+
+            // 确保旧表有所有必须的列（兼容已存在但结构不完整的表）
+            safeAddColumn("sys_permission", "parent_id", "BIGINT DEFAULT 0 COMMENT '父权限ID'");
+            safeAddColumn("sys_permission", "path", "VARCHAR(200) DEFAULT NULL COMMENT '前端路由路径'");
+            safeAddColumn("sys_permission", "icon", "VARCHAR(50) DEFAULT NULL COMMENT '菜单图标'");
+            safeAddColumn("sys_permission", "sort_order", "INT DEFAULT 0 COMMENT '排序'");
+            safeAddColumn("sys_permission", "type", "VARCHAR(20) NOT NULL DEFAULT 'button' COMMENT '类型:menu/button'");
+            safeAddColumn("sys_permission", "status", "TINYINT DEFAULT 1 COMMENT '1启用0禁用'");
+            safeAddColumn("sys_permission", "create_time", "DATETIME DEFAULT CURRENT_TIMESTAMP");
+            safeAddColumn("sys_permission", "update_time", "DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP");
+
+            jdbcTemplate.execute("CREATE TABLE IF NOT EXISTS `sys_role` (" +
+                "`id` BIGINT AUTO_INCREMENT PRIMARY KEY, " +
+                "`code` VARCHAR(50) NOT NULL COMMENT '角色编码', " +
+                "`name` VARCHAR(50) NOT NULL COMMENT '角色名称', " +
+                "`description` VARCHAR(200) DEFAULT NULL COMMENT '描述', " +
+                "`status` TINYINT DEFAULT 1 COMMENT '1启用0禁用', " +
+                "`create_time` DATETIME DEFAULT CURRENT_TIMESTAMP, " +
+                "`update_time` DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP, " +
+                "UNIQUE KEY `uk_code` (`code`)" +
+                ") ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='系统角色表'");
 
             jdbcTemplate.execute("CREATE TABLE IF NOT EXISTS `sys_role_permission` (" +
-                "`id` BIGINT NOT NULL AUTO_INCREMENT, " +
+                "`id` BIGINT AUTO_INCREMENT PRIMARY KEY, " +
                 "`role_id` BIGINT NOT NULL, " +
                 "`permission_id` BIGINT NOT NULL, " +
-                "`create_time` DATETIME DEFAULT CURRENT_TIMESTAMP, " +
-                "PRIMARY KEY (`id`), " +
                 "UNIQUE KEY `uk_role_perm` (`role_id`, `permission_id`), " +
-                "KEY `idx_rp_role_id` (`role_id`), " +
-                "KEY `idx_rp_perm_id` (`permission_id`)" +
-                ") ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
+                "KEY `idx_permission_id` (`permission_id`)" +
+                ") ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='角色-权限关联表'");
 
             jdbcTemplate.execute("CREATE TABLE IF NOT EXISTS `sys_user_role` (" +
-                "`id` BIGINT NOT NULL AUTO_INCREMENT, " +
-                "`user_type` VARCHAR(20) NOT NULL, " +
+                "`id` BIGINT AUTO_INCREMENT PRIMARY KEY, " +
+                "`user_type` VARCHAR(20) NOT NULL COMMENT '用户类型:admin/reader', " +
                 "`user_id` BIGINT NOT NULL, " +
                 "`role_id` BIGINT NOT NULL, " +
-                "`create_time` DATETIME DEFAULT CURRENT_TIMESTAMP, " +
-                "PRIMARY KEY (`id`), " +
                 "UNIQUE KEY `uk_user_role` (`user_type`, `user_id`, `role_id`), " +
-                "KEY `idx_ur_user` (`user_type`, `user_id`), " +
-                "KEY `idx_ur_role` (`role_id`)" +
-                ") ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
+                "KEY `idx_role_id` (`role_id`)" +
+                ") ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='用户-角色关联表'");
 
-            jdbcTemplate.execute("CREATE TABLE IF NOT EXISTS `sys_menu` (" +
-                "`id` BIGINT NOT NULL AUTO_INCREMENT, " +
-                "`parent_id` BIGINT DEFAULT 0, " +
-                "`name` VARCHAR(60) NOT NULL, " +
-                "`path` VARCHAR(200) DEFAULT NULL, " +
-                "`icon` VARCHAR(60) DEFAULT NULL, " +
-                "`sort_order` INT DEFAULT 0, " +
-                "`permission_code` VARCHAR(60) DEFAULT NULL, " +
-                "`type` INT DEFAULT 1, " +
-                "`status` INT DEFAULT 1, " +
-                "`create_time` DATETIME DEFAULT CURRENT_TIMESTAMP, " +
-                "PRIMARY KEY (`id`), " +
-                "KEY `idx_menu_parent` (`parent_id`)" +
-                ") ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
-
-            log.info("=== RBAC 权限管理表已就绪 ===");
+            log.info("=== RBAC权限表已就绪 ===");
         } catch (Exception e) {
-            log.warn("创建RBAC表时出现警告: {}", e.getMessage());
+            log.error("创建RBAC表失败: {}", e.getMessage(), e);
+        }
+    }
+
+    private void safeAddColumn(String table, String column, String definition) {
+        try {
+            jdbcTemplate.execute("ALTER TABLE `" + table + "` ADD COLUMN `" + column + "` " + definition);
+        } catch (Exception ignored) {
+            // 列已存在，忽略
+        }
+    }
+
+    private void initForeignKeys() {
+        safeAddForeignKey("sys_role_permission", "fk_srp_role", "role_id", "sys_role", "id", "CASCADE");
+        safeAddForeignKey("sys_role_permission", "fk_srp_perm", "permission_id", "sys_permission", "id", "CASCADE");
+        safeAddForeignKey("sys_user_role", "fk_sur_role", "role_id", "sys_role", "id", "CASCADE");
+        safeAddForeignKey("reader_account", "fk_ra_reader", "reader_id", "reader", "id", "CASCADE");
+        safeAddForeignKey("borrow_record", "fk_br_reader", "reader_id", "reader", "id", "RESTRICT");
+        safeAddForeignKey("book_review", "fk_brev_reader", "reader_id", "reader", "id", "CASCADE");
+        safeAddForeignKey("book_review", "fk_brev_book", "book_id", "book", "id", "CASCADE");
+        safeAddForeignKey("book_resource", "fk_bres_book", "book_id", "book", "id", "SET NULL");
+        safeAddForeignKey("reading_progress", "fk_rp_reader", "reader_id", "reader", "id", "CASCADE");
+        safeAddForeignKey("reading_progress", "fk_rp_book", "book_id", "book", "id", "CASCADE");
+        safeAddForeignKey("reading_note", "fk_rn_reader", "reader_id", "reader", "id", "CASCADE");
+        safeAddForeignKey("reading_note", "fk_rn_book", "book_id", "book", "id", "CASCADE");
+        safeAddForeignKey("admin_application", "fk_aa_reader", "reader_id", "reader", "id", "CASCADE");
+        safeAddForeignKey("reader_appeal", "fk_rap_reader", "reader_id", "reader", "id", "CASCADE");
+        log.info("=== 外键约束已就绪 ===");
+    }
+
+    private void safeAddForeignKey(String table, String fkName, String column, String refTable, String refColumn, String onDelete) {
+        try {
+            jdbcTemplate.execute("ALTER TABLE `" + table + "` ADD CONSTRAINT `" + fkName +
+                "` FOREIGN KEY (`" + column + "`) REFERENCES `" + refTable + "`(`" + refColumn + "`) ON DELETE " + onDelete);
+        } catch (Exception ignored) {
         }
     }
 
     private void initRbacData() {
         try {
-            Integer permCount = jdbcTemplate.queryForObject(
-                "SELECT COUNT(*) FROM sys_permission", Integer.class);
-
-            Map<String, String> permNames = new LinkedHashMap<>();
-            permNames.put("BOOK_CREATE", "创建图书");
-            permNames.put("BOOK_READ", "查看图书");
-            permNames.put("BOOK_UPDATE", "编辑图书");
-            permNames.put("BOOK_DELETE", "删除图书");
-            permNames.put("READER_CREATE", "创建读者");
-            permNames.put("READER_READ", "查看读者");
-            permNames.put("READER_UPDATE", "编辑读者");
-            permNames.put("READER_DELETE", "删除读者");
-            permNames.put("CATEGORY_CREATE", "创建分类");
-            permNames.put("CATEGORY_READ", "查看分类");
-            permNames.put("CATEGORY_UPDATE", "编辑分类");
-            permNames.put("CATEGORY_DELETE", "删除分类");
-            permNames.put("BORROW_CREATE", "创建借阅");
-            permNames.put("BORROW_READ", "查看借阅");
-            permNames.put("BORROW_UPDATE", "更新借阅");
-            permNames.put("RESERVATION_READ", "查看预约");
-            permNames.put("RESERVATION_UPDATE", "审批预约");
-            permNames.put("REVIEW_READ", "查看评论");
-            permNames.put("REVIEW_UPDATE", "审核评论");
-            permNames.put("REVIEW_DELETE", "删除评论");
-            permNames.put("FILE_CREATE", "上传文件");
-            permNames.put("FILE_READ", "查看文件");
-            permNames.put("FILE_DELETE", "删除文件");
-            permNames.put("DASHBOARD_READ", "查看仪表盘");
-            permNames.put("AUDIT_LOG_READ", "查看审计日志");
-            permNames.put("ADMIN_APPLICATION_REVIEW", "审批管理员申请");
-            permNames.put("READER_RESERVATION_CREATE", "读者创建预约");
-            permNames.put("READER_RESERVATION_READ", "读者查看预约");
-            permNames.put("READER_RESERVATION_CANCEL", "读者取消预约");
-            permNames.put("READER_REVIEW_CREATE", "读者创建评论");
-            permNames.put("READER_REVIEW_READ", "读者查看评论");
-            permNames.put("READER_REVIEW_UPDATE", "读者编辑评论");
-            permNames.put("READER_REVIEW_DELETE", "读者删除评论");
-            permNames.put("READING_PROGRESS_CREATE", "创建阅读进度");
-            permNames.put("READING_PROGRESS_READ", "查看阅读进度");
-            permNames.put("READING_PROGRESS_UPDATE", "更新阅读进度");
-            permNames.put("READING_PROGRESS_DELETE", "删除阅读进度");
-            permNames.put("ADMIN_APPLICATION_APPLY", "申请成为管理员");
-            permNames.put("ADMIN_APPLICATION_STATUS", "查看申请状态");
-            permNames.put("READER_PROFILE_READ", "查看个人中心");
-            permNames.put("READER_PROFILE_UPDATE", "编辑个人资料");
-            permNames.put("READER_BOOK_BROWSE", "浏览图书");
-            permNames.put("READER_CATEGORY_BROWSE", "浏览分类");
-            permNames.put("READER_BORROW_READ", "查看借阅记录");
-            permNames.put("READER_APPEAL_CREATE", "提交申诉");
-            permNames.put("READER_APPEAL_VIEW", "查看我的申诉");
-            permNames.put("APPEAL_READ", "查看申诉列表");
-            permNames.put("APPEAL_REVIEW", "审核申诉");
-            permNames.put("ROLE_MANAGE", "角色管理");
-            permNames.put("PERMISSION_MANAGE", "权限管理");
-            permNames.put("USER_ROLE_ASSIGN", "用户角色分配");
-
-            Map<String, String> moduleMap = new HashMap<>();
-            moduleMap.put("BOOK", "图书管理");
-            moduleMap.put("READER_RE", "读者预约");
-            moduleMap.put("READER_REVIEW", "读者评论");
-            moduleMap.put("READER_PROFILE", "读者中心");
-            moduleMap.put("READER_BOOK", "读者浏览");
-            moduleMap.put("READER_CATEGORY", "读者浏览");
-            moduleMap.put("READER_BORROW", "读者借阅");
-            moduleMap.put("READER_APPEAL", "读者申诉");
-            moduleMap.put("READER", "读者管理");
-            moduleMap.put("CATEGORY", "分类管理");
-            moduleMap.put("BORROW", "借阅管理");
-            moduleMap.put("RESERVATION", "预约管理");
-            moduleMap.put("REVIEW", "评论管理");
-            moduleMap.put("FILE", "文件管理");
-            moduleMap.put("DASHBOARD", "仪表盘");
-            moduleMap.put("AUDIT_LOG", "审计日志");
-            moduleMap.put("ADMIN_APPLICATION", "管理员申请");
-            moduleMap.put("READING_PROGRESS", "阅读进度");
-            moduleMap.put("APPEAL", "申诉管理");
-            moduleMap.put("ROLE", "系统管理");
-            moduleMap.put("PERMISSION", "系统管理");
-            moduleMap.put("USER_ROLE", "系统管理");
-
-            if (permCount != null && permCount > 0) {
-                // Incremental mode: insert new permissions that don't exist yet
-                int added = 0;
-                for (Map.Entry<String, String> entry : permNames.entrySet()) {
-                    String code = entry.getKey();
-                    String name = entry.getValue();
-                    String module = resolveModule(code, moduleMap);
-                    String type = inferPermissionType(code);
-                    try {
-                        jdbcTemplate.update(
-                            "INSERT IGNORE INTO sys_permission (code, name, module, type) VALUES (?, ?, ?, ?)",
-                            code, name, module, type);
-                        added++;
-                    } catch (Exception ignored) {}
-                }
-                // Update type field for existing permissions
-                try {
-                    jdbcTemplate.update("UPDATE sys_permission SET type = 'menu' WHERE code IN (" +
-                        "'BOOK_READ','READER_READ','CATEGORY_READ','BORROW_READ','RESERVATION_READ'," +
-                        "'REVIEW_READ','FILE_READ','DASHBOARD_READ','AUDIT_LOG_READ','ROLE_MANAGE'," +
-                        "'PERMISSION_MANAGE','USER_ROLE_ASSIGN','READER_RESERVATION_READ','READER_REVIEW_READ'," +
-                        "'READING_PROGRESS_READ','ADMIN_APPLICATION_STATUS','READER_PROFILE_READ'," +
-                        "'READER_BOOK_BROWSE','READER_CATEGORY_BROWSE','READER_BORROW_READ'," +
-                        "'READER_APPEAL_VIEW','APPEAL_READ') AND (type IS NULL OR type = '')");
-                    jdbcTemplate.update("UPDATE sys_permission SET type = 'button' WHERE type IS NULL OR type = ''");
-                } catch (Exception ignored) {}
-                // Ensure SUPER_ADMIN has all permissions
-                Long superAdminRoleId = null;
-                try {
-                    superAdminRoleId = jdbcTemplate.queryForObject(
-                        "SELECT id FROM sys_role WHERE code = 'SUPER_ADMIN'", Long.class);
-                } catch (Exception ignored) {}
-                if (superAdminRoleId != null) {
-                    jdbcTemplate.update(
-                        "INSERT IGNORE INTO sys_role_permission (role_id, permission_id) " +
-                        "SELECT ?, id FROM sys_permission WHERE id NOT IN " +
-                        "(SELECT permission_id FROM sys_role_permission WHERE role_id = ?)",
-                        superAdminRoleId, superAdminRoleId);
-                }
-                // Ensure ADMIN role has appeal permissions
-                Long adminRoleId = null;
-                try {
-                    adminRoleId = jdbcTemplate.queryForObject(
-                        "SELECT id FROM sys_role WHERE code = 'ADMIN'", Long.class);
-                } catch (Exception ignored) {}
-                if (adminRoleId != null) {
-                    for (Permission p : RolePermissions.getPermissions("ADMIN")) {
-                        try {
-                            jdbcTemplate.update(
-                                "INSERT IGNORE INTO sys_role_permission (role_id, permission_id) " +
-                                "SELECT ?, id FROM sys_permission WHERE code = ?",
-                                adminRoleId, p.name());
-                        } catch (Exception ignored) {}
-                    }
-                }
-                // Ensure READER role has reader permissions
-                Long readerRoleId = null;
-                try {
-                    readerRoleId = jdbcTemplate.queryForObject(
-                        "SELECT id FROM sys_role WHERE code = 'READER'", Long.class);
-                } catch (Exception ignored) {}
-                if (readerRoleId != null) {
-                    for (Permission p : RolePermissions.getPermissions("READER")) {
-                        try {
-                            jdbcTemplate.update(
-                                "INSERT IGNORE INTO sys_role_permission (role_id, permission_id) " +
-                                "SELECT ?, id FROM sys_permission WHERE code = ?",
-                                readerRoleId, p.name());
-                        } catch (Exception ignored) {}
-                    }
-                }
-                // Add appeal menu if not exists
-                try {
-                    Integer menuCount = jdbcTemplate.queryForObject(
-                        "SELECT COUNT(*) FROM sys_menu WHERE permission_code = 'APPEAL_READ'", Integer.class);
-                    if (menuCount == null || menuCount == 0) {
-                        jdbcTemplate.update("INSERT INTO sys_menu (parent_id, name, path, icon, sort_order, permission_code, type, status) VALUES (0, '申诉管理', '/appeals', 'Document', 7, 'APPEAL_READ', 1, 1)");
-                    }
-                } catch (Exception ignored) {}
-                log.info("=== RBAC数据已增量更新 ===");
+            Long existingCount = permissionMapper.selectCount(new LambdaQueryWrapper<>());
+            if (existingCount > 0) {
+                log.info("=== RBAC数据已存在({}条权限)，跳过初始化 ===", existingCount);
                 return;
             }
 
-            for (Map.Entry<String, String> entry : permNames.entrySet()) {
-                String code = entry.getKey();
-                String name = entry.getValue();
-                String module = resolveModule(code, moduleMap);
-                String type = inferPermissionType(code);
-                jdbcTemplate.update(
-                    "INSERT INTO sys_permission (code, name, module, type) VALUES (?, ?, ?, ?)",
-                    code, name, module, type);
-            }
-            log.info("=== 已初始化 {} 个权限 ===", permNames.size());
+            // 插入权限数据 - 菜单级（管理端）
+            insertPermission("dashboard:view", "数据概览", "menu", 0L, "/dashboard", "DataAnalysis", 1);
+        insertPermission("book:manage", "图书管理", "menu", 0L, "/books", "Reading", 2);
+        insertPermission("category:manage", "分类管理", "menu", 0L, "/categories", "Grid", 3);
+        insertPermission("reader:manage", "读者管理", "menu", 0L, "/readers", "UserFilled", 4);
+        insertPermission("borrow:manage", "借阅管理", "menu", 0L, "/borrows", "Notebook", 5);
+        insertPermission("review:manage", "评价管理", "menu", 0L, "/reviews", "ChatDotRound", 6);
+        insertPermission("resource:manage", "资源管理", "menu", 0L, "/resources", "Files", 7);
+        insertPermission("admin-app:manage", "管理员审批", "menu", 0L, "/admin-applications", "Stamp", 8);
+        insertPermission("appeal:manage", "申诉管理", "menu", 0L, "/appeals", "Warning", 9);
+        insertPermission("reader-view:access", "读者系统", "menu", 0L, "/reader-view", "Monitor", 10);
+        insertPermission("system:manage", "系统管理", "menu", 0L, "/roles", "Setting", 11);
 
-            jdbcTemplate.update(
-                "INSERT INTO sys_role (code, name, level, description, status) VALUES (?, ?, ?, ?, ?)",
-                "READER", "读者", 10, "普通读者角色，拥有基本借阅和浏览权限", 1);
-            jdbcTemplate.update(
-                "INSERT INTO sys_role (code, name, level, description, status) VALUES (?, ?, ?, ?, ?)",
-                "ADMIN", "管理员", 50, "系统管理员，拥有图书和读者管理权限", 1);
-            jdbcTemplate.update(
-                "INSERT INTO sys_role (code, name, level, description, status) VALUES (?, ?, ?, ?, ?)",
-                "SUPER_ADMIN", "超级管理员", 100, "最高权限管理员，拥有所有权限包括角色管理", 1);
-            log.info("=== 已初始化 3 个角色 ===");
+        // 插入权限数据 - 菜单级（读者端）
+        insertPermission("reader-center:manage", "读者中心", "menu", 0L, null, "House", 20);
+        Long readerCenterParent = getPermissionId("reader-center:manage");
+        insertPermission("reader-center:borrow", "我的借阅", "menu", readerCenterParent, "/reader/my-borrows", "Reading", 1);
+        insertPermission("reader-center:reservation", "预约图书", "menu", readerCenterParent, "/reader/reservations", "Calendar", 2);
+        insertPermission("reader-center:browse", "图书浏览", "menu", readerCenterParent, "/reader/books", "Search", 3);
+        insertPermission("reader-center:recommend", "图书推荐", "menu", readerCenterParent, "/reader/recommend", "Star", 4);
+        insertPermission("reader-center:progress", "阅读进度", "menu", readerCenterParent, "/reader/reading-progress", "TrendCharts", 5);
+        insertPermission("reader-center:review", "我的评价", "menu", readerCenterParent, "/reader/my-reviews", "ChatLineRound", 6);
+        insertPermission("reader-center:appeal", "我的申诉", "menu", readerCenterParent, "/reader/appeals", "Warning", 7);
+        insertPermission("reader-center:profile", "个人中心", "menu", readerCenterParent, "/reader/profile", "User", 8);
 
-            Long readerRoleId = jdbcTemplate.queryForObject(
-                "SELECT id FROM sys_role WHERE code = 'READER'", Long.class);
-            Long adminRoleId = jdbcTemplate.queryForObject(
-                "SELECT id FROM sys_role WHERE code = 'ADMIN'", Long.class);
-            Long superAdminRoleId = jdbcTemplate.queryForObject(
-                "SELECT id FROM sys_role WHERE code = 'SUPER_ADMIN'", Long.class);
+        // 获取父权限ID
+        Long bookParent = getPermissionId("book:manage");
+        Long catParent = getPermissionId("category:manage");
+        Long readerParent = getPermissionId("reader:manage");
+        Long borrowParent = getPermissionId("borrow:manage");
+        Long reviewParent = getPermissionId("review:manage");
+        Long resourceParent = getPermissionId("resource:manage");
+        Long adminAppParent = getPermissionId("admin-app:manage");
+        Long systemParent = getPermissionId("system:manage");
+        Long appealParent = getPermissionId("appeal:manage");
 
-            Set<Permission> readerPerms = RolePermissions.getPermissions("READER");
-            for (Permission p : readerPerms) {
-                jdbcTemplate.update(
-                    "INSERT INTO sys_role_permission (role_id, permission_id) " +
-                    "SELECT ?, id FROM sys_permission WHERE code = ?",
-                    readerRoleId, p.name());
-            }
+        // 图书按钮权限
+        insertPermission("book:view", "查看图书", "button", bookParent, null, null, 1);
+        insertPermission("book:add", "新增图书", "button", bookParent, null, null, 2);
+        insertPermission("book:edit", "编辑图书", "button", bookParent, null, null, 3);
+        insertPermission("book:delete", "删除图书", "button", bookParent, null, null, 4);
 
-            Set<Permission> adminPerms = RolePermissions.getPermissions("ADMIN");
-            for (Permission p : adminPerms) {
-                jdbcTemplate.update(
-                    "INSERT INTO sys_role_permission (role_id, permission_id) " +
-                    "SELECT ?, id FROM sys_permission WHERE code = ?",
-                    adminRoleId, p.name());
-            }
+        // 分类按钮权限
+        insertPermission("category:view", "查看分类", "button", catParent, null, null, 1);
+        insertPermission("category:add", "新增分类", "button", catParent, null, null, 2);
+        insertPermission("category:edit", "编辑分类", "button", catParent, null, null, 3);
+        insertPermission("category:delete", "删除分类", "button", catParent, null, null, 4);
 
-            // SUPER_ADMIN gets all permissions
-            jdbcTemplate.update(
-                "INSERT INTO sys_role_permission (role_id, permission_id) " +
-                "SELECT ?, id FROM sys_permission", superAdminRoleId);
-            log.info("=== 已初始化角色权限关联 ===");
+        // 读者按钮权限
+        insertPermission("reader:view", "查看读者", "button", readerParent, null, null, 1);
+        insertPermission("reader:add", "新增读者", "button", readerParent, null, null, 2);
+        insertPermission("reader:edit", "编辑读者", "button", readerParent, null, null, 3);
+        insertPermission("reader:delete", "删除读者", "button", readerParent, null, null, 4);
+        insertPermission("reader:status", "变更读者状态", "button", readerParent, null, null, 5);
 
-            // Assign SUPER_ADMIN to existing admin user
-            Admin admin = adminMapper.selectOne(
-                new LambdaQueryWrapper<Admin>().eq(Admin::getUsername, "admin"));
-            if (admin != null) {
-                jdbcTemplate.update(
-                    "INSERT INTO sys_user_role (user_type, user_id, role_id) VALUES (?, ?, ?)",
-                    "ADMIN", admin.getId(), superAdminRoleId);
-            }
+        // 借阅按钮权限
+        insertPermission("borrow:view", "查看借阅", "button", borrowParent, null, null, 1);
+        insertPermission("borrow:create", "创建借阅", "button", borrowParent, null, null, 2);
+        insertPermission("borrow:return", "归还操作", "button", borrowParent, null, null, 3);
+        insertPermission("borrow:renew", "续借操作", "button", borrowParent, null, null, 4);
 
-            // Assign READER to existing reader account
-            ReaderAccount readerAccount = readerAccountMapper.selectOne(
-                new LambdaQueryWrapper<ReaderAccount>().eq(ReaderAccount::getUsername, "xiaoming"));
-            if (readerAccount != null) {
-                jdbcTemplate.update(
-                    "INSERT INTO sys_user_role (user_type, user_id, role_id) VALUES (?, ?, ?)",
-                    "READER", readerAccount.getId(), readerRoleId);
-            }
-            log.info("=== 已初始化用户角色分配 ===");
+        // 评价按钮权限
+        insertPermission("review:view", "查看评价", "button", reviewParent, null, null, 1);
+        insertPermission("review:approve", "审核通过", "button", reviewParent, null, null, 2);
+        insertPermission("review:reject", "审核拒绝", "button", reviewParent, null, null, 3);
+        insertPermission("review:reply", "回复评价", "button", reviewParent, null, null, 4);
+        insertPermission("review:delete", "删除评价", "button", reviewParent, null, null, 5);
 
-            // Seed menus
-            initMenus();
+        // 资源按钮权限
+        insertPermission("resource:view", "查看资源", "button", resourceParent, null, null, 1);
+        insertPermission("resource:upload", "上传资源", "button", resourceParent, null, null, 2);
+        insertPermission("resource:delete", "删除资源", "button", resourceParent, null, null, 3);
 
+        // 管理员审批按钮权限
+        insertPermission("admin-app:view", "查看申请", "button", adminAppParent, null, null, 1);
+        insertPermission("admin-app:approve", "批准申请", "button", adminAppParent, null, null, 2);
+        insertPermission("admin-app:reject", "拒绝申请", "button", adminAppParent, null, null, 3);
+
+        // 申诉管理按钮权限
+        insertPermission("appeal:view", "查看申诉", "button", appealParent, null, null, 1);
+        insertPermission("appeal:handle", "处理申诉", "button", appealParent, null, null, 2);
+
+        // 系统管理按钮权限
+        insertPermission("role:view", "查看角色", "button", systemParent, null, null, 1);
+        insertPermission("role:add", "新增角色", "button", systemParent, null, null, 2);
+        insertPermission("role:edit", "编辑角色", "button", systemParent, null, null, 3);
+        insertPermission("role:delete", "删除角色", "button", systemParent, null, null, 4);
+        insertPermission("permission:view", "查看权限", "button", systemParent, null, null, 5);
+        insertPermission("permission:add", "新增权限", "button", systemParent, null, null, 6);
+        insertPermission("permission:edit", "编辑权限", "button", systemParent, null, null, 7);
+        insertPermission("permission:delete", "删除权限", "button", systemParent, null, null, 8);
+        insertPermission("permission:assign", "分配权限", "button", systemParent, null, null, 9);
+        insertPermission("user-role:view", "查看用户角色", "button", systemParent, null, null, 10);
+        insertPermission("user-role:assign", "分配用户角色", "button", systemParent, null, null, 11);
+
+        // 创建角色
+        SysRole superAdmin = new SysRole();
+        superAdmin.setCode("super:admin");
+        superAdmin.setName("超级管理员");
+        superAdmin.setDescription("拥有系统全部权限");
+        superAdmin.setStatus(1);
+        roleMapper.insert(superAdmin);
+
+        SysRole adminRole = new SysRole();
+        adminRole.setCode("admin");
+        adminRole.setName("管理员");
+        adminRole.setDescription("拥有业务管理权限，无系统管理权限");
+        adminRole.setStatus(1);
+        roleMapper.insert(adminRole);
+
+        SysRole readerRole = new SysRole();
+        readerRole.setCode("reader");
+        readerRole.setName("读者");
+        readerRole.setDescription("拥有读者中心所有功能权限");
+        readerRole.setStatus(1);
+        roleMapper.insert(readerRole);
+
+        // 为超级管理员分配全部权限
+        List<SysPermission> allPerms = permissionMapper.selectList(new LambdaQueryWrapper<>());
+        for (SysPermission perm : allPerms) {
+            SysRolePermission rp = new SysRolePermission();
+            rp.setRoleId(superAdmin.getId());
+            rp.setPermissionId(perm.getId());
+            rolePermissionMapper.insert(rp);
+        }
+
+        // 为管理员分配除系统管理和读者中心外的全部权限
+        List<SysPermission> adminPerms = permissionMapper.selectList(
+            new LambdaQueryWrapper<SysPermission>()
+                .ne(SysPermission::getCode, "system:manage")
+                .notLike(SysPermission::getCode, "role:")
+                .notLike(SysPermission::getCode, "permission:")
+                .notLike(SysPermission::getCode, "user-role:")
+                .notLike(SysPermission::getCode, "reader-center:"));
+        for (SysPermission perm : adminPerms) {
+            SysRolePermission rp = new SysRolePermission();
+            rp.setRoleId(adminRole.getId());
+            rp.setPermissionId(perm.getId());
+            rolePermissionMapper.insert(rp);
+        }
+
+        // 为读者角色分配读者中心相关权限
+        List<SysPermission> readerPerms = permissionMapper.selectList(
+            new LambdaQueryWrapper<SysPermission>()
+                .likeRight(SysPermission::getCode, "reader-center:"));
+        for (SysPermission perm : readerPerms) {
+            SysRolePermission rp = new SysRolePermission();
+            rp.setRoleId(readerRole.getId());
+            rp.setPermissionId(perm.getId());
+            rolePermissionMapper.insert(rp);
+        }
+
+        // 为默认admin用户分配超级管理员角色
+        Admin admin = adminMapper.selectOne(
+            new LambdaQueryWrapper<Admin>().eq(Admin::getUsername, "admin"));
+        if (admin != null) {
+            SysUserRole ur = new SysUserRole();
+            ur.setUserType("admin");
+            ur.setUserId(admin.getId());
+            ur.setRoleId(superAdmin.getId());
+            userRoleMapper.insert(ur);
+        }
+
+        // 为默认读者分配读者角色
+        Reader defaultReader = readerMapper.selectOne(
+            new LambdaQueryWrapper<Reader>().eq(Reader::getName, "小明"));
+        if (defaultReader != null) {
+            SysUserRole ur = new SysUserRole();
+            ur.setUserType("reader");
+            ur.setUserId(defaultReader.getId());
+            ur.setRoleId(readerRole.getId());
+            userRoleMapper.insert(ur);
+        }
+
+        log.info("=== RBAC权限数据初始化完成 ===");
         } catch (Exception e) {
-            log.warn("RBAC数据初始化出现警告: {}", e.getMessage());
+            log.error("RBAC数据初始化失败: {}", e.getMessage(), e);
         }
     }
 
-    private void initMenus() {
-        // Admin menus
-        jdbcTemplate.update("INSERT INTO sys_menu (parent_id, name, path, icon, sort_order, permission_code, type, status) VALUES (0, '数据概览', '/dashboard', 'DataAnalysis', 1, 'DASHBOARD_READ', 1, 1)");
-        jdbcTemplate.update("INSERT INTO sys_menu (parent_id, name, path, icon, sort_order, permission_code, type, status) VALUES (0, '图书管理', '/books', 'Reading', 2, 'BOOK_READ', 1, 1)");
-        jdbcTemplate.update("INSERT INTO sys_menu (parent_id, name, path, icon, sort_order, permission_code, type, status) VALUES (0, '分类管理', '/categories', 'FolderOpened', 3, 'CATEGORY_READ', 1, 1)");
-        jdbcTemplate.update("INSERT INTO sys_menu (parent_id, name, path, icon, sort_order, permission_code, type, status) VALUES (0, '读者管理', '/readers', 'UserFilled', 4, 'READER_READ', 1, 1)");
-        jdbcTemplate.update("INSERT INTO sys_menu (parent_id, name, path, icon, sort_order, permission_code, type, status) VALUES (0, '借阅管理', '/borrows', 'Notebook', 5, 'BORROW_READ', 1, 1)");
-        jdbcTemplate.update("INSERT INTO sys_menu (parent_id, name, path, icon, sort_order, permission_code, type, status) VALUES (0, '管理员审批', '/admin-applications', 'Stamp', 6, 'ADMIN_APPLICATION_REVIEW', 1, 1)");
-        jdbcTemplate.update("INSERT INTO sys_menu (parent_id, name, path, icon, sort_order, permission_code, type, status) VALUES (0, '申诉管理', '/appeals', 'Document', 7, 'APPEAL_READ', 1, 1)");
-        jdbcTemplate.update("INSERT INTO sys_menu (parent_id, name, path, icon, sort_order, permission_code, type, status) VALUES (0, '读者系统', '/reader-view', 'View', 8, 'READER_PROFILE_READ', 1, 1)");
-        jdbcTemplate.update("INSERT INTO sys_menu (parent_id, name, path, icon, sort_order, permission_code, type, status) VALUES (0, '资源管理', '/resources', 'Files', 9, 'FILE_READ', 1, 1)");
-        jdbcTemplate.update("INSERT INTO sys_menu (parent_id, name, path, icon, sort_order, permission_code, type, status) VALUES (0, '评价管理', '/reviews', 'ChatDotRound', 10, 'REVIEW_READ', 1, 1)");
-        jdbcTemplate.update("INSERT INTO sys_menu (parent_id, name, path, icon, sort_order, permission_code, type, status) VALUES (0, '角色管理', '/system/roles', 'Key', 11, 'ROLE_MANAGE', 1, 1)");
-        jdbcTemplate.update("INSERT INTO sys_menu (parent_id, name, path, icon, sort_order, permission_code, type, status) VALUES (0, '权限管理', '/system/permissions', 'Lock', 12, 'PERMISSION_MANAGE', 1, 1)");
-        jdbcTemplate.update("INSERT INTO sys_menu (parent_id, name, path, icon, sort_order, permission_code, type, status) VALUES (0, '用户角色', '/system/user-roles', 'Avatar', 13, 'USER_ROLE_ASSIGN', 1, 1)");
-        log.info("=== 已初始化系统菜单 ===");
+    private void insertPermission(String code, String name, String type, Long parentId, String path, String icon, int sortOrder) {
+        SysPermission p = new SysPermission();
+        p.setCode(code);
+        p.setName(name);
+        p.setType(type);
+        p.setParentId(parentId);
+        p.setPath(path);
+        p.setIcon(icon);
+        p.setSortOrder(sortOrder);
+        p.setStatus(1);
+        permissionMapper.insert(p);
     }
 
-    private String inferPermissionType(String code) {
-        Set<String> menuCodes = Set.of(
-            "BOOK_READ", "READER_READ", "CATEGORY_READ", "BORROW_READ",
-            "RESERVATION_READ", "REVIEW_READ", "FILE_READ", "DASHBOARD_READ",
-            "AUDIT_LOG_READ", "ROLE_MANAGE", "PERMISSION_MANAGE", "USER_ROLE_ASSIGN",
-            "READER_RESERVATION_READ", "READER_REVIEW_READ", "READING_PROGRESS_READ",
-            "ADMIN_APPLICATION_STATUS", "READER_PROFILE_READ", "READER_BOOK_BROWSE",
-            "READER_CATEGORY_BROWSE", "READER_BORROW_READ", "READER_APPEAL_VIEW",
-            "APPEAL_READ"
-        );
-        return menuCodes.contains(code) ? "menu" : "button";
-    }
-
-    private String resolveModule(String code, Map<String, String> moduleMap) {
-        // Try longest prefix match first for more specific mappings
-        String bestMatch = null;
-        int bestLen = 0;
-        for (Map.Entry<String, String> m : moduleMap.entrySet()) {
-            if (code.startsWith(m.getKey()) && m.getKey().length() > bestLen) {
-                bestMatch = m.getValue();
-                bestLen = m.getKey().length();
-            }
-        }
-        return bestMatch != null ? bestMatch : "其他";
+    private Long getPermissionId(String code) {
+        SysPermission p = permissionMapper.selectOne(
+            new LambdaQueryWrapper<SysPermission>().eq(SysPermission::getCode, code));
+        return p != null ? p.getId() : 0L;
     }
 }

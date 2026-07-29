@@ -21,11 +21,11 @@
       >
         <el-menu-item
           v-for="menu in visibleMenus"
-          :key="menu.path"
-          :index="menu.path"
+          :key="menu.index"
+          :index="menu.index"
         >
           <el-icon><component :is="menu.icon" /></el-icon>
-          <template #title>{{ menu.name }}</template>
+          <template #title>{{ menu.title }}</template>
         </el-menu-item>
       </el-menu>
     </el-aside>
@@ -69,7 +69,6 @@
 import { ref, computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { ElMessageBox, ElMessage } from 'element-plus'
-import { clearAuth } from '@/utils/auth'
 import { usePermissionStore } from '@/stores/permission'
 import { readerMenus } from '@/config/menus'
 
@@ -77,13 +76,15 @@ const route = useRoute()
 const router = useRouter()
 const isCollapse = ref(false)
 const nickname = ref(localStorage.getItem('nickname') || '读者')
+
 const permStore = usePermissionStore()
+permStore.loadFromStorage()
 
 const visibleMenus = computed(() => {
-  return readerMenus.filter(menu => {
-    if (!menu.permission) return true
-    return permStore.hasPermission(menu.permission)
-  })
+  if (!permStore.permissions || permStore.permissions.length === 0) {
+    return readerMenus
+  }
+  return readerMenus.filter(m => permStore.hasPermission(m.permission))
 })
 
 const handleLogout = () => {
@@ -92,7 +93,10 @@ const handleLogout = () => {
     cancelButtonText: '取消',
     type: 'warning'
   }).then(() => {
-    clearAuth()
+    localStorage.removeItem('token')
+    localStorage.removeItem('nickname')
+    localStorage.removeItem('role')
+    localStorage.removeItem('readerId')
     permStore.clear()
     ElMessage.success('已安全退出')
     router.push('/login')

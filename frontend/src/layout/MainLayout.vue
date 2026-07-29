@@ -18,11 +18,11 @@
       >
         <el-menu-item
           v-for="menu in visibleMenus"
-          :key="menu.path"
-          :index="menu.path"
+          :key="menu.index"
+          :index="menu.index"
         >
           <el-icon><component :is="menu.icon" /></el-icon>
-          <template #title>{{ menu.name }}</template>
+          <template #title>{{ menu.title }}</template>
         </el-menu-item>
       </el-menu>
     </el-aside>
@@ -65,24 +65,26 @@
 </template>
 
 <script setup>
-import { ref, computed } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { ElMessageBox, ElMessage } from 'element-plus'
-import { clearAuth } from '@/utils/auth'
 import { usePermissionStore } from '@/stores/permission'
-import { adminMenus } from '@/config/menus'
+import { useMenuStore } from '@/stores/menu'
 
 const route = useRoute()
 const router = useRouter()
 const isCollapse = ref(false)
 const nickname = ref(localStorage.getItem('nickname') || '管理员')
-const permStore = usePermissionStore()
 
-const visibleMenus = computed(() => {
-  return adminMenus.filter(menu => {
-    if (!menu.permission) return true
-    return permStore.hasPermission(menu.permission)
-  })
+const permStore = usePermissionStore()
+permStore.loadFromStorage()
+
+const menuStore = useMenuStore()
+
+const visibleMenus = computed(() => menuStore.menus)
+
+onMounted(() => {
+  menuStore.fetchMenus()
 })
 
 const handleLogout = () => {
@@ -91,8 +93,12 @@ const handleLogout = () => {
     cancelButtonText: '取消',
     type: 'warning'
   }).then(() => {
-    clearAuth()
+    localStorage.removeItem('token')
+    localStorage.removeItem('nickname')
+    localStorage.removeItem('role')
+    localStorage.removeItem('readerId')
     permStore.clear()
+    menuStore.clear()
     ElMessage.success('已安全退出')
     router.push('/login')
   }).catch(() => {})
@@ -210,7 +216,7 @@ const handleLogout = () => {
 }
 
 .logout-btn {
-  background: linear-gradient(135deg, #FFB3BA, #FF8A9E) !important;
+  background: linear-gradient(135deg, #FF6B81, #FF8A9E) !important;
   border: none !important;
   color: #fff !important;
   font-size: 13px;
@@ -219,9 +225,9 @@ const handleLogout = () => {
 }
 
 .logout-btn:hover {
-  background: linear-gradient(135deg, #FF8A9E, #FF6B81) !important;
+  background: linear-gradient(135deg, #FF4757, #FF6B81) !important;
   transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(255, 107, 129, 0.3);
+  box-shadow: 0 4px 12px rgba(255, 107, 129, 0.4);
 }
 
 .content {

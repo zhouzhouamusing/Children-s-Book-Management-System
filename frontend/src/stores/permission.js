@@ -1,109 +1,46 @@
 import { defineStore } from 'pinia'
-import { ref, computed } from 'vue'
+import { ref } from 'vue'
 
 export const usePermissionStore = defineStore('permission', () => {
-  const roles = ref([])
   const permissions = ref([])
-  const version = ref(0)
+  const roles = ref([])
 
-  const permissionSet = computed(() => new Set(permissions.value))
+  function setPermissions(perms) {
+    permissions.value = perms || []
+    localStorage.setItem('permissions', JSON.stringify(perms || []))
+  }
 
-  function setAuth(data) {
-    const newRoles = data.roles || []
-    const newPerms = data.permissions || []
-    const rolesChanged = JSON.stringify(newRoles) !== JSON.stringify(roles.value)
-    const permsChanged = JSON.stringify(newPerms) !== JSON.stringify(permissions.value)
-
-    if (rolesChanged || permsChanged) {
-      roles.value = newRoles
-      permissions.value = newPerms
-      localStorage.setItem('roles', JSON.stringify(newRoles))
-      localStorage.setItem('permissions', JSON.stringify(newPerms))
-      version.value++
-    }
+  function setRoles(r) {
+    roles.value = r || []
+    localStorage.setItem('roles', JSON.stringify(r || []))
   }
 
   function loadFromStorage() {
     try {
-      const storedRoles = localStorage.getItem('roles')
-      const storedPerms = localStorage.getItem('permissions')
-      const newRoles = storedRoles ? JSON.parse(storedRoles) : []
-      const newPerms = storedPerms ? JSON.parse(storedPerms) : []
-      const changed = JSON.stringify(newRoles) !== JSON.stringify(roles.value) ||
-        JSON.stringify(newPerms) !== JSON.stringify(permissions.value)
-      roles.value = newRoles
-      permissions.value = newPerms
-      if (changed) version.value++
-    } catch (e) {
-      roles.value = []
+      permissions.value = JSON.parse(localStorage.getItem('permissions') || '[]')
+      roles.value = JSON.parse(localStorage.getItem('roles') || '[]')
+    } catch {
       permissions.value = []
+      roles.value = []
     }
   }
 
   function hasPermission(code) {
-    return permissionSet.value.has(code)
+    if (roles.value.includes('super:admin')) return true
+    return permissions.value.includes(code)
   }
 
   function hasAnyPermission(codes) {
-    const set = permissionSet.value
-    return codes.some(c => set.has(c))
-  }
-
-  function hasAllPermissions(codes) {
-    const set = permissionSet.value
-    return codes.every(c => set.has(c))
-  }
-
-  function hasRole(role) {
-    return roles.value.includes(role)
-  }
-
-  function hasAnyRole(roleList) {
-    return roleList.some(r => roles.value.includes(r))
-  }
-
-  async function refreshFromServer() {
-    try {
-      const { default: request } = await import('@/utils/request')
-      const res = await request.get('/auth/validate')
-      if (res.data) {
-        if (res.data.roles || res.data.permissions) {
-          setAuth({
-            roles: res.data.roles || roles.value,
-            permissions: res.data.permissions || permissions.value
-          })
-        }
-        if (res.data.suspended !== undefined) {
-          localStorage.setItem('suspended', res.data.suspended ? 'true' : 'false')
-        }
-      }
-    } catch (e) {
-      if (e?.response?.status === 401) {
-        clear()
-      }
-    }
+    if (roles.value.includes('super:admin')) return true
+    return codes.some(c => permissions.value.includes(c))
   }
 
   function clear() {
-    roles.value = []
     permissions.value = []
-    localStorage.removeItem('roles')
+    roles.value = []
     localStorage.removeItem('permissions')
-    version.value++
+    localStorage.removeItem('roles')
   }
 
-  // 跨标签页同步
-  if (typeof window !== 'undefined') {
-    window.addEventListener('storage', (e) => {
-      if (e.key === 'permissions' || e.key === 'roles') {
-        loadFromStorage()
-      }
-    })
-  }
-
-  return {
-    roles, permissions, version, permissionSet,
-    setAuth, loadFromStorage, hasPermission, hasAnyPermission, hasAllPermissions,
-    hasRole, hasAnyRole, refreshFromServer, clear
-  }
+  return { permissions, roles, setPermissions, setRoles, loadFromStorage, hasPermission, hasAnyPermission, clear }
 })

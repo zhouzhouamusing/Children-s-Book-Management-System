@@ -32,13 +32,9 @@
           <el-icon><Search /></el-icon>
           搜索
         </el-button>
-        <el-button v-permission="'BOOK_CREATE'" type="success" size="large" @click="handleAdd">
+        <el-button v-permission="'book:add'" type="success" size="large" @click="handleAdd">
           <el-icon><Plus /></el-icon>
           新增图书
-        </el-button>
-        <el-button v-permission="'BOOK_EXPORT'" type="info" size="large" plain @click="handleExport">
-          <el-icon><Download /></el-icon>
-          导出数据
         </el-button>
       </div>
     </el-card>
@@ -94,10 +90,10 @@
         </el-table-column>
         <el-table-column label="操作" width="200" fixed="right">
           <template #default="{ row }">
-            <el-button v-permission="'BOOK_UPDATE'" class="action-btn-edit" @click="handleEdit(row)">
+            <el-button v-permission="'book:edit'" class="action-btn-edit" @click="handleEdit(row)">
               <el-icon><Edit /></el-icon> 编辑
             </el-button>
-            <el-button v-permission="'BOOK_DELETE'" class="action-btn-delete" @click="handleDelete(row)">
+            <el-button v-permission="'book:delete'" class="action-btn-delete" @click="handleDelete(row)">
               <el-icon><Delete /></el-icon> 删除
             </el-button>
           </template>
@@ -198,11 +194,10 @@
         <el-form-item label="封面上传">
           <div class="upload-area">
             <el-upload
-              v-if="bookForm.id"
               class="cover-upload"
               :action="'/api/files/upload'"
               :headers="uploadHeaders"
-              :data="uploadCoverData"
+              :data="{ fileType: 'cover', bookId: bookForm.id || '' }"
               :show-file-list="false"
               :on-success="handleCoverSuccess"
               :before-upload="beforeCoverUpload"
@@ -220,19 +215,15 @@
                 <span>上传封面</span>
               </div>
             </el-upload>
-            <div v-else class="cover-placeholder-hint">
-              <el-icon :size="24"><InfoFilled /></el-icon>
-              <span>请先保存图书后再上传封面</span>
-            </div>
             <div class="upload-tip">支持 JPG/PNG/GIF，不超过10MB</div>
           </div>
         </el-form-item>
-        <el-form-item label="PDF绘本" v-if="bookForm.id">
+        <el-form-item label="PDF绘本">
           <el-upload
             class="pdf-upload"
             :action="'/api/files/upload'"
             :headers="uploadHeaders"
-            :data="uploadPdfData"
+            :data="{ fileType: 'pdf', bookId: bookForm.id || '' }"
             :on-success="handlePdfSuccess"
             :before-upload="beforePdfUpload"
             :file-list="pdfFileList"
@@ -251,7 +242,7 @@
       </el-form>
       <template #footer>
         <el-button @click="dialogVisible = false">取消</el-button>
-        <el-button v-permission="['BOOK_CREATE', 'BOOK_UPDATE']" type="primary" :loading="submitLoading" @click="handleSubmit">
+        <el-button type="primary" :loading="submitLoading" @click="handleSubmit">
           {{ submitLoading ? '保存中...' : '确认保存' }}
         </el-button>
       </template>
@@ -263,10 +254,8 @@
 import { ref, reactive, computed, onMounted } from 'vue'
 import { useRoute } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import { usePermission } from '@/composables/usePermission'
 import { getBooks, addBook, updateBook, deleteBook, getCategories, getAllCategories, getBookFiles } from '@/api'
 
-const { checkWithFeedback } = usePermission()
 const route = useRoute()
 const tableLoading = ref(false)
 const submitLoading = ref(false)
@@ -286,16 +275,6 @@ const pdfFileList = ref([])
 
 const uploadHeaders = computed(() => ({
   Authorization: 'Bearer ' + localStorage.getItem('token')
-}))
-
-const uploadCoverData = computed(() => ({
-  fileType: 'cover',
-  bookId: bookForm.id
-}))
-
-const uploadPdfData = computed(() => ({
-  fileType: 'pdf',
-  bookId: bookForm.id
 }))
 
 const bookForm = reactive({
@@ -347,13 +326,11 @@ const fetchBooks = async () => {
 const fetchCategories = async () => {
   try {
     const res = await getCategories()
-    const list = res.data || []
-    categories.value = list.map(c => typeof c === 'string' ? c : c?.name).filter(Boolean)
+    categories.value = res.data || []
   } catch (e) {}
   try {
     const res = await getAllCategories()
-    const list = res.data || []
-    categoryDetails.value = list.filter(c => c && typeof c === 'object' && c.name)
+    categoryDetails.value = res.data || []
   } catch (e) {}
 }
 
@@ -381,7 +358,6 @@ const resetForm = () => {
 }
 
 const handleAdd = () => {
-  if (!checkWithFeedback('BOOK_CREATE')) return
   isEdit.value = false
   resetForm()
   pdfFileList.value = []
@@ -389,7 +365,6 @@ const handleAdd = () => {
 }
 
 const handleEdit = (row) => {
-  if (!checkWithFeedback('BOOK_UPDATE')) return
   isEdit.value = true
   Object.assign(bookForm, { ...row })
   pdfFileList.value = []
@@ -455,7 +430,6 @@ const beforePdfUpload = (file) => {
 }
 
 const handleSubmit = async () => {
-  if (!checkWithFeedback(isEdit.value ? 'BOOK_UPDATE' : 'BOOK_CREATE')) return
   const valid = await bookFormRef.value.validate().catch(() => false)
   if (!valid) return
 
@@ -464,19 +438,11 @@ const handleSubmit = async () => {
     if (isEdit.value) {
       await updateBook(bookForm.id, bookForm)
       ElMessage.success('图书更新成功！')
-      dialogVisible.value = false
     } else {
-      const res = await addBook(bookForm)
-      const newId = res.data?.id
-      if (newId) {
-        bookForm.id = newId
-        isEdit.value = true
-        ElMessage.success('图书添加成功！现在可以上传封面和PDF了')
-      } else {
-        ElMessage.success('图书添加成功！')
-        dialogVisible.value = false
-      }
+      await addBook(bookForm)
+      ElMessage.success('图书添加成功！')
     }
+    dialogVisible.value = false
     fetchBooks()
     fetchCategories()
   } catch (e) {
@@ -487,7 +453,6 @@ const handleSubmit = async () => {
 }
 
 const handleDelete = (row) => {
-  if (!checkWithFeedback('BOOK_DELETE')) return
   ElMessageBox.confirm(
     `确定要删除《${row.title}》吗？此操作不可恢复。`,
     '删除确认',
@@ -510,31 +475,6 @@ const handleDelete = (row) => {
       tableLoading.value = false
     }
   }).catch(() => {})
-}
-
-const handleExport = async () => {
-  if (!checkWithFeedback('BOOK_EXPORT')) return
-  try {
-    const res = await getBooks({ page: 1, size: 10000, keyword: searchKeyword.value, category: searchCategory.value })
-    const books = res.data?.records || res.data || []
-    if (books.length === 0) {
-      ElMessage.warning('暂无数据可导出')
-      return
-    }
-    const headers = ['书名', '作者', '分类', '适读年龄', '价格', '库存', '状态']
-    const rows = books.map(b => [b.title, b.author, b.category, b.ageRange, b.price, b.stock, b.status === 1 ? '上架' : '下架'])
-    const csv = [headers.join(','), ...rows.map(r => r.join(','))].join('\n')
-    const blob = new Blob(['﻿' + csv], { type: 'text/csv;charset=utf-8;' })
-    const url = URL.createObjectURL(blob)
-    const a = document.createElement('a')
-    a.href = url
-    a.download = `图书列表_${new Date().toLocaleDateString()}.csv`
-    a.click()
-    URL.revokeObjectURL(url)
-    ElMessage.success('导出成功')
-  } catch (e) {
-    // handled by interceptor
-  }
 }
 
 onMounted(() => {
@@ -643,7 +583,7 @@ onMounted(() => {
 }
 
 .action-btn-edit {
-  background: linear-gradient(135deg, var(--btn-edit-from), var(--btn-edit-to)) !important;
+  background: linear-gradient(135deg, #7C5CFC, #A78BFA) !important;
   border: none !important;
   color: #fff !important;
   font-size: 13px;
@@ -652,12 +592,12 @@ onMounted(() => {
 }
 
 .action-btn-edit:hover {
-  background: linear-gradient(135deg, var(--btn-edit-to), var(--btn-edit-from)) !important;
-  box-shadow: 0 3px 8px rgba(167, 139, 250, 0.3);
+  background: linear-gradient(135deg, #6C4DE6, #7C5CFC) !important;
+  box-shadow: 0 3px 8px rgba(124, 92, 252, 0.4);
 }
 
 .action-btn-delete {
-  background: linear-gradient(135deg, var(--btn-delete-from), var(--btn-delete-to)) !important;
+  background: linear-gradient(135deg, #FF6B81, #FF8A9E) !important;
   border: none !important;
   color: #fff !important;
   font-size: 13px;
@@ -666,8 +606,8 @@ onMounted(() => {
 }
 
 .action-btn-delete:hover {
-  background: linear-gradient(135deg, var(--btn-delete-to), var(--btn-delete-from)) !important;
-  box-shadow: 0 3px 8px rgba(255, 179, 186, 0.4);
+  background: linear-gradient(135deg, #FF4757, #FF6B81) !important;
+  box-shadow: 0 3px 8px rgba(255, 107, 129, 0.4);
 }
 
 .upload-area {

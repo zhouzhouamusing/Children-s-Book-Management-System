@@ -3,22 +3,25 @@ package com.kidsbook.controller;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
-import com.kidsbook.common.BusinessException;
-import com.kidsbook.common.PageResult;
-import com.kidsbook.common.Permission;
-import com.kidsbook.common.RequirePermission;
+import com.kidsbook.annotation.RequirePermission;
 import com.kidsbook.common.Result;
+import com.kidsbook.entity.Admin;
 import com.kidsbook.entity.AdminApplication;
 import com.kidsbook.entity.Reader;
 import com.kidsbook.entity.ReaderAccount;
+import com.kidsbook.entity.SysRole;
+import com.kidsbook.entity.SysUserRole;
 import com.kidsbook.mapper.AdminApplicationMapper;
+import com.kidsbook.mapper.AdminMapper;
 import com.kidsbook.mapper.ReaderAccountMapper;
 import com.kidsbook.mapper.ReaderMapper;
-import com.kidsbook.service.AdminApplicationService;
+import com.kidsbook.mapper.SysRoleMapper;
+import com.kidsbook.mapper.SysUserRoleMapper;
 import com.kidsbook.util.JwtUtil;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDateTime;
@@ -30,26 +33,28 @@ import java.util.Map;
 @RequiredArgsConstructor
 public class AdminApplicationController {
     private final AdminApplicationMapper applicationMapper;
+    private final AdminMapper adminMapper;
     private final ReaderMapper readerMapper;
     private final ReaderAccountMapper readerAccountMapper;
-    private final AdminApplicationService adminApplicationService;
+    private final SysRoleMapper roleMapper;
+    private final SysUserRoleMapper userRoleMapper;
+    private final PasswordEncoder passwordEncoder;
     private final JwtUtil jwtUtil;
 
     @PostMapping("/apply")
-    @RequirePermission(Permission.ADMIN_APPLICATION_APPLY)
     public Result<Void> apply(@RequestBody Map<String, String> request) {
         Long readerId = getCurrentReaderId();
         String reason = request.get("reason");
 
         if (reason == null || reason.trim().isEmpty()) {
-            throw new BusinessException(400, "请填写申请理由");
+            throw new RuntimeException("请填写申请理由");
         }
 
         LambdaQueryWrapper<AdminApplication> existWrapper = new LambdaQueryWrapper<>();
         existWrapper.eq(AdminApplication::getReaderId, readerId)
                 .eq(AdminApplication::getStatus, "pending");
         if (applicationMapper.selectCount(existWrapper) > 0) {
-            throw new BusinessException(400, "您已有待审批的申请，请勿重复提交");
+            throw new RuntimeException("您已有待审批的申请，请勿重复提交");
         }
 
         Reader reader = readerMapper.selectById(readerId);
@@ -70,7 +75,6 @@ public class AdminApplicationController {
     }
 
     @GetMapping("/my-status")
-    @RequirePermission(Permission.ADMIN_APPLICATION_STATUS)
     public Result<Map<String, Object>> getMyApplicationStatus() {
         Long readerId = null;
         try {
@@ -111,8 +115,8 @@ public class AdminApplicationController {
     }
 
     @GetMapping("/list")
-    @RequirePermission(Permission.ADMIN_APPLICATION_REVIEW)
-    public Result<PageResult<AdminApplication>> getApplicationList(
+    @RequirePermission("admin-app:view")
+    public Result<Map<String, Object>> getApplicationList(
             @RequestParam(defaultValue = "1") int page,
             @RequestParam(defaultValue = "10") int size,
             @RequestParam(required = false) String status) {
@@ -123,43 +127,94 @@ public class AdminApplicationController {
         wrapper.orderByDesc(AdminApplication::getCreateTime);
         IPage<AdminApplication> result = applicationMapper.selectPage(new Page<>(page, size), wrapper);
 
+        Map<String, Object> data = new HashMap<>();
+        data.put("records", result.getRecords());
+        data.put("total", result.getTotal());
+
         LambdaQueryWrapper<AdminApplication> pendingWrapper = new LambdaQueryWrapper<>();
         pendingWrapper.eq(AdminApplication::getStatus, "pending");
-        long pendingCount = applicationMapper.selectCount(pendingWrapper);
+        data.put("pendingCount", applicationMapper.selectCount(pendingWrapper));
 
-        return Result.success(PageResult.of(result).withExtra("pendingCount", pendingCount));
+        return Result.success(data);
     }
 
     @PutMapping("/{id}/approve")
-    @RequirePermission(Permission.ADMIN_APPLICATION_REVIEW)
+    @RequirePermission("admin-app:approve")
     public Result<Void> approve(@PathVariable Long id) {
-        adminApplicationService.approve(id);
+        AdminApplication application = applicationMapper.selectById(id);
+        if (application == null) {
+            throw new RuntimeException("申请不存在");
+        }
+        if (!"pending".equals(application.getStatus())) {
+            throw new RuntimeException("该申请已处理");
+        }
+
+        ReaderAccount account = readerAccountMapper.selectOne(
+                new LambdaQueryWrapper<ReaderAccount>().eq(ReaderAccount::getReaderId, application.getReaderId()));
+        if (account == null) {
+            throw new RuntimeException("读者账号不存在");
+        }
+
+        LambdaQueryWrapper<Admin> existAdmin = new LambdaQueryWrapper<>();
+        existAdmin.eq(Admin::getUsername, account.getUsername());
+        if (adminMapper.selectCount(existAdmin) > 0) {
+            throw new RuntimeException("该用户名已存在管理员账号");
+        }
+
+        Admin admin = new Admin();
+        admin.setUsername(account.getUsername());
+        admin.setPassword(account.getPassword());
+        admin.setNickname(application.getReaderName());
+        admin.setCreateTime(LocalDateTime.now());
+        admin.setUpdateTime(LocalDateTime.now());
+        adminMapper.insert(admin);
+
+        // 为新审批的管理员分配 admin 角色
+        SysRole adminRole = roleMapper.selectOne(
+                new LambdaQueryWrapper<SysRole>().eq(SysRole::getCode, "admin"));
+        if (adminRole != null) {
+            SysUserRole ur = new SysUserRole();
+            ur.setUserType("admin");
+            ur.setUserId(admin.getId());
+            ur.setRoleId(adminRole.getId());
+            userRoleMapper.insert(ur);
+        }
+
+        application.setStatus("approved");
+        application.setApprovedTime(LocalDateTime.now());
+        application.setUpdateTime(LocalDateTime.now());
+        applicationMapper.updateById(application);
+
         return Result.success(null);
     }
 
     @PutMapping("/{id}/reject")
-    @RequirePermission(Permission.ADMIN_APPLICATION_REVIEW)
+    @RequirePermission("admin-app:reject")
     public Result<Void> reject(@PathVariable Long id, @RequestBody Map<String, String> request) {
-        adminApplicationService.reject(id, request.get("rejectReason"));
+        AdminApplication application = applicationMapper.selectById(id);
+        if (application == null) {
+            throw new RuntimeException("申请不存在");
+        }
+        if (!"pending".equals(application.getStatus())) {
+            throw new RuntimeException("该申请已处理");
+        }
+
+        application.setStatus("rejected");
+        application.setRejectReason(request.get("rejectReason"));
+        application.setApprovedTime(LocalDateTime.now());
+        application.setUpdateTime(LocalDateTime.now());
+        applicationMapper.updateById(application);
+
         return Result.success(null);
     }
 
     private Long getCurrentReaderId() {
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
-        if (auth == null || auth.getCredentials() == null) {
-            throw new BusinessException(401, "无法获取读者信息，请重新登录");
+        String token = (String) auth.getCredentials();
+        Long readerId = jwtUtil.getReaderIdFromToken(token);
+        if (readerId == null) {
+            throw new RuntimeException("无法获取读者信息");
         }
-        try {
-            String token = auth.getCredentials().toString();
-            Long readerId = jwtUtil.getReaderIdFromToken(token);
-            if (readerId == null) {
-                throw new BusinessException(401, "无法获取读者信息");
-            }
-            return readerId;
-        } catch (BusinessException e) {
-            throw e;
-        } catch (Exception e) {
-            throw new BusinessException(401, "无法获取读者信息，请重新登录");
-        }
+        return readerId;
     }
 }

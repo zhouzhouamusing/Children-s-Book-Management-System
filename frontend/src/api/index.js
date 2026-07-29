@@ -1,10 +1,5 @@
 import request from '@/utils/request'
 
-// Token验证
-export function validateToken() {
-  return request.get('/auth/validate')
-}
-
 export function login(data) {
   return request.post('/admin/login', data)
 }
@@ -174,10 +169,6 @@ export function browseBooks(params) {
   return request.get('/reader-center/books', { params })
 }
 
-export function getReaderCategories() {
-  return request.get('/reader-center/categories')
-}
-
 export function getMyStatistics() {
   return request.get('/reader-center/statistics')
 }
@@ -222,10 +213,6 @@ export function getRecommendTop10() {
 
 export function getAllRecommendations() {
   return request.get('/reader-center/recommend/all')
-}
-
-export function getRecommendByProgress(params) {
-  return request.get('/reader-center/recommend/by-progress', { params })
 }
 
 // 阅读进度 API
@@ -342,69 +329,7 @@ export function getTopRatedBooks(params) {
   return request.get('/reader-center/recommend/top-rated', { params })
 }
 
-// 数据面板 API
-export function getBorrowTrends(params) {
-  return request.get('/dashboard/borrow-trends', { params })
-}
-
-export function getOverdueAnalytics(params) {
-  return request.get('/dashboard/overdue-analytics', { params })
-}
-
-export function getTopReaders(params) {
-  return request.get('/dashboard/top-readers', { params })
-}
-
-export function getAuditLogs(params) {
-  return request.get('/dashboard/audit-logs', { params })
-}
-
-export function getReaderGrowth(params) {
-  return request.get('/dashboard/reader-growth', { params })
-}
-
-export function getBookUtilization(params) {
-  return request.get('/dashboard/book-utilization', { params })
-}
-
-export function getDashboardReadingStats() {
-  return request.get('/dashboard/reading-stats')
-}
-
-// 读者密码重置
-export function readerSendResetCode(data) {
-  return request.post('/reader/send-code', data)
-}
-
-export function readerResetPassword(data) {
-  return request.post('/reader/reset-password', data)
-}
-
-// 预约管理 (管理端)
-export function getAdminReservations(params) {
-  return request.get('/borrows/reservations', { params })
-}
-
-export function fulfillReservation(id) {
-  return request.put(`/borrows/reservations/${id}/fulfill`)
-}
-
-// 暂停申诉
-export function appealSuspension(data) {
-  return request.post('/reader-center/appeal-suspension', data)
-}
-
-export function getSuspensionAppeals(params) {
-  return request.get('/readers/suspension-appeals', { params })
-}
-
-export function resolveAppeal(readerId, data) {
-  return request.put(`/readers/${readerId}/resolve-appeal`, data)
-}
-
-// ===== RBAC 权限管理 API =====
-
-// 角色管理
+// RBAC - 角色管理
 export function getRoles(params) {
   return request.get('/sys/roles', { params })
 }
@@ -413,7 +338,11 @@ export function getAllRoles() {
   return request.get('/sys/roles/all')
 }
 
-export function createRole(data) {
+export function getRole(id) {
+  return request.get(`/sys/roles/${id}`)
+}
+
+export function addRole(data) {
   return request.post('/sys/roles', data)
 }
 
@@ -425,59 +354,60 @@ export function deleteRole(id) {
   return request.delete(`/sys/roles/${id}`)
 }
 
-export function getRolePermissions(roleId) {
-  return request.get(`/sys/roles/${roleId}/permissions`)
+export function assignRolePermissions(id, permissionIds) {
+  return request.put(`/sys/roles/${id}/permissions`, { permissionIds })
 }
 
-export function getEffectivePermissions(roleId) {
-  return request.get(`/sys/roles/${roleId}/effective-permissions`)
+// RBAC - 权限管理
+export function getPermissionTree() {
+  return request.get('/sys/permissions/tree')
 }
 
-export function assignRolePermissions(roleId, data) {
-  return request.put(`/sys/roles/${roleId}/permissions`, data)
+export function getPermissionList() {
+  return request.get('/sys/permissions')
 }
 
-// 权限管理
-export function getPermissions(params) {
-  return request.get('/sys/permissions', { params })
+// RBAC - 用户角色
+export function getAdminUsersWithRoles(params) {
+  return request.get('/sys/user-roles/admins', { params })
 }
 
-export function getPermissionsGrouped() {
-  return request.get('/sys/permissions/grouped')
+export function getReaderUsersWithRoles(params) {
+  return request.get('/sys/user-roles/readers', { params })
 }
 
-export function getPermissionModules() {
-  return request.get('/sys/permissions/modules')
+export function assignUserRoles(data) {
+  return request.put('/sys/user-roles/assign', data)
 }
 
-export function getPermissionsWithRoles() {
-  return request.get('/sys/permissions/with-roles')
+export function getMyPermissions() {
+  return request.get('/sys/user-roles/my-permissions')
 }
 
-// 用户角色分配
-export function getUserRoles(userType, userId) {
-  return request.get(`/sys/user-roles/users/${userType}/${userId}/roles`)
+// 申诉 API (读者端)
+export function submitAppeal(data) {
+  return request.post('/reader-center/appeals', data)
 }
 
-export function assignUserRoles(userType, userId, data) {
-  return request.put(`/sys/user-roles/users/${userType}/${userId}/roles`, data)
+export function getMyAppeals(params) {
+  return request.get('/reader-center/appeals/my', { params })
 }
 
-export function getAllUsersWithRoles(params) {
-  return request.get('/sys/user-roles/users', { params })
+export function getAppealDetail(id) {
+  return request.get(`/reader-center/appeals/${id}`)
 }
 
-export function getRoleUsers(roleId) {
-  return request.get(`/sys/user-roles/roles/${roleId}/users`)
+// 申诉 API (管理端)
+export function getAdminAppeals(params) {
+  return request.get('/appeals', { params })
 }
 
-// 用户菜单
-export function getMyMenus() {
-  return request.get('/sys/menus/my')
+export function handleAppeal(id, data) {
+  return request.put(`/appeals/${id}/handle`, data)
 }
 
-// 权限CRUD
-export function createPermission(data) {
+// 权限管理 CRUD
+export function addPermission(data) {
   return request.post('/sys/permissions', data)
 }
 
@@ -489,46 +419,17 @@ export function deletePermission(id) {
   return request.delete(`/sys/permissions/${id}`)
 }
 
-export function batchDeletePermissions(ids) {
-  return request.delete('/sys/permissions/batch', { data: ids })
+// 权限完整性检查
+export function checkPermissionIntegrity() {
+  return request.get('/sys/permissions/integrity-check')
 }
 
-export function exportPermissionsData() {
-  return request.get('/sys/permissions/export')
+export function repairPermissionIntegrity() {
+  return request.post('/sys/permissions/integrity-repair')
 }
 
-// 批量操作 API
-export function batchDeleteBooks(ids) {
-  return request.delete('/books/batch', { data: ids })
-}
-
-export function batchDeleteReaders(ids) {
-  return request.delete('/readers/batch', { data: ids })
-}
-
-export function batchDeleteReviews(ids) {
-  return request.delete('/reviews/batch', { data: ids })
-}
-
-// 读者申诉
-export function submitAppeal(data) {
-  return request.post('/reader-center/appeals', data)
-}
-
-export function getMyAppeals(params) {
-  return request.get('/reader-center/appeals', { params })
-}
-
-export function getAppealDetail(id) {
-  return request.get(`/reader-center/appeals/${id}`)
-}
-
-// 管理员申诉管理
-export function getAdminAppeals(params) {
-  return request.get('/admin/appeals', { params })
-}
-
-export function reviewAppeal(id, data) {
-  return request.put(`/admin/appeals/${id}/review`, data)
+// 动态菜单
+export function getMenusByPermission() {
+  return request.get('/sys/permissions/menus')
 }
 

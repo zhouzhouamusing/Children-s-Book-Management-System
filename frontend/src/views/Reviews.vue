@@ -26,13 +26,9 @@
           <el-option label="已通过" value="approved" />
           <el-option label="已拒绝" value="rejected" />
         </el-select>
-        <el-button v-permission="'REVIEW_READ'" @click="handleFilter">
+        <el-button @click="handleFilter">
           <el-icon><Search /></el-icon>
           筛选
-        </el-button>
-        <el-button v-permission="'REVIEW_BATCH_DELETE'" type="danger" plain @click="handleBatchDelete">
-          <el-icon><Delete /></el-icon>
-          批量删除
         </el-button>
       </div>
     </el-card>
@@ -71,8 +67,8 @@
             <span class="review-time">{{ review.createTime }}</span>
             <div class="review-actions">
               <el-button
+                v-permission="'review:approve'"
                 v-if="review.status === 'pending'"
-                v-permission="'REVIEW_UPDATE'"
                 type="success"
                 size="small"
                 plain
@@ -81,8 +77,8 @@
                 通过
               </el-button>
               <el-button
+                v-permission="'review:reject'"
                 v-if="review.status === 'pending'"
-                v-permission="'REVIEW_UPDATE'"
                 type="danger"
                 size="small"
                 plain
@@ -91,7 +87,7 @@
                 拒绝
               </el-button>
               <el-button
-                v-permission="'REVIEW_UPDATE'"
+                v-permission="'review:reply'"
                 type="primary"
                 size="small"
                 plain
@@ -100,7 +96,7 @@
                 回复
               </el-button>
               <el-button
-                v-permission="'REVIEW_DELETE'"
+                v-permission="'review:delete'"
                 type="danger"
                 size="small"
                 text
@@ -145,7 +141,7 @@
       />
       <template #footer>
         <el-button @click="replyVisible = false">取消</el-button>
-        <el-button v-permission="'REVIEW_UPDATE'" type="primary" :loading="replyLoading" @click="submitReply">发送回复</el-button>
+        <el-button type="primary" :loading="replyLoading" @click="submitReply">发送回复</el-button>
       </template>
     </el-dialog>
   </div>
@@ -155,8 +151,6 @@
 import { ref, computed, onMounted } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { getAdminReviews, approveReview, rejectReview, replyReview, adminDeleteReview } from '@/api'
-import { usePermission } from '@/composables/usePermission'
-const { checkWithFeedback } = usePermission()
 
 const loading = ref(false)
 const reviews = ref([])
@@ -194,7 +188,6 @@ const handleFilter = () => {
 }
 
 const handleApprove = async (review) => {
-  if (!checkWithFeedback('REVIEW_UPDATE')) return
   try {
     await approveReview(review.id)
     ElMessage.success('已通过审核')
@@ -203,7 +196,6 @@ const handleApprove = async (review) => {
 }
 
 const handleReject = (review) => {
-  if (!checkWithFeedback('REVIEW_UPDATE')) return
   ElMessageBox.confirm('确定拒绝该评价吗？', '拒绝确认', { type: 'warning' })
     .then(async () => {
       try {
@@ -221,7 +213,6 @@ const handleReply = (review) => {
 }
 
 const submitReply = async () => {
-  if (!checkWithFeedback('REVIEW_UPDATE')) return
   if (!replyContent.value.trim()) {
     ElMessage.warning('请输入回复内容')
     return
@@ -238,34 +229,12 @@ const submitReply = async () => {
 }
 
 const handleDelete = (review) => {
-  if (!checkWithFeedback('REVIEW_DELETE')) return
   ElMessageBox.confirm('确定删除该评价吗？此操作不可恢复。', '删除确认', {
     type: 'warning', confirmButtonText: '确认删除'
   }).then(async () => {
     try {
       await adminDeleteReview(review.id)
       ElMessage.success('已删除')
-      fetchReviews()
-    } catch (e) {}
-  }).catch(() => {})
-}
-
-const handleBatchDelete = () => {
-  if (!checkWithFeedback('REVIEW_BATCH_DELETE')) return
-  const rejectedReviews = reviews.value.filter(r => r.status === 'rejected')
-  if (rejectedReviews.length === 0) {
-    ElMessage.warning('没有可批量删除的评价（仅支持删除已拒绝的评价）')
-    return
-  }
-  ElMessageBox.confirm(
-    `确定批量删除 ${rejectedReviews.length} 条已拒绝的评价吗？此操作不可恢复。`,
-    '批量删除确认',
-    { type: 'warning', confirmButtonText: '确认删除' }
-  ).then(async () => {
-    try {
-      const ids = rejectedReviews.map(r => r.id)
-      await Promise.all(ids.map(id => adminDeleteReview(id)))
-      ElMessage.success(`已删除 ${ids.length} 条评价`)
       fetchReviews()
     } catch (e) {}
   }).catch(() => {})

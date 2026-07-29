@@ -3,10 +3,7 @@ package com.kidsbook.controller;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
-import com.kidsbook.common.BusinessException;
-import com.kidsbook.common.PageResult;
-import com.kidsbook.common.Permission;
-import com.kidsbook.common.RequirePermission;
+import com.kidsbook.annotation.RequirePermission;
 import com.kidsbook.common.Result;
 import com.kidsbook.dto.ReaderProfileUpdateRequest;
 import com.kidsbook.dto.ReservationRequest;
@@ -17,11 +14,7 @@ import com.kidsbook.entity.Reader;
 import com.kidsbook.mapper.BookMapper;
 import com.kidsbook.mapper.BorrowRecordMapper;
 import com.kidsbook.mapper.ReaderMapper;
-import com.kidsbook.service.AppealService;
-import com.kidsbook.service.AuditLogService;
 import com.kidsbook.service.BookReservationService;
-import com.kidsbook.service.BookReviewService;
-import com.kidsbook.service.BorrowService;
 import com.kidsbook.service.ReaderPointsService;
 import com.kidsbook.util.JwtUtil;
 import jakarta.validation.Valid;
@@ -45,34 +38,23 @@ public class ReaderCenterController {
     private final BookMapper bookMapper;
     private final BookReservationService reservationService;
     private final ReaderPointsService readerPointsService;
-    private final BookReviewService bookReviewService;
-    private final AuditLogService auditLogService;
-    private final BorrowService borrowService;
-    private final AppealService appealService;
     private final JwtUtil jwtUtil;
 
     private Long getCurrentReaderId() {
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
-        if (auth == null || auth.getCredentials() == null) {
-            return null;
-        }
-        try {
-            String token = auth.getCredentials().toString();
-            return jwtUtil.getReaderIdFromToken(token);
-        } catch (Exception e) {
-            return null;
-        }
+        String token = (String) auth.getCredentials();
+        Long readerId = jwtUtil.getReaderIdFromToken(token);
+        return readerId;
     }
 
     private boolean isAdmin() {
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
-        if (auth == null) return false;
         return auth.getAuthorities().stream()
                 .anyMatch(a -> a.getAuthority().equals("ROLE_ADMIN"));
     }
 
     @GetMapping("/profile")
-    @RequirePermission(Permission.READER_PROFILE_READ)
+    @RequirePermission("reader-center:profile")
     public Result<Reader> getProfile() {
         Long readerId = getCurrentReaderId();
         if (readerId == null) {
@@ -82,57 +64,52 @@ public class ReaderCenterController {
                 adminReader.setStatus("normal");
                 return Result.success(adminReader);
             }
-            throw new BusinessException(401, "无法获取读者信息");
+            throw new RuntimeException("无法获取读者信息");
         }
         Reader reader = readerMapper.selectById(readerId);
         if (reader == null) {
-            throw new BusinessException(404, "读者信息不存在");
+            throw new RuntimeException("读者信息不存在");
         }
         return Result.success(reader);
     }
 
     @PutMapping("/profile")
-    @RequirePermission(Permission.READER_PROFILE_UPDATE)
+    @RequirePermission("reader-center:profile")
     public Result<Void> updateProfile(@RequestBody @Valid ReaderProfileUpdateRequest request) {
         Long readerId = getCurrentReaderId();
         if (readerId == null) {
-            throw new BusinessException(403, "管理员身份无法修改读者信息");
+            throw new RuntimeException("管理员身份无法修改读者信息");
         }
         Reader reader = readerMapper.selectById(readerId);
         if (reader == null) {
-            throw new BusinessException(404, "读者信息不存在");
+            throw new RuntimeException("读者信息不存在");
         }
-        String oldName = reader.getName();
         reader.setName(request.getName());
         reader.setAge(request.getAge());
         reader.setGender(request.getGender());
         reader.setParentName(request.getParentName());
         reader.setParentPhone(request.getParentPhone());
         readerMapper.updateById(reader);
-
-        if (request.getName() != null && !request.getName().equals(oldName)) {
-            bookReviewService.updateReaderName(readerId, request.getName());
-        }
         return Result.success(null);
     }
 
     @GetMapping("/borrow-records")
-    @RequirePermission(Permission.READER_BORROW_READ)
-    public Result<PageResult<BorrowRecord>> getBorrowRecords(
+    @RequirePermission("reader-center:borrow")
+    public Result<Map<String, Object>> getBorrowRecords(
             @RequestParam(defaultValue = "1") int page,
             @RequestParam(defaultValue = "10") int size,
             @RequestParam(required = false) String status) {
         Long readerId = getCurrentReaderId();
+        Map<String, Object> data = new HashMap<>();
         if (readerId == null) {
-            return Result.success(PageResult.<BorrowRecord>empty(page, size)
-                .withExtra("totalBorrows", 0)
-                .withExtra("borrowingCount", 0)
-                .withExtra("overdueCount", 0)
-                .withExtra("returnedCount", 0));
+            data.put("records", List.of());
+            data.put("total", 0);
+            data.put("totalBorrows", 0);
+            data.put("borrowingCount", 0);
+            data.put("overdueCount", 0);
+            data.put("returnedCount", 0);
+            return Result.success(data);
         }
-
-        borrowService.markOverdueForReader(readerId);
-
         LambdaQueryWrapper<BorrowRecord> wrapper = new LambdaQueryWrapper<>();
         wrapper.eq(BorrowRecord::getReaderId, readerId);
         if (status != null && !status.isEmpty() && !"all".equals(status)) {
@@ -149,52 +126,59 @@ public class ReaderCenterController {
         overdueWrapper.eq(BorrowRecord::getReaderId, readerId).eq(BorrowRecord::getStatus, "overdue");
         long overdueCount = borrowRecordMapper.selectCount(overdueWrapper);
 
-        return Result.success(PageResult.of(result)
-            .withExtra("totalBorrows", totalBorrows)
-            .withExtra("borrowingCount", borrowingCount)
-            .withExtra("overdueCount", overdueCount)
-            .withExtra("returnedCount", totalBorrows - borrowingCount - overdueCount));
+        data.put("records", result.getRecords());
+        data.put("total", result.getTotal());
+        data.put("totalBorrows", totalBorrows);
+        data.put("borrowingCount", borrowingCount);
+        data.put("overdueCount", overdueCount);
+        data.put("returnedCount", totalBorrows - borrowingCount - overdueCount);
+        return Result.success(data);
     }
 
     @GetMapping("/reservations")
-    @RequirePermission(Permission.READER_RESERVATION_READ)
-    public Result<PageResult<BookReservation>> getReservations(
+    @RequirePermission("reader-center:reservation")
+    public Result<Map<String, Object>> getReservations(
             @RequestParam(defaultValue = "1") int page,
             @RequestParam(defaultValue = "10") int size,
             @RequestParam(required = false) String status) {
         Long readerId = getCurrentReaderId();
+        Map<String, Object> data = new HashMap<>();
         if (readerId == null) {
-            return Result.success(PageResult.empty(page, size));
+            data.put("records", List.of());
+            data.put("total", 0);
+            return Result.success(data);
         }
         IPage<BookReservation> result = reservationService.getMyReservations(readerId, page, size, status);
-        return Result.success(PageResult.of(result));
+        data.put("records", result.getRecords());
+        data.put("total", result.getTotal());
+        return Result.success(data);
     }
 
     @PostMapping("/reservations")
-    @RequirePermission(Permission.READER_RESERVATION_CREATE)
+    @RequirePermission("reader-center:reservation")
     public Result<Void> createReservation(@RequestBody @Valid ReservationRequest request) {
         Long readerId = getCurrentReaderId();
         if (readerId == null) {
-            throw new BusinessException(403, "管理员身份无法进行预约操作");
+            throw new RuntimeException("管理员身份无法进行预约操作");
         }
         reservationService.createReservation(readerId, request.getBookId());
         return Result.success(null);
     }
 
     @PutMapping("/reservations/{id}/cancel")
-    @RequirePermission(Permission.READER_RESERVATION_CANCEL)
+    @RequirePermission("reader-center:reservation")
     public Result<Void> cancelReservation(@PathVariable Long id) {
         Long readerId = getCurrentReaderId();
         if (readerId == null) {
-            throw new BusinessException(403, "管理员身份无法进行预约操作");
+            throw new RuntimeException("管理员身份无法进行预约操作");
         }
         reservationService.cancelReservation(readerId, id);
         return Result.success(null);
     }
 
     @GetMapping("/books")
-    @RequirePermission(Permission.READER_BOOK_BROWSE)
-    public Result<PageResult<Book>> browseBooks(
+    @RequirePermission("reader-center:browse")
+    public Result<Map<String, Object>> browseBooks(
             @RequestParam(defaultValue = "1") int page,
             @RequestParam(defaultValue = "12") int size,
             @RequestParam(required = false) String keyword,
@@ -210,10 +194,14 @@ public class ReaderCenterController {
         }
         wrapper.orderByDesc(Book::getCreateTime);
         IPage<Book> result = bookMapper.selectPage(new Page<>(page, size), wrapper);
-        return Result.success(PageResult.of(result));
+        Map<String, Object> data = new HashMap<>();
+        data.put("records", result.getRecords());
+        data.put("total", result.getTotal());
+        return Result.success(data);
     }
 
     @GetMapping("/statistics")
+    @RequirePermission("reader-center:borrow")
     public Result<Map<String, Object>> getStatistics() {
         Long readerId = getCurrentReaderId();
         Map<String, Object> data = new HashMap<>();
@@ -244,21 +232,11 @@ public class ReaderCenterController {
                 .distinct()
                 .count();
 
-        List<Long> bookIds = allRecords.stream()
-                .map(BorrowRecord::getBookId)
-                .filter(id -> id != null)
-                .distinct()
-                .collect(Collectors.toList());
-        Map<Long, Book> bookMap = new HashMap<>();
-        if (!bookIds.isEmpty()) {
-            bookMapper.selectBatchIds(bookIds).forEach(b -> bookMap.put(b.getId(), b));
-        }
-
         Map<String, Long> categoryMap = allRecords.stream()
                 .filter(r -> r.getBookId() != null)
                 .collect(Collectors.groupingBy(
                         r -> {
-                            Book book = bookMap.get(r.getBookId());
+                            Book book = bookMapper.selectById(r.getBookId());
                             return book != null && book.getCategory() != null ? book.getCategory() : "其他";
                         },
                         Collectors.counting()
@@ -297,6 +275,7 @@ public class ReaderCenterController {
     }
 
     @GetMapping("/points")
+    @RequirePermission("reader-center:borrow")
     public Result<Map<String, Object>> getPoints() {
         Long readerId = getCurrentReaderId();
         if (readerId == null) {
@@ -307,79 +286,5 @@ public class ReaderCenterController {
         }
         Map<String, Object> data = readerPointsService.getPointsDetail(readerId);
         return Result.success(data);
-    }
-
-    @GetMapping("/categories")
-    @RequirePermission(Permission.READER_CATEGORY_BROWSE)
-    public Result<List<String>> getCategories() {
-        LambdaQueryWrapper<Book> wrapper = new LambdaQueryWrapper<>();
-        wrapper.eq(Book::getStatus, 1)
-                .isNotNull(Book::getCategory)
-                .select(Book::getCategory)
-                .groupBy(Book::getCategory);
-        List<Book> books = bookMapper.selectList(wrapper);
-        List<String> categories = books.stream()
-                .map(Book::getCategory)
-                .filter(c -> c != null && !c.isEmpty())
-                .distinct()
-                .sorted()
-                .toList();
-        return Result.success(categories);
-    }
-
-    @PostMapping("/appeal-suspension")
-    @RequirePermission(Permission.READER_APPEAL_CREATE)
-    public Result<Void> appealSuspension(@RequestBody Map<String, String> body) {
-        Long readerId = getCurrentReaderId();
-        if (readerId == null) {
-            throw new BusinessException(401, "无法获取读者信息，请重新登录");
-        }
-        String reason = body != null ? body.getOrDefault("reason", "") : "";
-        appealService.submitAppeal(readerId, "suspension", reason, null);
-        return Result.success(null);
-    }
-
-    @PostMapping("/appeals")
-    @RequirePermission(Permission.READER_APPEAL_CREATE)
-    public Result<Object> submitAppeal(@RequestBody Map<String, String> body) {
-        Long readerId = getCurrentReaderId();
-        if (readerId == null) {
-            throw new BusinessException(401, "无法获取读者信息，请重新登录");
-        }
-        String type = body != null ? body.getOrDefault("type", "suspension") : "suspension";
-        String reason = body != null ? body.getOrDefault("reason", "") : "";
-        String evidence = body != null ? body.getOrDefault("evidence", null) : null;
-        if (reason.isEmpty()) {
-            throw new BusinessException(400, "申诉原因不能为空");
-        }
-        var appeal = appealService.submitAppeal(readerId, type, reason, evidence);
-        return Result.success(appeal);
-    }
-
-    @GetMapping("/appeals")
-    @RequirePermission(Permission.READER_APPEAL_VIEW)
-    public Result<Object> getMyAppeals(
-            @RequestParam(defaultValue = "1") int page,
-            @RequestParam(defaultValue = "10") int size) {
-        Long readerId = getCurrentReaderId();
-        if (readerId == null) {
-            throw new BusinessException(401, "无法获取读者信息，请重新登录");
-        }
-        var result = appealService.getMyAppeals(readerId, page, size);
-        return Result.success(PageResult.of(result));
-    }
-
-    @GetMapping("/appeals/{id}")
-    @RequirePermission(Permission.READER_APPEAL_VIEW)
-    public Result<Object> getAppealDetail(@PathVariable Long id) {
-        Long readerId = getCurrentReaderId();
-        if (readerId == null) {
-            throw new BusinessException(401, "无法获取读者信息，请重新登录");
-        }
-        var appeal = appealService.getAppealById(id);
-        if (!appeal.getReaderId().equals(readerId)) {
-            throw new BusinessException(403, "无权查看他人的申诉记录");
-        }
-        return Result.success(appeal);
     }
 }

@@ -20,11 +20,8 @@
           <el-option label="逾期" value="overdue" />
         </el-select>
       </div>
-      <el-button v-permission="'BORROW_CREATE'" type="primary" @click="showBorrowDialog = true">
+      <el-button v-permission="'borrow:create'" type="primary" @click="showBorrowDialog = true">
         <el-icon><Plus /></el-icon> 新增借阅
-      </el-button>
-      <el-button v-permission="'BORROW_EXPORT'" type="info" plain @click="handleExport">
-        <el-icon><Download /></el-icon> 导出数据
       </el-button>
     </div>
 
@@ -54,8 +51,8 @@
         <el-table-column label="操作" width="180" fixed="right">
           <template #default="{ row }">
             <template v-if="row.status === 'borrowing' || row.status === 'overdue'">
-              <el-button v-permission="'BORROW_UPDATE'" type="success" text size="small" @click="handleReturn(row)">归还</el-button>
-              <el-button v-if="row.status === 'borrowing'" v-permission="'BORROW_UPDATE'" type="primary" text size="small" @click="handleRenew(row)">续借</el-button>
+              <el-button v-permission="'borrow:return'" type="success" text size="small" @click="handleReturn(row)">归还</el-button>
+              <el-button v-permission="'borrow:renew'" v-if="row.status === 'borrowing'" type="primary" text size="small" @click="handleRenew(row)">续借</el-button>
             </template>
             <span v-else class="text-muted">已完成</span>
           </template>
@@ -90,7 +87,7 @@
       </el-form>
       <template #footer>
         <el-button @click="showBorrowDialog = false">取消</el-button>
-        <el-button v-permission="'BORROW_CREATE'" type="primary" :loading="submitting" @click="handleBorrow">确认借出</el-button>
+        <el-button type="primary" :loading="submitting" @click="handleBorrow">确认借出</el-button>
       </template>
     </el-dialog>
 
@@ -102,7 +99,7 @@
       </el-form-item>
       <template #footer>
         <el-button @click="showRenewDialog = false">取消</el-button>
-        <el-button v-permission="'BORROW_UPDATE'" type="primary" :loading="submitting" @click="confirmRenew">确认续借</el-button>
+        <el-button type="primary" :loading="submitting" @click="confirmRenew">确认续借</el-button>
       </template>
     </el-dialog>
   </div>
@@ -112,8 +109,6 @@
 import { ref, reactive, computed, onMounted } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { getBorrows, createBorrow, returnBorrow, renewBorrow, getBorrowStatistics } from '@/api'
-import { usePermission } from '@/composables/usePermission'
-const { checkWithFeedback } = usePermission()
 
 const loading = ref(false)
 const submitting = ref(false)
@@ -172,7 +167,6 @@ const fetchStats = async () => {
 }
 
 const handleBorrow = async () => {
-  if (!checkWithFeedback('BORROW_CREATE')) return
   const valid = await borrowFormRef.value.validate().catch(() => false)
   if (!valid) return
   submitting.value = true
@@ -190,7 +184,6 @@ const handleBorrow = async () => {
 }
 
 const handleReturn = (row) => {
-  if (!checkWithFeedback('BORROW_UPDATE')) return
   ElMessageBox.confirm(`确认归还《${row.bookTitle}》？`, '确认归还', {
     confirmButtonText: '确认', cancelButtonText: '取消', type: 'info'
   }).then(async () => {
@@ -210,7 +203,6 @@ const handleRenew = (row) => {
 }
 
 const confirmRenew = async () => {
-  if (!checkWithFeedback('BORROW_UPDATE')) return
   submitting.value = true
   try {
     await renewBorrow(renewTarget.value.id, renewDays.value)
@@ -222,31 +214,6 @@ const confirmRenew = async () => {
 }
 
 onMounted(() => { fetchList(); fetchStats() })
-
-const handleExport = async () => {
-  if (!checkWithFeedback('BORROW_EXPORT')) return
-  try {
-    const res = await getBorrows({ page: 1, size: 10000, keyword: keyword.value, status: statusFilter.value })
-    const borrows = res.data?.records || res.data || []
-    if (borrows.length === 0) {
-      ElMessage.warning('暂无数据可导出')
-      return
-    }
-    const headers = ['图书名称', '读者姓名', '借阅日期', '应还日期', '归还日期', '状态']
-    const rows = borrows.map(b => [b.bookTitle, b.readerName, b.borrowDate, b.dueDate, b.returnDate || '', b.status])
-    const csv = [headers.join(','), ...rows.map(r => r.join(','))].join('\n')
-    const blob = new Blob(['﻿' + csv], { type: 'text/csv;charset=utf-8;' })
-    const url = URL.createObjectURL(blob)
-    const a = document.createElement('a')
-    a.href = url
-    a.download = `借阅记录_${new Date().toLocaleDateString()}.csv`
-    a.click()
-    URL.revokeObjectURL(url)
-    ElMessage.success('导出成功')
-  } catch (e) {
-    // handled by interceptor
-  }
-}
 </script>
 
 <style scoped>

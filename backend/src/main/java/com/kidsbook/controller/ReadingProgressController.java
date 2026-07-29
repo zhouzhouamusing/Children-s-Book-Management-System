@@ -1,10 +1,7 @@
 package com.kidsbook.controller;
 
 import com.baomidou.mybatisplus.core.metadata.IPage;
-import com.kidsbook.common.BusinessException;
-import com.kidsbook.common.PageResult;
-import com.kidsbook.common.Permission;
-import com.kidsbook.common.RequirePermission;
+import com.kidsbook.annotation.RequirePermission;
 import com.kidsbook.common.Result;
 import com.kidsbook.entity.ReadingNote;
 import com.kidsbook.entity.ReadingProgress;
@@ -15,6 +12,7 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.HashMap;
 import java.util.Map;
 
 @RestController
@@ -26,40 +24,33 @@ public class ReadingProgressController {
 
     private Long getCurrentReaderId() {
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
-        if (auth == null || auth.getCredentials() == null) {
-            throw new BusinessException(401, "无法获取读者信息，请重新登录");
-        }
-        try {
-            String token = auth.getCredentials().toString();
-            Long readerId = jwtUtil.getReaderIdFromToken(token);
-            if (readerId == null) {
-                throw new BusinessException(401, "无法获取读者信息，请使用读者账号登录");
-            }
-            return readerId;
-        } catch (BusinessException e) {
-            throw e;
-        } catch (Exception e) {
-            throw new BusinessException(401, "无法获取读者信息，请重新登录");
-        }
+        String token = (String) auth.getCredentials();
+        return jwtUtil.getReaderIdFromToken(token);
     }
 
     @GetMapping
-    @RequirePermission(Permission.READING_PROGRESS_READ)
-    public Result<PageResult<ReadingProgress>> getProgressList(
+    @RequirePermission("reader-center:progress")
+    public Result<Map<String, Object>> getProgressList(
             @RequestParam(defaultValue = "1") int page,
             @RequestParam(defaultValue = "10") int size,
             @RequestParam(required = false) String status) {
         Long readerId = getCurrentReaderId();
+        if (readerId == null) {
+            throw new RuntimeException("无法获取读者信息");
+        }
         IPage<ReadingProgress> result = progressService.getProgressList(readerId, page, size, status);
-        return Result.success(PageResult.of(result));
+        Map<String, Object> data = new HashMap<>();
+        data.put("records", result.getRecords());
+        data.put("total", result.getTotal());
+        return Result.success(data);
     }
 
     @PostMapping
-    @RequirePermission(Permission.READING_PROGRESS_CREATE)
+    @RequirePermission("reader-center:progress")
     public Result<ReadingProgress> createOrUpdate(@RequestBody Map<String, Object> body) {
         Long readerId = getCurrentReaderId();
-        if (body.get("bookId") == null) {
-            throw new BusinessException(400, "图书ID不能为空");
+        if (readerId == null) {
+            throw new RuntimeException("无法获取读者信息");
         }
         Long bookId = Long.valueOf(body.get("bookId").toString());
         Integer totalPages = body.get("totalPages") != null ? Integer.valueOf(body.get("totalPages").toString()) : null;
@@ -71,57 +62,65 @@ public class ReadingProgressController {
     }
 
     @PutMapping("/{id}/status")
-    @RequirePermission(Permission.READING_PROGRESS_UPDATE)
+    @RequirePermission("reader-center:progress")
     public Result<Void> updateStatus(@PathVariable Long id, @RequestBody Map<String, String> body) {
         Long readerId = getCurrentReaderId();
-        String status = body.get("status");
-        if (status == null || status.isEmpty()) {
-            throw new BusinessException(400, "状态不能为空");
+        if (readerId == null) {
+            throw new RuntimeException("无法获取读者信息");
         }
-        progressService.updateProgressStatus(readerId, id, status);
+        progressService.updateProgressStatus(readerId, id, body.get("status"));
         return Result.success(null);
     }
 
     @DeleteMapping("/{id}")
-    @RequirePermission(Permission.READING_PROGRESS_DELETE)
+    @RequirePermission("reader-center:progress")
     public Result<Void> deleteProgress(@PathVariable Long id) {
         Long readerId = getCurrentReaderId();
+        if (readerId == null) {
+            throw new RuntimeException("无法获取读者信息");
+        }
         progressService.deleteProgress(readerId, id);
         return Result.success(null);
     }
 
     @GetMapping("/statistics")
-    @RequirePermission(Permission.READING_PROGRESS_READ)
+    @RequirePermission("reader-center:progress")
     public Result<Map<String, Object>> getStatistics() {
         Long readerId = getCurrentReaderId();
+        if (readerId == null) {
+            throw new RuntimeException("无法获取读者信息");
+        }
         Map<String, Object> stats = progressService.getStatistics(readerId);
         return Result.success(stats);
     }
 
     @GetMapping("/notes")
-    @RequirePermission(Permission.READING_PROGRESS_READ)
-    public Result<PageResult<ReadingNote>> getNotes(
+    @RequirePermission("reader-center:progress")
+    public Result<Map<String, Object>> getNotes(
             @RequestParam(defaultValue = "1") int page,
             @RequestParam(defaultValue = "10") int size,
             @RequestParam(required = false) Long bookId) {
         Long readerId = getCurrentReaderId();
+        if (readerId == null) {
+            throw new RuntimeException("无法获取读者信息");
+        }
         IPage<ReadingNote> result = progressService.getNotes(readerId, bookId, page, size);
-        return Result.success(PageResult.of(result));
+        Map<String, Object> data = new HashMap<>();
+        data.put("records", result.getRecords());
+        data.put("total", result.getTotal());
+        return Result.success(data);
     }
 
     @PostMapping("/notes")
-    @RequirePermission(Permission.READING_PROGRESS_CREATE)
+    @RequirePermission("reader-center:progress")
     public Result<ReadingNote> addNote(@RequestBody Map<String, Object> body) {
         Long readerId = getCurrentReaderId();
-        if (body.get("bookId") == null) {
-            throw new BusinessException(400, "图书ID不能为空");
+        if (readerId == null) {
+            throw new RuntimeException("无法获取读者信息");
         }
         Long bookId = Long.valueOf(body.get("bookId").toString());
         Long progressId = body.get("progressId") != null ? Long.valueOf(body.get("progressId").toString()) : null;
         String content = (String) body.get("content");
-        if (content == null || content.trim().isEmpty()) {
-            throw new BusinessException(400, "笔记内容不能为空");
-        }
         Integer pageNumber = body.get("pageNumber") != null ? Integer.valueOf(body.get("pageNumber").toString()) : null;
 
         ReadingNote note = progressService.addNote(readerId, bookId, progressId, content, pageNumber);
@@ -129,22 +128,25 @@ public class ReadingProgressController {
     }
 
     @PutMapping("/notes/{id}")
-    @RequirePermission(Permission.READING_PROGRESS_UPDATE)
+    @RequirePermission("reader-center:progress")
     public Result<Void> updateNote(@PathVariable Long id, @RequestBody Map<String, Object> body) {
         Long readerId = getCurrentReaderId();
-        String content = (String) body.get("content");
-        if (content == null || content.trim().isEmpty()) {
-            throw new BusinessException(400, "笔记内容不能为空");
+        if (readerId == null) {
+            throw new RuntimeException("无法获取读者信息");
         }
+        String content = (String) body.get("content");
         Integer pageNumber = body.get("pageNumber") != null ? Integer.valueOf(body.get("pageNumber").toString()) : null;
         progressService.updateNote(readerId, id, content, pageNumber);
         return Result.success(null);
     }
 
     @DeleteMapping("/notes/{id}")
-    @RequirePermission(Permission.READING_PROGRESS_DELETE)
+    @RequirePermission("reader-center:progress")
     public Result<Void> deleteNote(@PathVariable Long id) {
         Long readerId = getCurrentReaderId();
+        if (readerId == null) {
+            throw new RuntimeException("无法获取读者信息");
+        }
         progressService.deleteNote(readerId, id);
         return Result.success(null);
     }

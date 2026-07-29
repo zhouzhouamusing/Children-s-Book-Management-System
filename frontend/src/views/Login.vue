@@ -140,11 +140,10 @@
 </template>
 
 <script setup>
-import { ref, reactive, onMounted } from 'vue'
+import { ref, reactive } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import { login, readerLogin } from '@/api'
-import { usePermissionStore } from '@/stores/permission'
 
 const router = useRouter()
 const formRef = ref(null)
@@ -152,15 +151,6 @@ const loading = ref(false)
 const loginRole = ref('admin')
 const focusField = ref('')
 const rememberMe = ref(false)
-const permStore = usePermissionStore()
-
-onMounted(() => {
-  const authError = localStorage.getItem('authError')
-  if (authError) {
-    ElMessage.warning(authError)
-    localStorage.removeItem('authError')
-  }
-})
 
 const form = reactive({
   username: '',
@@ -187,7 +177,7 @@ const handleLogin = async () => {
   try {
     const loginFn = loginRole.value === 'admin' ? login : readerLogin
     const res = await loginFn(form)
-    const { token, nickname, role, roles, permissions, readerId, suspended } = res.data
+    const { token, nickname, role, readerId, roles, permissions } = res.data
     if (!token) {
       ElMessage.error('登录异常：未获取到凭证')
       return
@@ -198,18 +188,12 @@ const handleLogin = async () => {
     if (readerId) {
       localStorage.setItem('readerId', readerId)
     }
-    // Store roles and permissions
-    permStore.setAuth({ roles: roles || [role], permissions: permissions || [] })
-
-    if (suspended) {
-      localStorage.setItem('suspended', 'true')
-    } else {
-      localStorage.removeItem('suspended')
+    if (roles && permissions) {
+      localStorage.setItem('roles', JSON.stringify(roles))
+      localStorage.setItem('permissions', JSON.stringify(permissions))
     }
     ElMessage.success('登录成功，欢迎回来！')
-    if (suspended) {
-      await router.push('/reader/profile')
-    } else if (role === 'READER' || loginRole.value === 'reader') {
+    if (role === 'READER' || loginRole.value === 'reader') {
       await router.push('/reader/my-borrows')
     } else {
       await router.push('/dashboard')

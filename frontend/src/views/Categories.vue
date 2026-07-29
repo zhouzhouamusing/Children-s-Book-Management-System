@@ -61,7 +61,7 @@
           <el-icon><Search /></el-icon>
           搜索
         </el-button>
-        <el-button v-permission="'CATEGORY_CREATE'" type="success" size="large" @click="handleAdd">
+        <el-button v-permission="'category:add'" type="success" size="large" @click="handleAdd">
           <el-icon><Plus /></el-icon>
           新增分类
         </el-button>
@@ -110,13 +110,13 @@
             </div>
           </div>
           <div class="card-footer">
-            <el-button v-permission="'CATEGORY_READ'" class="card-btn view" size="small" @click="handleViewBooks(cat)">
+            <el-button class="card-btn view" size="small" @click="handleViewBooks(cat)">
               <el-icon><View /></el-icon> 查看图书
             </el-button>
-            <el-button v-permission="'CATEGORY_UPDATE'" class="card-btn edit" size="small" @click="handleEdit(cat)">
+            <el-button v-permission="'category:edit'" class="card-btn edit" size="small" @click="handleEdit(cat)">
               <el-icon><Edit /></el-icon> 编辑
             </el-button>
-            <el-button v-permission="'CATEGORY_DELETE'" class="card-btn delete" size="small" @click="handleDelete(cat)">
+            <el-button v-permission="'category:delete'" class="card-btn delete" size="small" @click="handleDelete(cat)">
               <el-icon><Delete /></el-icon> 删除
             </el-button>
           </div>
@@ -124,7 +124,7 @@
       </transition-group>
 
       <el-empty v-if="!loading && categoryList.length === 0" description="暂无分类数据，点击上方按钮创建第一个分类吧~">
-        <el-button v-permission="'CATEGORY_CREATE'" type="primary" @click="handleAdd">立即创建</el-button>
+        <el-button v-permission="'category:add'" type="primary" @click="handleAdd">立即创建</el-button>
       </el-empty>
     </div>
 
@@ -227,7 +227,7 @@
       </el-form>
       <template #footer>
         <el-button @click="dialogVisible = false">取消</el-button>
-        <el-button v-permission="['CATEGORY_CREATE', 'CATEGORY_UPDATE']" type="primary" :loading="submitLoading" @click="handleSubmit">
+        <el-button type="primary" :loading="submitLoading" @click="handleSubmit">
           {{ submitLoading ? '保存中...' : '确认保存' }}
         </el-button>
       </template>
@@ -240,8 +240,6 @@ import { ref, reactive, onMounted, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { getCategoryList, addCategory, updateCategory, deleteCategory } from '@/api'
-import { usePermission } from '@/composables/usePermission'
-const { checkWithFeedback } = usePermission()
 
 const router = useRouter()
 const loading = ref(false)
@@ -327,14 +325,12 @@ const resetForm = () => {
 }
 
 const handleAdd = () => {
-  if (!checkWithFeedback('CATEGORY_CREATE')) return
   isEdit.value = false
   resetForm()
   dialogVisible.value = true
 }
 
 const handleEdit = (row) => {
-  if (!checkWithFeedback('CATEGORY_UPDATE')) return
   isEdit.value = true
   Object.assign(form, { ...row })
   dialogVisible.value = true
@@ -345,7 +341,6 @@ const handleViewBooks = (cat) => {
 }
 
 const handleSubmit = async () => {
-  if (!checkWithFeedback(isEdit.value ? 'CATEGORY_UPDATE' : 'CATEGORY_CREATE')) return
   const valid = await formRef.value.validate().catch(() => false)
   if (!valid) return
 
@@ -373,7 +368,6 @@ const handleSubmit = async () => {
 }
 
 const handleDelete = (row) => {
-  if (!checkWithFeedback('CATEGORY_DELETE')) return
   const bookCount = row.bookCount || 0
   if (bookCount > 0) {
     ElMessageBox.alert(
@@ -667,27 +661,27 @@ onMounted(() => {
 }
 
 .card-btn.edit {
-  background: linear-gradient(135deg, var(--btn-edit-from), var(--btn-edit-to)) !important;
+  background: linear-gradient(135deg, #7C5CFC, #A78BFA) !important;
   border: none !important;
   color: #fff !important;
   font-size: 12px;
 }
 
 .card-btn.edit:hover {
-  background: linear-gradient(135deg, var(--btn-edit-to), var(--btn-edit-from)) !important;
-  box-shadow: 0 3px 8px rgba(167, 139, 250, 0.3);
+  background: linear-gradient(135deg, #6C4DE6, #7C5CFC) !important;
+  box-shadow: 0 3px 8px rgba(124, 92, 252, 0.4);
 }
 
 .card-btn.delete {
-  background: linear-gradient(135deg, var(--btn-delete-from), var(--btn-delete-to)) !important;
+  background: linear-gradient(135deg, #FF6B81, #FF8A9E) !important;
   border: none !important;
   color: #fff !important;
   font-size: 12px;
 }
 
 .card-btn.delete:hover {
-  background: linear-gradient(135deg, var(--btn-delete-to), var(--btn-delete-from)) !important;
-  box-shadow: 0 3px 8px rgba(255, 179, 186, 0.4);
+  background: linear-gradient(135deg, #FF4757, #FF6B81) !important;
+  box-shadow: 0 3px 8px rgba(255, 107, 129, 0.4);
 }
 
 /* 分页 */
